@@ -40,27 +40,23 @@ The `ContextMesh` is the heart of Syntha - a high-performance, thread-safe share
 ### Key Features
 
 **Shared Knowledge**: All agents can access common information
-
 ```python
 mesh.push("company_name", "TechCorp")  # Global access
 mesh.push("project_status", "In Progress")
 ```
 
 **Access Control**: Restrict sensitive information to specific agents
-
 ```python
-mesh.push("database_credentials", {"user": "admin", "pass": "secret"},
+mesh.push("database_credentials", {"user": "admin", "pass": "secret"}, 
           subscribers=["Backend", "Database"])
 ```
 
 **Time-To-Live (TTL)**: Automatic expiration for temporary data
-
 ```python
 mesh.push("session_token", "abc123", ttl=3600)  # Expires in 1 hour
 ```
 
 **Performance Optimization**: Optional indexing for large datasets
-
 ```python
 mesh = ContextMesh(enable_indexing=True)  # 10x faster lookups
 ```
@@ -84,21 +80,18 @@ mesh.push("user_count", 1600)  # Overwrites previous value
 ### Access Patterns
 
 **Global Context**: Accessible to all agents
-
 ```python
 mesh.push("environment", "production")
 mesh.push("api_version", "v2.1")
 ```
 
 **Team Context**: Accessible to specific agents
-
 ```python
 mesh.push("frontend_config", config, subscribers=["Frontend", "QA"])
 mesh.push("backend_config", config, subscribers=["Backend", "DevOps"])
 ```
 
 **Agent-Specific Context**: Accessible to one agent
-
 ```python
 mesh.push("user_preferences", preferences, subscribers=["UserAgent"])
 ```
@@ -109,15 +102,15 @@ The `ToolHandler` provides standardized tool schemas and execution for LLM funct
 
 ### The 7 Core Tools
 
-| Tool                          | Purpose                    | When to Use                      |
-| ----------------------------- | -------------------------- | -------------------------------- |
-| `get_context`                 | Retrieve shared context    | Agent needs current state/data   |
-| `push_context`                | Store shared context       | Agent wants to share information |
-| `list_context_keys`           | Discover available context | Debugging or exploration         |
-| `send_message_to_agent`       | Direct messaging           | Task assignment, notifications   |
-| `get_messages_from_agents`    | Retrieve messages          | Check for new tasks/updates      |
-| `broadcast_message_to_agents` | Multi-agent messaging      | Announcements, team updates      |
-| `batch_context_operation`     | Bulk operations            | Performance optimization         |
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `get_context` | Retrieve shared context | Agent needs current state/data |
+| `push_context` | Store shared context | Agent wants to share information |
+| `list_context_keys` | Discover available context | Debugging or exploration |
+| `send_message_to_agent` | Direct messaging | Task assignment, notifications |
+| `get_messages_from_agents` | Retrieve messages | Check for new tasks/updates |
+| `broadcast_message_to_agents` | Multi-agent messaging | Announcements, team updates |
+| `batch_context_operation` | Bulk operations | Performance optimization |
 
 ### Tool Integration Flow
 
@@ -132,7 +125,7 @@ schemas = handler.get_schemas()
 # 3. Execute tool calls
 result = handler.handle_tool_call("send_message_to_agent",
     from_agent="Agent1",
-    to_agent="Agent2",
+    to_agent="Agent2", 
     message="Task completed"
 )
 
@@ -207,7 +200,7 @@ Prompts automatically respect access control:
 # Backend agent only sees backend-specific + global context
 backend_prompt = build_system_prompt("Backend", mesh)
 
-# Frontend agent only sees frontend-specific + global context
+# Frontend agent only sees frontend-specific + global context  
 frontend_prompt = build_system_prompt("Frontend", mesh)
 ```
 
@@ -252,7 +245,7 @@ handler.handle_tool_call("send_message_to_agent",
 
 # Continue the thread
 handler.handle_tool_call("send_message_to_agent",
-    from_agent="Dev",
+    from_agent="Dev", 
     to_agent="QA",
     message="Can you provide reproduction steps?",
     thread_id="payment_bug_investigation"
@@ -275,7 +268,7 @@ handler.handle_tool_call("send_message_to_agent",
 # Normal priority (default)
 handler.handle_tool_call("send_message_to_agent",
     from_agent="PM",
-    to_agent="Dev",
+    to_agent="Dev", 
     message="Update progress on feature X",
     priority="normal"
 )
@@ -315,7 +308,7 @@ handler.handle_tool_call("send_message_to_agent",
 validation_result = validate_user_data(user_data)
 handler.handle_tool_call("send_message_to_agent",
     from_agent="Backend",
-    to_agent="Frontend",
+    to_agent="Frontend", 
     message="Validation result: " + json.dumps(validation_result),
     message_type="result"
 )
@@ -336,7 +329,7 @@ handler.handle_tool_call("broadcast_message_to_agents",
 
 # 2. Each agent performs their part
 # EmailAgent: Send welcome email
-# DatabaseAgent: Create user record
+# DatabaseAgent: Create user record  
 # NotificationAgent: Send push notification
 
 # 3. Agents report completion
@@ -409,7 +402,7 @@ mesh.push("company_name", "TechCorp")
 # Team-specific information
 mesh.push("api_keys", secrets, subscribers=["Backend", "DevOps"])
 
-# Agent-specific information
+# Agent-specific information  
 mesh.push("user_session", session_data, subscribers=["UserAgent"])
 ```
 
@@ -428,28 +421,24 @@ mesh.push("api_response", data, ttl=300)  # 5 minutes
 ## Best Practices Summary
 
 ### Context Management
-
 - Use descriptive keys: `"user_preferences"` not `"up"`
 - Set appropriate TTL for temporary data
 - Use subscribers for sensitive information
 - Enable indexing for large datasets
 
 ### Agent Communication
-
 - Use meaningful message types and priorities
 - Create threads for related conversations
 - Include context in messages when needed
 - Handle errors gracefully
 
 ### Performance
-
 - Enable indexing for >100 context items
 - Enable auto-cleanup for long-running systems
 - Use batch operations for multiple changes
 - Monitor system stats regularly
 
 ### Security
-
 - Use subscribers for access control
 - Set TTL for sensitive temporary data
 - Avoid storing secrets in global context

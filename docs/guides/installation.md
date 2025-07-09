@@ -64,7 +64,6 @@ python test_installation.py
 ```
 
 Expected output:
-
 ```
 ✅ Syntha SDK installed successfully!
 ✅ 7 tool schemas available
@@ -167,19 +166,16 @@ pip install syntha langgraph
 ### Common Issues
 
 **Import Error**: If you get import errors, ensure you're in the correct environment:
-
 ```bash
 python -c "import syntha; print('Installation successful')"
 ```
 
 **Version Conflicts**: If you have version conflicts with other packages:
-
 ```bash
 pip install --upgrade syntha
 ```
 
 **Permission Issues**: On some systems, you may need:
-
 ```bash
 pip install --user syntha
 ```
@@ -198,7 +194,7 @@ If you encounter issues:
 Now that Syntha is installed:
 
 1. **Quick Start**: Follow the [Quick Start Guide](quick-start.md)
-2. **Learn Concepts**: Read [Core Concepts](core-concepts.md)
+2. **Learn Concepts**: Read [Core Concepts](core-concepts.md)  
 3. **Try Examples**: Explore [Basic Usage Tutorial](../tutorials/basic-usage.md)
 4. **Framework Integration**: Choose your [LLM framework integration](integrations/)
 

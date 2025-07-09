@@ -64,7 +64,7 @@ handler.handle_tool_call(
 # Restricted context with explicit permissions
 handler.handle_tool_call(
     "push_context",
-    agent_name="FinanceManager",
+    agent_name="FinanceManager", 
     key="financial_data",
     value={"revenue": 100000, "costs": 75000},
     subscribers=["FinanceAgent", "CFO_Agent", "AuditAgent"]
@@ -99,15 +99,15 @@ class SecurityRoleManager:
                 "agents": ["ReportingAgent", "AnalyticsAgent", "MonitoringAgent"]
             }
         }
-
+    
     def store_secure_data(self, agent_name, key, value, role_required):
         """Store data with role-based access control"""
         if role_required not in self.roles:
             raise ValueError(f"Unknown role: {role_required}")
-
+        
         role_info = self.roles[role_required]
         subscribers = role_info["agents"]
-
+        
         return self.handler.handle_tool_call(
             "push_context",
             agent_name=agent_name,
@@ -115,22 +115,22 @@ class SecurityRoleManager:
             value=value,
             subscribers=subscribers
         )
-
+    
     def get_secure_data(self, agent_name, key, role_required):
         """Retrieve data with role verification"""
         if not self.verify_agent_role(agent_name, role_required):
             raise PermissionError(f"Agent {agent_name} does not have {role_required} role")
-
+        
         return self.handler.handle_tool_call(
             "get_context",
             agent_name=agent_name,
             key=f"secure.{role_required}.{key}"
         )
-
+    
     def verify_agent_role(self, agent_name, role):
         """Verify if agent has required role"""
         return agent_name in self.roles.get(role, {}).get("agents", [])
-
+    
     def list_agent_permissions(self, agent_name):
         """List all permissions for an agent"""
         agent_roles = []
@@ -176,14 +176,14 @@ class EncryptedContextManager:
         self.handler = handler
         self.key = encryption_key or Fernet.generate_key()
         self.cipher = Fernet(self.key)
-
+    
     def store_encrypted_data(self, agent_name, key, value, subscribers=None):
         """Store encrypted data in context"""
         # Serialize and encrypt the data
         serialized = json.dumps(value).encode()
         encrypted = self.cipher.encrypt(serialized)
         encoded = base64.b64encode(encrypted).decode()
-
+        
         # Store encrypted data with metadata
         encrypted_package = {
             "data": encoded,
@@ -191,7 +191,7 @@ class EncryptedContextManager:
             "algorithm": "Fernet",
             "timestamp": time.time()
         }
-
+        
         return self.handler.handle_tool_call(
             "push_context",
             agent_name=agent_name,
@@ -199,7 +199,7 @@ class EncryptedContextManager:
             value=encrypted_package,
             subscribers=subscribers
         )
-
+    
     def get_encrypted_data(self, agent_name, key):
         """Retrieve and decrypt data from context"""
         try:
@@ -208,31 +208,31 @@ class EncryptedContextManager:
                 agent_name=agent_name,
                 key=f"encrypted.{key}"
             )
-
+            
             package = result["value"]
             if not package.get("encrypted"):
                 raise ValueError("Data is not encrypted")
-
+            
             # Decode and decrypt
             encoded_data = package["data"]
             encrypted_data = base64.b64decode(encoded_data.encode())
             decrypted_data = self.cipher.decrypt(encrypted_data)
-
+            
             return json.loads(decrypted_data.decode())
         except Exception as e:
             raise ValueError(f"Failed to decrypt data: {e}")
-
+    
     def rotate_encryption_key(self, new_key=None):
         """Rotate encryption key (for security best practices)"""
         old_cipher = self.cipher
-
+        
         # Generate new key if not provided
         if new_key is None:
             new_key = Fernet.generate_key()
-
+        
         self.key = new_key
         self.cipher = Fernet(new_key)
-
+        
         return old_cipher, self.cipher
 
 # Usage example
@@ -273,7 +273,7 @@ class SecurityAuditLogger:
     def __init__(self, handler):
         self.handler = handler
         self.audit_log_key = "security.audit_log"
-
+    
     def log_access(self, agent_name, action, resource, result="success", details=None):
         """Log security-relevant actions"""
         audit_entry = {
@@ -287,7 +287,7 @@ class SecurityAuditLogger:
             "ip_address": "127.0.0.1",  # In production, get real IP
             "user_agent": "syntha-sdk"
         }
-
+        
         # Store audit entry
         self.handler.handle_tool_call(
             "push_context",
@@ -296,11 +296,11 @@ class SecurityAuditLogger:
             value=audit_entry,
             ttl=2592000  # Keep audit logs for 30 days
         )
-
+        
         # Alert on security violations
         if result in ["denied", "error"]:
             self.send_security_alert(audit_entry)
-
+    
     def get_audit_logs(self, agent_name=None, action=None, start_time=None, end_time=None):
         """Retrieve audit logs with filtering"""
         log_keys = self.handler.handle_tool_call(
@@ -308,7 +308,7 @@ class SecurityAuditLogger:
             agent_name="SecurityAuditor",
             pattern=f"{self.audit_log_key}.*"
         )
-
+        
         logs = []
         for key in log_keys["keys"]:
             try:
@@ -317,34 +317,34 @@ class SecurityAuditLogger:
                     agent_name="SecurityAuditor",
                     key=key
                 )["value"]
-
+                
                 # Apply filters
                 if agent_name and log_entry["agent_name"] != agent_name:
                     continue
-
+                
                 if action and log_entry["action"] != action:
                     continue
-
+                
                 if start_time:
                     log_time = datetime.fromisoformat(log_entry["timestamp"])
                     if log_time < start_time:
                         continue
-
+                
                 if end_time:
                     log_time = datetime.fromisoformat(log_entry["timestamp"])
                     if log_time > end_time:
                         continue
-
+                
                 logs.append(log_entry)
             except KeyError:
                 continue  # Log entry expired or inaccessible
-
+        
         return sorted(logs, key=lambda x: x["timestamp"], reverse=True)
-
+    
     def send_security_alert(self, audit_entry):
         """Send security alert for violations"""
         alert_message = f"Security violation detected: {audit_entry['action']} on {audit_entry['resource']} by {audit_entry['agent_name']} - Result: {audit_entry['result']}"
-
+        
         self.handler.handle_tool_call(
             "send_message_to_agent",
             from_agent="SecurityAuditor",
@@ -353,14 +353,14 @@ class SecurityAuditLogger:
             message_type="error",
             priority="urgent"
         )
-
+    
     def generate_security_report(self, days=7):
         """Generate security activity report"""
         end_time = datetime.now()
         start_time = end_time - timedelta(days=days)
-
+        
         logs = self.get_audit_logs(start_time=start_time, end_time=end_time)
-
+        
         report = {
             "period": {"start": start_time.isoformat(), "end": end_time.isoformat()},
             "total_activities": len(logs),
@@ -369,24 +369,24 @@ class SecurityAuditLogger:
             "violations": [],
             "most_active_hours": {}
         }
-
+        
         for log in logs:
             # Count by agent
             agent = log["agent_name"]
             report["by_agent"][agent] = report["by_agent"].get(agent, 0) + 1
-
+            
             # Count by action
             action = log["action"]
             report["by_action"][action] = report["by_action"].get(action, 0) + 1
-
+            
             # Track violations
             if log["result"] in ["denied", "error"]:
                 report["violations"].append(log)
-
+            
             # Track activity by hour
             hour = datetime.fromisoformat(log["timestamp"]).hour
             report["most_active_hours"][hour] = report["most_active_hours"].get(hour, 0) + 1
-
+        
         return report
 
 # Integration with existing handlers
@@ -394,11 +394,11 @@ class SecureToolHandler:
     def __init__(self, base_handler, audit_logger):
         self.base_handler = base_handler
         self.audit_logger = audit_logger
-
+    
     def handle_tool_call(self, tool_name, **kwargs):
         """Secure wrapper for tool calls with audit logging"""
         agent_name = kwargs.get("agent_name", "unknown")
-
+        
         try:
             # Log the attempt
             self.audit_logger.log_access(
@@ -407,10 +407,10 @@ class SecureToolHandler:
                 resource=kwargs.get("key", "unknown"),
                 details={"tool_args": kwargs}
             )
-
+            
             # Execute the tool call
             result = self.base_handler.handle_tool_call(tool_name, **kwargs)
-
+            
             # Log success
             self.audit_logger.log_access(
                 agent_name=agent_name,
@@ -418,9 +418,9 @@ class SecureToolHandler:
                 resource=kwargs.get("key", "unknown"),
                 result="success"
             )
-
+            
             return result
-
+            
         except PermissionError as e:
             # Log access denial
             self.audit_logger.log_access(
@@ -431,7 +431,7 @@ class SecureToolHandler:
                 details={"error": str(e)}
             )
             raise
-
+        
         except Exception as e:
             # Log general errors
             self.audit_logger.log_access(
@@ -465,14 +465,14 @@ class SecureMessaging:
         self.handler = handler
         self.encryption_key = encryption_key or Fernet.generate_key()
         self.cipher = Fernet(self.encryption_key)
-
+    
     def send_secure_message(self, from_agent, to_agent, message, **kwargs):
         """Send encrypted message between agents"""
-
+        
         # Encrypt the message
         encrypted_message = self.cipher.encrypt(message.encode())
         encoded_message = base64.b64encode(encrypted_message).decode()
-
+        
         # Send with encryption metadata
         return self.handler.handle_tool_call(
             "send_message_to_agent",
@@ -483,7 +483,7 @@ class SecureMessaging:
             priority=kwargs.get("priority", "normal"),
             requires_confirmation=kwargs.get("requires_confirmation", True)
         )
-
+    
     def get_secure_messages(self, agent_name, **kwargs):
         """Retrieve and decrypt messages"""
         messages = self.handler.handle_tool_call(
@@ -491,7 +491,7 @@ class SecureMessaging:
             agent_name=agent_name,
             **kwargs
         )
-
+        
         decrypted_messages = []
         for msg in messages.get("messages", []):
             if msg.get("message_type") == "encrypted":
@@ -500,16 +500,16 @@ class SecureMessaging:
                     encoded_message = msg["message"]
                     encrypted_message = base64.b64decode(encoded_message.encode())
                     decrypted_message = self.cipher.decrypt(encrypted_message).decode()
-
+                    
                     # Update message with decrypted content
                     msg["message"] = decrypted_message
                     msg["decrypted"] = True
                 except Exception as e:
                     msg["message"] = "[DECRYPTION_FAILED]"
                     msg["error"] = str(e)
-
+            
             decrypted_messages.append(msg)
-
+        
         return {"messages": decrypted_messages}
 
 # Usage
@@ -518,7 +518,7 @@ secure_messaging = SecureMessaging(handler)
 # Send encrypted message
 secure_messaging.send_secure_message(
     from_agent="Agent1",
-    to_agent="Agent2",
+    to_agent="Agent2", 
     message="This is a confidential message",
     priority="high",
     requires_confirmation=True
@@ -545,14 +545,14 @@ class TTLSecurityManager:
             "temp_credentials": {"ttl": 300, "cleanup_on_expire": True}, # 5 minutes
             "user_cache": {"ttl": 86400, "cleanup_on_expire": False},  # 24 hours
         }
-
+    
     def store_with_security_policy(self, agent_name, key, value, policy_type, subscribers=None):
         """Store data with security policy"""
         if policy_type not in self.security_policies:
             raise ValueError(f"Unknown security policy: {policy_type}")
-
+        
         policy = self.security_policies[policy_type]
-
+        
         return self.handler.handle_tool_call(
             "push_context",
             agent_name=agent_name,
@@ -561,7 +561,7 @@ class TTLSecurityManager:
             subscribers=subscribers,
             ttl=policy["ttl"]
         )
-
+    
     def store_session_data(self, agent_name, session_id, session_data):
         """Store session data with automatic expiration"""
         return self.store_with_security_policy(
@@ -570,7 +570,7 @@ class TTLSecurityManager:
             value=session_data,
             policy_type="session_data"
         )
-
+    
     def store_api_token(self, agent_name, token_id, token_data, authorized_agents):
         """Store API token with limited lifetime"""
         return self.store_with_security_policy(
@@ -580,7 +580,7 @@ class TTLSecurityManager:
             policy_type="api_tokens",
             subscribers=authorized_agents
         )
-
+    
     def cleanup_expired_data(self):
         """Manually cleanup expired security data"""
         for policy_type, policy in self.security_policies.items():
@@ -592,7 +592,7 @@ class TTLSecurityManager:
                         agent_name="SecurityManager",
                         pattern=f"secure.{policy_type}.*"
                     )
-
+                    
                     for key in keys["keys"]:
                         try:
                             self.handler.handle_tool_call(
@@ -674,7 +674,7 @@ def security_hardening_checklist():
 # Security configuration example
 def configure_production_security():
     """Configure Syntha for production security"""
-
+    
     # Initialize with security features
     mesh = ContextMesh(
         enable_indexing=True,
@@ -682,15 +682,15 @@ def configure_production_security():
         encryption_at_rest=True,  # If supported
         audit_logging=True        # If supported
     )
-
+    
     handler = ToolHandler(mesh)
-
+    
     # Set up security managers
     security_roles = SecurityRoleManager(handler)
     audit_logger = SecurityAuditLogger(handler)
     secure_handler = SecureToolHandler(handler, audit_logger)
     ttl_security = TTLSecurityManager(secure_handler)
-
+    
     return {
         "handler": secure_handler,
         "security_roles": security_roles,
@@ -707,7 +707,7 @@ def configure_production_security():
 # Grant minimal necessary permissions
 def create_agent_with_minimal_permissions(agent_name, required_data_patterns):
     subscribers = [agent_name]  # Agent can only access its own data
-
+    
     for pattern in required_data_patterns:
         handler.handle_tool_call(
             "push_context",
@@ -729,29 +729,29 @@ class LayeredSecurity:
         self.roles = SecurityRoleManager(handler)
         self.audit = SecurityAuditLogger(handler)
         self.ttl = TTLSecurityManager(handler)
-
+    
     def secure_operation(self, agent_name, operation, **kwargs):
         """Secure operation with multiple security layers"""
-
+        
         # Layer 1: Role verification
         if not self.roles.verify_agent_role(agent_name, "authorized"):
             raise PermissionError("Agent not authorized")
-
+        
         # Layer 2: Audit logging
         self.audit.log_access(agent_name, operation, kwargs.get("key", "unknown"))
-
+        
         # Layer 3: Encrypted storage
         if operation == "store_sensitive":
             return self.encryption.store_encrypted_data(
                 agent_name, kwargs["key"], kwargs["value"], kwargs.get("subscribers")
             )
-
+        
         # Layer 4: TTL enforcement
         if kwargs.get("sensitive", False):
             return self.ttl.store_with_security_policy(
                 agent_name, kwargs["key"], kwargs["value"], "temp_credentials"
             )
-
+        
         return self.handler.handle_tool_call(operation, **kwargs)
 ```
 
@@ -760,30 +760,30 @@ class LayeredSecurity:
 ```python
 def perform_security_review(audit_logger, days=30):
     """Perform regular security review"""
-
+    
     # Generate security report
     report = audit_logger.generate_security_report(days)
-
+    
     # Check for anomalies
     anomalies = []
-
+    
     # Unusual access patterns
     for agent, count in report["by_agent"].items():
         if count > 1000:  # Threshold for review
             anomalies.append(f"High activity from {agent}: {count} actions")
-
+    
     # Failed access attempts
     if len(report["violations"]) > 10:
         anomalies.append(f"High number of violations: {len(report['violations'])}")
-
+    
     # Generate recommendations
     recommendations = []
     if report["total_activities"] > 10000:
         recommendations.append("Consider implementing rate limiting")
-
+    
     if len(report["violations"]) > 0:
         recommendations.append("Review agent permissions")
-
+    
     return {
         "report": report,
         "anomalies": anomalies,
@@ -800,5 +800,5 @@ def perform_security_review(audit_logger, days=30):
 ## See Also
 
 - [Context Management Tutorial](../tutorials/context-management.md) - Secure context patterns
-- [API Reference](../api/) - Security-related API features
+- [API Reference](../api/) - Security-related API features  
 - [Production Examples](../examples/) - Secure multi-agent implementations

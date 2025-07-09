@@ -200,7 +200,7 @@ class PromptManager:
         self.context_mesh = context_mesh
         self.last_update = None
         self.cached_prompt = None
-
+    
     def get_prompt(self, agent_name, force_refresh=False):
         """Get prompt with caching"""
         if force_refresh or self._needs_update():
@@ -262,21 +262,21 @@ response = client.messages.create(
 ```python
 def integrate_with_custom_framework(agent_name, user_message, context_mesh):
     """Integration with any LLM framework"""
-
+    
     # Build context-aware prompt
     system_prompt = build_system_prompt(agent_name, context_mesh)
-
+    
     # Get tool schemas
     handler = ToolHandler(context_mesh)
     tools = handler.get_schemas()
-
+    
     # Use with your framework
     response = your_llm_framework.generate(
         system_prompt=system_prompt,
         user_message=user_message,
         tools=tools
     )
-
+    
     return response
 ```
 
@@ -287,7 +287,7 @@ def integrate_with_custom_framework(agent_name, user_message, context_mesh):
 ```python
 def generate_contextual_prompt(agent_name, context_mesh, situation):
     """Generate situation-specific prompts"""
-
+    
     if situation == "crisis":
         return build_system_prompt(
             agent_name=agent_name,
@@ -318,11 +318,11 @@ def validate_prompt_quality(prompt):
         "reasonable_length": 100 < len(prompt) < 8000,
         "has_instructions": "instructions" in prompt.lower()
     }
-
+    
     failed_checks = [check for check, passed in checks.items() if not passed]
     if failed_checks:
         raise ValueError(f"Prompt validation failed: {failed_checks}")
-
+    
     return True
 ```
 
@@ -350,17 +350,17 @@ def get_optimized_prompt(agent_name, context_mesh):
 def generate_prompts_for_agents(agent_names, context_mesh):
     """Generate prompts for multiple agents efficiently"""
     prompts = {}
-
+    
     # Pre-load common context
     common_context = context_mesh.get_global_context()
-
+    
     for agent_name in agent_names:
         prompts[agent_name] = build_system_prompt(
             agent_name=agent_name,
             context_mesh=context_mesh,
             preloaded_context=common_context
         )
-
+    
     return prompts
 ```
 

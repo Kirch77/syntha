@@ -28,7 +28,7 @@ schemas = handler.get_schemas()
 
 **Returns**: List of tool schema dictionaries compatible with OpenAI, Anthropic, and other LLM APIs.
 
-### handle_tool_call(tool_name, \*\*kwargs)
+### handle_tool_call(tool_name, **kwargs)
 
 Processes a tool call from the LLM and returns the result.
 
@@ -41,14 +41,12 @@ result = handler.handle_tool_call(
 ```
 
 **Parameters**:
-
 - `tool_name` (str): Name of the tool to execute
 - `**kwargs`: Tool-specific parameters
 
 **Returns**: Tool execution result (varies by tool)
 
-**Raises**:
-
+**Raises**: 
 - `ValueError`: Invalid tool name or parameters
 - `KeyError`: Context key not found (for get_context)
 - `PermissionError`: Access denied (for restricted context)
@@ -58,7 +56,6 @@ result = handler.handle_tool_call(
 ### Context Management Tools
 
 #### get_context
-
 Retrieve context data for an agent.
 
 ```python
@@ -70,7 +67,6 @@ result = handler.handle_tool_call(
 ```
 
 #### push_context
-
 Store context data with optional access control.
 
 ```python
@@ -85,7 +81,6 @@ result = handler.handle_tool_call(
 ```
 
 #### list_context_keys
-
 List all context keys accessible to an agent.
 
 ```python
@@ -99,7 +94,6 @@ result = handler.handle_tool_call(
 ### Agent Communication Tools
 
 #### send_message_to_agent
-
 Send a direct message to another agent.
 
 ```python
@@ -116,7 +110,6 @@ result = handler.handle_tool_call(
 ```
 
 #### get_messages_from_agents
-
 Retrieve messages for an agent with filtering.
 
 ```python
@@ -133,7 +126,6 @@ result = handler.handle_tool_call(
 ```
 
 #### broadcast_message_to_agents
-
 Send a message to multiple agents.
 
 ```python
@@ -151,7 +143,6 @@ result = handler.handle_tool_call(
 ### Advanced Tools
 
 #### batch_context_operation
-
 Execute multiple context operations atomically.
 
 ```python
@@ -185,7 +176,6 @@ except ValueError as e:
 ## Best Practices
 
 ### 1. Always Handle Errors
-
 ```python
 def safe_tool_call(handler, tool_name, **kwargs):
     try:
@@ -195,7 +185,6 @@ def safe_tool_call(handler, tool_name, **kwargs):
 ```
 
 ### 2. Use Type Hints
-
 ```python
 from typing import Dict, Any, List
 
@@ -208,7 +197,6 @@ def process_tool_calls(handler: ToolHandler, calls: List[Dict[str, Any]]) -> Lis
 ```
 
 ### 3. Validate Tool Results
-
 ```python
 def validate_context_result(result):
     if isinstance(result, dict) and "error" in result:
@@ -219,7 +207,6 @@ def validate_context_result(result):
 ## Integration Examples
 
 ### OpenAI Integration
-
 ```python
 import openai
 from syntha import ContextMesh, ToolHandler
@@ -242,7 +229,6 @@ for tool_call in response.choices[0].message.tool_calls or []:
 ```
 
 ### Anthropic Claude Integration
-
 ```python
 import anthropic
 from syntha import ContextMesh, ToolHandler

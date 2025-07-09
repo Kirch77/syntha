@@ -5,7 +5,6 @@ Learn how to enable agents to communicate directly with each other through Synth
 ## Overview
 
 Syntha's agent communication system allows agents to:
-
 - Send direct messages to specific agents
 - Broadcast messages to multiple agents
 - Organize conversations with threading
@@ -27,7 +26,7 @@ handler = ToolHandler(mesh)
 result = handler.handle_tool_call(
     "send_message_to_agent",
     from_agent="AgentA",
-    to_agent="AgentB",
+    to_agent="AgentB", 
     message="Task completed successfully",
     message_type="result",
     priority="normal"
@@ -70,7 +69,7 @@ handler.handle_tool_call(
 
 # Task assignment
 handler.handle_tool_call(
-    "send_message_to_agent",
+    "send_message_to_agent", 
     from_agent="Manager",
     to_agent="Worker",
     message="Please process the new batch of files",
@@ -82,7 +81,7 @@ handler.handle_tool_call(
 handler.handle_tool_call(
     "send_message_to_agent",
     from_agent="Worker",
-    to_agent="Manager",
+    to_agent="Manager", 
     message="Failed to connect to database",
     message_type="error",
     priority="urgent"
@@ -126,7 +125,7 @@ thread_id = thread_result["thread_id"]
 # Continue the conversation
 handler.handle_tool_call(
     "send_message_to_agent",
-    from_agent="Developer",
+    from_agent="Developer", 
     to_agent="ProjectManager",
     message="Sure, I need clarification on the user interface design",
     message_type="question",
@@ -183,7 +182,7 @@ def daily_standup(team_lead, team_members):
         priority="normal",
         create_thread=True
     )
-
+    
     return result["thread_id"]
 
 # Usage
@@ -208,7 +207,7 @@ urgent_tasks = handler.handle_tool_call(
 
 # Get all messages from specific agent
 manager_messages = handler.handle_tool_call(
-    "get_messages_from_agents",
+    "get_messages_from_agents", 
     agent_name="Worker",
     from_agent="Manager",
     limit=50
@@ -261,7 +260,7 @@ class CustomerSupportSystem:
     def __init__(self):
         self.mesh = ContextMesh()
         self.handler = ToolHandler(self.mesh)
-
+    
     def route_customer_inquiry(self, inquiry, customer_id):
         # Determine appropriate agent based on inquiry type
         if "billing" in inquiry.lower():
@@ -270,7 +269,7 @@ class CustomerSupportSystem:
             agent = "TechSupportAgent"
         else:
             agent = "GeneralSupportAgent"
-
+        
         # Send inquiry to appropriate agent
         self.handler.handle_tool_call(
             "send_message_to_agent",
@@ -280,7 +279,7 @@ class CustomerSupportSystem:
             message_type="task",
             priority="normal"
         )
-
+    
     def escalate_to_supervisor(self, agent_name, customer_id, issue):
         # Escalate complex issues
         self.handler.handle_tool_call(
@@ -302,7 +301,7 @@ class DataProcessingPipeline:
         self.mesh = ContextMesh()
         self.handler = ToolHandler(self.mesh)
         self.pipeline_agents = ["Extractor", "Transformer", "Validator", "Loader"]
-
+    
     def start_pipeline(self, data_source):
         # Notify all agents about new pipeline run
         self.handler.handle_tool_call(
@@ -314,7 +313,7 @@ class DataProcessingPipeline:
             priority="normal",
             create_thread=True
         )
-
+    
     def pass_data_to_next_stage(self, from_stage, to_stage, data_info, thread_id):
         # Pass processed data between pipeline stages
         self.handler.handle_tool_call(
@@ -326,7 +325,7 @@ class DataProcessingPipeline:
             priority="normal",
             thread_id=thread_id
         )
-
+    
     def report_pipeline_error(self, agent_name, error_details, thread_id):
         # Report errors to pipeline manager
         self.handler.handle_tool_call(
@@ -334,7 +333,7 @@ class DataProcessingPipeline:
             from_agent=agent_name,
             to_agent="PipelineManager",
             message=f"Pipeline error: {error_details}",
-            message_type="error",
+            message_type="error", 
             priority="high",
             thread_id=thread_id
         )
@@ -348,7 +347,7 @@ class ResearchTeam:
         self.mesh = ContextMesh()
         self.handler = ToolHandler(self.mesh)
         self.researchers = ["DataResearcher", "ModelTrainer", "ResultsAnalyzer"]
-
+    
     def start_research_project(self, project_description):
         # Initiate research project
         result = self.handler.handle_tool_call(
@@ -360,9 +359,9 @@ class ResearchTeam:
             priority="normal",
             create_thread=True
         )
-
+        
         return result["thread_id"]
-
+    
     def share_findings(self, researcher, findings, project_thread):
         # Share research findings with team
         self.handler.handle_tool_call(
@@ -374,7 +373,7 @@ class ResearchTeam:
             priority="normal",
             thread_id=project_thread
         )
-
+    
     def request_collaboration(self, from_researcher, to_researcher, request, project_thread):
         # Request collaboration between researchers
         self.handler.handle_tool_call(
@@ -396,7 +395,7 @@ class ResearchTeam:
 # Use consistent naming conventions
 AGENT_NAMES = {
     "data_processor": "DataProcessor",
-    "file_handler": "FileHandler",
+    "file_handler": "FileHandler", 
     "error_logger": "ErrorLogger"
 }
 
@@ -441,13 +440,13 @@ def process_message_queue(handler, agent_name, max_messages=10):
         limit=max_messages,
         mark_as_read=True
     )
-
+    
     processed = []
     for message in messages.get("messages", []):
         # Process each message
         result = process_single_message(message)
         processed.append(result)
-
+    
     return processed
 ```
 
@@ -461,10 +460,10 @@ from syntha import ContextMesh, ToolHandler, build_system_prompt
 
 def create_communicating_agent(agent_name, context_mesh):
     handler = ToolHandler(context_mesh)
-
+    
     # Build system prompt with communication capabilities
     system_prompt = build_system_prompt(agent_name, context_mesh)
-
+    
     def chat_completion(user_message):
         response = openai.chat.completions.create(
             model="gpt-4",
@@ -474,16 +473,16 @@ def create_communicating_agent(agent_name, context_mesh):
             ],
             tools=handler.get_schemas()
         )
-
+        
         # Process tool calls for communication
         for tool_call in response.choices[0].message.tool_calls or []:
             result = handler.handle_tool_call(
                 tool_call.function.name,
                 **json.loads(tool_call.function.arguments)
             )
-
+        
         return response.choices[0].message.content
-
+    
     return chat_completion
 ```
 
@@ -492,13 +491,11 @@ def create_communicating_agent(agent_name, context_mesh):
 ### Common Issues
 
 1. **Messages not being received**
-
    - Check agent name spelling
    - Verify message isn't filtered out
    - Check if agent exists in system
 
 2. **Thread messages out of order**
-
    - Use proper thread_id consistency
    - Check timestamp ordering
    - Verify thread creation
@@ -513,30 +510,30 @@ def create_communicating_agent(agent_name, context_mesh):
 ```python
 def debug_agent_messages(handler, agent_name):
     """Debug message system for an agent"""
-
+    
     # Get all messages (read and unread)
     all_messages = handler.handle_tool_call(
         "get_messages_from_agents",
         agent_name=agent_name,
         limit=100
     )
-
+    
     print(f"Agent {agent_name} has {len(all_messages['messages'])} total messages")
-
+    
     # Group by type
     by_type = {}
     for msg in all_messages["messages"]:
         msg_type = msg.get("message_type", "unknown")
         by_type[msg_type] = by_type.get(msg_type, 0) + 1
-
+    
     print("Messages by type:", by_type)
-
+    
     # Group by priority
     by_priority = {}
     for msg in all_messages["messages"]:
         priority = msg.get("priority", "unknown")
         by_priority[priority] = by_priority.get(priority, 0) + 1
-
+    
     print("Messages by priority:", by_priority)
 ```
 

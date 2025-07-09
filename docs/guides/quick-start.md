@@ -5,7 +5,6 @@ Get your first multi-agent system running with Syntha in under 5 minutes!
 ## Overview
 
 This guide will teach you to:
-
 1. Set up the basic components
 2. Create shared context between agents
 3. Enable agent-to-agent communication
@@ -44,7 +43,7 @@ mesh.push("api_config", {
 }, subscribers=["Backend", "QA"])
 
 # Temporary context with auto-expiration
-mesh.push("deployment_token", "temp_token_123",
+mesh.push("deployment_token", "temp_token_123", 
           ttl=3600)  # Expires in 1 hour
 
 print("✅ Context added!")
@@ -57,7 +56,7 @@ print(f"Available keys: {mesh.list_keys()}")
 # Send a message between agents
 result = handler.handle_tool_call("send_message_to_agent",
     from_agent="ProductManager",
-    to_agent="DevLead",
+    to_agent="DevLead", 
     message="Please prioritize the authentication feature",
     priority="high"
 )
@@ -102,11 +101,11 @@ import json
 def run_agent(agent_name, user_message):
     # Get context-aware prompt
     system_prompt = build_system_prompt(agent_name, mesh)
-
-    # Get tool schemas
-    tools = [{"type": "function", "function": schema}
+    
+    # Get tool schemas  
+    tools = [{"type": "function", "function": schema} 
              for schema in handler.get_schemas()]
-
+    
     # Make LLM call
     response = openai.chat.completions.create(
         model="gpt-4",
@@ -116,7 +115,7 @@ def run_agent(agent_name, user_message):
         ],
         tools=tools
     )
-
+    
     # Handle tool calls
     if response.choices[0].message.tool_calls:
         for tool_call in response.choices[0].message.tool_calls:
@@ -126,7 +125,7 @@ def run_agent(agent_name, user_message):
             )
             print(f"Tool executed: {tool_call.function.name}")
             print(f"Result: {result}")
-
+    
     return response.choices[0].message.content
 
 # Test the agent
@@ -143,10 +142,10 @@ def run_claude_agent(agent_name, user_message):
     # Get context and tools
     system_prompt = build_system_prompt(agent_name, mesh)
     tools = handler.get_schemas()
-
+    
     # Create client
     client = anthropic.Anthropic(api_key="your-api-key")
-
+    
     # Make request
     response = client.messages.create(
         model="claude-3-5-sonnet-20241022",
@@ -155,7 +154,7 @@ def run_claude_agent(agent_name, user_message):
         messages=[{"role": "user", "content": user_message}],
         tools=tools
     )
-
+    
     # Handle tool use
     if response.content:
         for block in response.content:
@@ -165,7 +164,7 @@ def run_claude_agent(agent_name, user_message):
                     **block.input
                 )
                 print(f"Tool executed: {block.name}")
-
+    
     return response
 
 print("✅ Claude integration ready!")
@@ -183,29 +182,29 @@ class MultiAgentTeam:
         # Initialize Syntha
         self.mesh = ContextMesh(enable_indexing=True, auto_cleanup=True)
         self.handler = ToolHandler(self.mesh)
-
+        
         # Set up team context
         self.setup_team_context()
-
+    
     def setup_team_context(self):
         """Initialize shared team knowledge"""
         # Project information
         self.mesh.push("project_name", "CustomerPortal")
         self.mesh.push("sprint_goal", "Implement user authentication")
         self.mesh.push("deadline", "2025-03-15")
-
+        
         # Team configurations
         self.mesh.push("backend_config", {
             "api_url": "https://api.company.com",
             "database": "postgresql://...",
             "redis_cache": "redis://..."
         }, subscribers=["Backend", "DevOps"])
-
+        
         self.mesh.push("frontend_config", {
-            "app_url": "https://app.company.com",
+            "app_url": "https://app.company.com", 
             "cdn": "https://cdn.company.com"
         }, subscribers=["Frontend", "QA"])
-
+    
     def create_workflow(self, workflow_name, participants):
         """Start a coordinated workflow"""
         # Broadcast workflow start
@@ -215,13 +214,13 @@ class MultiAgentTeam:
             message=f"Starting workflow: {workflow_name}",
             create_thread=True
         )
-
+        
         return result.get("thread_id")
-
+    
     def get_agent_prompt(self, agent_name):
         """Get context-aware prompt for any agent"""
         return build_system_prompt(agent_name, self.mesh)
-
+    
     def get_llm_tools(self):
         """Get tool schemas for LLM integration"""
         return self.handler.get_schemas()
@@ -230,7 +229,7 @@ class MultiAgentTeam:
 team = MultiAgentTeam()
 
 # Start authentication workflow
-thread_id = team.create_workflow("user_authentication",
+thread_id = team.create_workflow("user_authentication", 
                                 ["Backend", "Frontend", "QA"])
 
 # Get prompts for each agent
@@ -253,30 +252,30 @@ Run this verification script:
 def test_syntha_setup():
     """Test all Syntha components"""
     print("🧪 Testing Syntha setup...")
-
+    
     # Test 1: Context Management
     mesh = ContextMesh()
     mesh.push("test", "value")
     assert mesh.get("test") == "value"
     print("✅ Context management working")
-
+    
     # Test 2: Tool Handler
     handler = ToolHandler(mesh)
     schemas = handler.get_schemas()
     assert len(schemas) == 7
     print("✅ Tool handler working")
-
+    
     # Test 3: Agent Communication
     result = handler.handle_tool_call("send_message_to_agent",
         from_agent="Test1", to_agent="Test2", message="Hello")
     assert result["success"] == True
     print("✅ Agent communication working")
-
+    
     # Test 4: Prompt Generation
     prompt = build_system_prompt("TestAgent", mesh)
     assert len(prompt) > 0
     print("✅ Prompt generation working")
-
+    
     print("🎉 All tests passed! Syntha is ready to use.")
 
 # Run the test
@@ -288,19 +287,16 @@ test_syntha_setup()
 Congratulations! You now have a working multi-agent system. Here's what to explore next:
 
 ### Immediate Next Steps
-
 1. **[Core Concepts](core-concepts.md)** - Understand the architecture deeply
 2. **[Basic Usage Tutorial](../tutorials/basic-usage.md)** - Learn all the fundamentals
 3. **[Agent Communication Tutorial](../tutorials/agent-communication.md)** - Master agent messaging
 
 ### Choose Your Path
-
 - **Web Developer**: Try the [E-commerce Example](../examples/ecommerce.md)
 - **Data Scientist**: Explore [Data Processing Patterns](../examples/data-processing.md)
 - **DevOps Engineer**: Check [Development Team Coordination](../examples/dev-team.md)
 
 ### Advanced Features
-
 - **[Performance Optimization](performance.md)** - Production-ready optimizations
 - **[Security Guide](security.md)** - Protect sensitive data
 - **[Best Practices](best-practices.md)** - Production deployment patterns

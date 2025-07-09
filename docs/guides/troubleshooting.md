@@ -229,7 +229,7 @@ for schema in schemas:
     print(f"Tool: {schema['name']}")
     required_params = schema['parameters'].get('required', [])
     print(f"Required parameters: {required_params}")
-
+    
     # Check for common parameter patterns
     properties = schema['parameters'].get('properties', {})
     for param_name, param_info in properties.items():
@@ -372,7 +372,7 @@ def handle_custom_tool_call(llm_response):
     # Parse your LLM's tool call format
     function_name = llm_response.get("function_name")
     arguments = llm_response.get("arguments", {})
-
+    
     # Call Syntha handler
     return handler.handle_tool_call(function_name, **arguments)
 ```

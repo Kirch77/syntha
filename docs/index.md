@@ -7,7 +7,6 @@ permalink: /
 ---
 
 # Syntha SDK Documentation
-
 {: .fs-9 }
 
 Lightweight, framework-agnostic SDK for building multi-agent AI systems where agents share context through pure prompt injection and real-time tool calls.
@@ -43,19 +42,15 @@ tools = handler.get_schemas()
 ## Features
 
 ### 🧠 Context Mesh
-
 Share data between agents through intelligent context management.
 
-### 🛠️ Tool System
-
+### 🛠️ Tool System  
 7 standardized tools for agent communication and coordination.
 
 ### 🚀 Framework Agnostic
-
 Works with OpenAI, Anthropic, LangChain, or any LLM framework.
 
 ### 🔒 Security First
-
 Built-in access controls and data protection.
 
 ---
@@ -63,19 +58,15 @@ Built-in access controls and data protection.
 ## Documentation Sections
 
 ### [📚 Guides](guides/)
-
 Step-by-step guides for installation, quick start, and core concepts.
 
 ### [🔧 API Reference](api/)
-
 Detailed documentation of all classes and methods.
 
 ### [🎓 Tutorials](tutorials/)
-
 Learn through practical examples and use cases.
 
 ### [💡 Examples](examples/)
-
 Real-world implementations and patterns.
 
 ---
@@ -88,4 +79,4 @@ Real-world implementations and patterns.
 
 ---
 
-_Last updated: {{ site.time | date: "%B %d, %Y" }}_
+*Last updated: {{ site.time | date: "%B %d, %Y" }}*

@@ -94,7 +94,7 @@ except PermissionError:
 class ContextRoles:
     def __init__(self, handler):
         self.handler = handler
-
+    
     def store_admin_data(self, agent_name, key, value):
         """Store data accessible only to admin agents"""
         return self.handler.handle_tool_call(
@@ -104,7 +104,7 @@ class ContextRoles:
             value=value,
             subscribers=["AdminAgent", "SupervisorAgent", "SystemManager"]
         )
-
+    
     def store_user_data(self, agent_name, key, value):
         """Store data accessible to user-facing agents"""
         return self.handler.handle_tool_call(
@@ -114,7 +114,7 @@ class ContextRoles:
             value=value,
             subscribers=["UserAgent", "SupportAgent", "ChatBot"]
         )
-
+    
     def store_public_data(self, agent_name, key, value):
         """Store globally accessible data"""
         return self.handler.handle_tool_call(
@@ -229,7 +229,7 @@ print(f"Batch operation results: {batch_result}")
 class ContextHierarchy:
     def __init__(self, handler):
         self.handler = handler
-
+    
     def store_user_profile(self, agent_name, user_id, profile_data):
         """Store user profile data"""
         self.handler.handle_tool_call(
@@ -238,7 +238,7 @@ class ContextHierarchy:
             key=f"users.{user_id}.profile",
             value=profile_data
         )
-
+    
     def store_user_preferences(self, agent_name, user_id, preferences):
         """Store user preferences"""
         self.handler.handle_tool_call(
@@ -247,7 +247,7 @@ class ContextHierarchy:
             key=f"users.{user_id}.preferences",
             value=preferences
         )
-
+    
     def store_user_activity(self, agent_name, user_id, activity_data):
         """Store user activity data"""
         self.handler.handle_tool_call(
@@ -257,7 +257,7 @@ class ContextHierarchy:
             value=activity_data,
             ttl=86400  # Expire daily activity after 24 hours
         )
-
+    
     def get_all_user_data(self, agent_name, user_id):
         """Get all data for a user"""
         keys = self.handler.handle_tool_call(
@@ -265,7 +265,7 @@ class ContextHierarchy:
             agent_name=agent_name,
             pattern=f"users.{user_id}.*"
         )
-
+        
         user_data = {}
         for key in keys["keys"]:
             data = self.handler.handle_tool_call(
@@ -274,7 +274,7 @@ class ContextHierarchy:
                 key=key
             )
             user_data[key] = data["value"]
-
+        
         return user_data
 ```
 
@@ -285,13 +285,13 @@ class EventDrivenContext:
     def __init__(self, handler):
         self.handler = handler
         self.event_handlers = {}
-
+    
     def register_event_handler(self, event_type, handler_func):
         """Register a handler for context events"""
         if event_type not in self.event_handlers:
             self.event_handlers[event_type] = []
         self.event_handlers[event_type].append(handler_func)
-
+    
     def trigger_event(self, event_type, agent_name, data):
         """Trigger an event and update context"""
         # Store event data
@@ -303,11 +303,11 @@ class EventDrivenContext:
             value={"type": event_type, "data": data, "timestamp": time.time()},
             ttl=3600  # Events expire after 1 hour
         )
-
+        
         # Notify registered handlers
         for handler_func in self.event_handlers.get(event_type, []):
             handler_func(agent_name, data)
-
+    
     def handle_user_login(self, agent_name, user_data):
         """Handle user login event"""
         # Update active users count
@@ -316,14 +316,14 @@ class EventDrivenContext:
             agent_name=agent_name,
             key="stats.active_users"
         ).get("value", 0)
-
+        
         self.handler.handle_tool_call(
             "push_context",
             agent_name=agent_name,
             key="stats.active_users",
             value=active_users + 1
         )
-
+        
         # Store user session
         self.handler.handle_tool_call(
             "push_context",
@@ -342,12 +342,12 @@ class EventDrivenContext:
 class VersionedContext:
     def __init__(self, handler):
         self.handler = handler
-
+    
     def store_versioned_data(self, agent_name, key, value, version=None):
         """Store data with versioning"""
         if version is None:
             version = int(time.time())
-
+        
         # Store current version
         self.handler.handle_tool_call(
             "push_context",
@@ -355,7 +355,7 @@ class VersionedContext:
             key=f"{key}.current",
             value={"version": version, "data": value}
         )
-
+        
         # Store versioned data
         self.handler.handle_tool_call(
             "push_context",
@@ -364,9 +364,9 @@ class VersionedContext:
             value=value,
             ttl=86400  # Keep versions for 24 hours
         )
-
+        
         return version
-
+    
     def get_versioned_data(self, agent_name, key, version=None):
         """Get data by version"""
         if version is None:
@@ -393,17 +393,17 @@ class VersionedContext:
 class ContextSynchronizer:
     def __init__(self, handler):
         self.handler = handler
-
+    
     def sync_context_across_agents(self, source_agent, target_agents, key_patterns):
         """Synchronize context data across multiple agents"""
-
+        
         # Get source data
         source_keys = self.handler.handle_tool_call(
             "list_context_keys",
             agent_name=source_agent,
             pattern="*"
         )
-
+        
         sync_data = {}
         for key in source_keys["keys"]:
             if any(pattern in key for pattern in key_patterns):
@@ -413,7 +413,7 @@ class ContextSynchronizer:
                     key=key
                 )
                 sync_data[key] = data["value"]
-
+        
         # Sync to target agents
         for target_agent in target_agents:
             operations = []
@@ -423,7 +423,7 @@ class ContextSynchronizer:
                     "key": key,
                     "value": value
                 })
-
+            
             self.handler.handle_tool_call(
                 "batch_context_operation",
                 agent_name=target_agent,
@@ -441,7 +441,7 @@ class EcommerceContext:
     def __init__(self):
         self.mesh = ContextMesh(enable_indexing=True, auto_cleanup=True)
         self.handler = ToolHandler(self.mesh)
-
+    
     def setup_product_catalog(self, agent_name, products):
         """Set up product catalog in context"""
         for product in products:
@@ -452,7 +452,7 @@ class EcommerceContext:
                 value=product,
                 subscribers=["ProductService", "SearchAgent", "RecommendationEngine"]
             )
-
+    
     def update_inventory(self, agent_name, product_id, stock_level):
         """Update product inventory"""
         self.handler.handle_tool_call(
@@ -462,7 +462,7 @@ class EcommerceContext:
             value={"stock": stock_level, "last_updated": time.time()},
             subscribers=["InventoryManager", "OrderProcessor"]
         )
-
+    
     def store_user_cart(self, agent_name, user_id, cart_items):
         """Store user shopping cart"""
         self.handler.handle_tool_call(
@@ -473,11 +473,11 @@ class EcommerceContext:
             ttl=3600,  # Cart expires in 1 hour
             subscribers=[f"UserSession_{user_id}", "CheckoutService"]
         )
-
+    
     def process_order(self, agent_name, order_data):
         """Process a new order"""
         order_id = order_data["order_id"]
-
+        
         # Store order
         self.handler.handle_tool_call(
             "push_context",
@@ -486,7 +486,7 @@ class EcommerceContext:
             value=order_data,
             subscribers=["OrderProcessor", "PaymentService", "ShippingService"]
         )
-
+        
         # Update order status
         self.handler.handle_tool_call(
             "push_context",
@@ -503,11 +503,11 @@ class MonitoringContext:
     def __init__(self):
         self.mesh = ContextMesh(enable_indexing=True, auto_cleanup=True)
         self.handler = ToolHandler(self.mesh)
-
+    
     def store_system_metrics(self, agent_name, metrics):
         """Store system performance metrics"""
         timestamp = int(time.time())
-
+        
         # Store current metrics
         self.handler.handle_tool_call(
             "push_context",
@@ -516,7 +516,7 @@ class MonitoringContext:
             value=metrics,
             ttl=300  # Refresh every 5 minutes
         )
-
+        
         # Store historical data
         self.handler.handle_tool_call(
             "push_context",
@@ -525,7 +525,7 @@ class MonitoringContext:
             value=metrics,
             ttl=86400  # Keep for 24 hours
         )
-
+    
     def check_alerts(self, agent_name, thresholds):
         """Check metrics against alert thresholds"""
         current_metrics = self.handler.handle_tool_call(
@@ -533,7 +533,7 @@ class MonitoringContext:
             agent_name=agent_name,
             key="system.current_metrics"
         )
-
+        
         alerts = []
         for metric, value in current_metrics["value"].items():
             if metric in thresholds and value > thresholds[metric]:
@@ -543,7 +543,7 @@ class MonitoringContext:
                     "threshold": thresholds[metric],
                     "timestamp": time.time()
                 })
-
+        
         if alerts:
             self.handler.handle_tool_call(
                 "push_context",
@@ -552,9 +552,9 @@ class MonitoringContext:
                 value=alerts,
                 subscribers=["AlertManager", "NotificationService"]
             )
-
+        
         return alerts
-
+    
     def generate_report(self, agent_name, time_range):
         """Generate performance report"""
         # Get historical metrics
@@ -563,7 +563,7 @@ class MonitoringContext:
             agent_name=agent_name,
             pattern="system.metrics.*"
         )
-
+        
         report_data = []
         for key in metric_keys["keys"]:
             # Extract timestamp from key
@@ -578,7 +578,7 @@ class MonitoringContext:
                     "timestamp": timestamp,
                     "metrics": metrics["value"]
                 })
-
+        
         # Store report
         self.handler.handle_tool_call(
             "push_context",
@@ -587,7 +587,7 @@ class MonitoringContext:
             value={"data": report_data, "generated": time.time()},
             ttl=604800  # Keep reports for 1 week
         )
-
+        
         return report_data
 ```
 
@@ -650,7 +650,7 @@ def cleanup_expired_context(handler, agent_name, pattern):
         agent_name=agent_name,
         pattern=pattern
     )
-
+    
     for key in keys["keys"]:
         try:
             handler.handle_tool_call("get_context", agent_name=agent_name, key=key)

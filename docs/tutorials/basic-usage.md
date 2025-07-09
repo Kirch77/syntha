@@ -5,9 +5,8 @@ Learn the fundamentals of building multi-agent systems with Syntha through hands
 ## What You'll Build
 
 In this tutorial, you'll create a simple multi-agent system with:
-
 - **ProductManager**: Assigns tasks and coordinates work
-- **Developer**: Implements features and reports progress
+- **Developer**: Implements features and reports progress  
 - **QA**: Tests features and reports issues
 
 ## Prerequisites
@@ -50,7 +49,7 @@ mesh.push("dev_environment", {
 }, subscribers=["Developer"])
 
 mesh.push("qa_environment", {
-    "test_url": "https://test-api.company.com",
+    "test_url": "https://test-api.company.com", 
     "test_database": "postgresql://test-db:5432/userauth"
 }, subscribers=["QA"])
 
@@ -134,7 +133,7 @@ print("✅ Developer progress updated")
 
 # Later... Developer completes the feature
 handler.handle_tool_call("push_context",
-    key="feature_status",
+    key="feature_status", 
     value={
         "oauth2_login": "completed",
         "completed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -204,7 +203,7 @@ thread_id = "oauth_bug_investigation"
 
 handler.handle_tool_call("send_message_to_agent",
     from_agent="Developer",
-    to_agent="QA",
+    to_agent="QA", 
     message="Can you provide exact steps to reproduce the HTTPS redirect issue?",
     thread_id=thread_id,
     message_type="question"
@@ -300,16 +299,16 @@ def simulate_llm_agent(agent_name, user_input):
     """
     # 1. Get context-aware system prompt
     system_prompt = build_system_prompt(agent_name, mesh)
-
+    
     # 2. Get available tools
     tools = handler.get_schemas()
-
+    
     # 3. Simulate LLM processing
     print(f"\n🤖 {agent_name} LLM Agent Processing...")
     print(f"System prompt length: {len(system_prompt)} chars")
     print(f"Available tools: {len(tools)}")
     print(f"User input: {user_input}")
-
+    
     # 4. Simulate tool usage
     if "check messages" in user_input.lower():
         messages = handler.handle_tool_call("get_messages_from_agents",
@@ -318,7 +317,7 @@ def simulate_llm_agent(agent_name, user_input):
         )
         print(f"✅ Found {messages['count']} unread messages")
         return f"You have {messages['count']} unread messages"
-
+    
     elif "update status" in user_input.lower():
         handler.handle_tool_call("push_context",
             key=f"{agent_name.lower()}_last_activity",
@@ -326,7 +325,7 @@ def simulate_llm_agent(agent_name, user_input):
         )
         print("✅ Status updated")
         return "Status updated successfully"
-
+    
     return "Task processed"
 
 # Test LLM simulation
@@ -383,37 +382,37 @@ import time
 
 def main():
     """Complete basic usage tutorial"""
-
+    
     # Step 1: Initialize
     mesh = ContextMesh(enable_indexing=True, auto_cleanup=True)
     handler = ToolHandler(mesh)
     print("✅ Syntha initialized")
-
+    
     # Step 2: Setup context
     mesh.push("project_name", "UserAuth System")
     mesh.push("deadline", "2025-02-15")
     mesh.push("priority", "high")
-
+    
     mesh.push("dev_environment", {
         "api_url": "https://dev-api.company.com",
         "database": "postgresql://dev-db:5432/userauth"
     }, subscribers=["Developer"])
-
+    
     # Step 3: Agent communication
     handler.handle_tool_call("send_message_to_agent",
         from_agent="ProductManager",
-        to_agent="Developer",
+        to_agent="Developer", 
         message="Please implement OAuth2 login functionality",
         message_type="request",
         priority="high"
     )
-
+    
     # Step 4: Progress tracking
     handler.handle_tool_call("push_context",
         key="feature_status",
         value={"oauth2_login": "completed", "progress": 100}
     )
-
+    
     # Step 5: Issue reporting
     handler.handle_tool_call("send_message_to_agent",
         from_agent="QA",
@@ -422,7 +421,7 @@ def main():
         message_type="bug_report",
         priority="high"
     )
-
+    
     # Step 6: Team coordination
     handler.handle_tool_call("broadcast_message_to_agents",
         from_agent="ProductManager",
@@ -430,7 +429,7 @@ def main():
         message="Great progress! Demo target: EOD",
         message_type="announcement"
     )
-
+    
     # Final stats
     stats = mesh.get_stats()
     print(f"\n🎉 Tutorial complete! {stats['total_items']} context items created")
@@ -450,24 +449,21 @@ After completing this tutorial, you now understand:
 ✅ **Access Control**: Restricting context to specific agents  
 ✅ **Prompt Generation**: Creating context-aware LLM prompts  
 ✅ **Tool Integration**: Using Syntha's 7 core tools  
-✅ **Performance Features**: Indexing and auto-cleanup benefits
+✅ **Performance Features**: Indexing and auto-cleanup benefits  
 
 ## Next Steps
 
 ### Immediate Next Steps
-
 1. **[Agent Communication Tutorial](agent-communication.md)** - Master advanced messaging patterns
 2. **[Context Management Tutorial](context-management.md)** - Deep dive into context strategies
 3. **[LLM Integration Tutorial](llm-integration.md)** - Connect with real LLM frameworks
 
 ### Real-World Applications
-
 - **[E-commerce Example](../examples/ecommerce.md)** - Multi-agent online store
 - **[Development Team Example](../examples/dev-team.md)** - Coordinated software development
 - **[Customer Support Example](../examples/customer-support.md)** - Automated support system
 
 ### Advanced Topics
-
 - **[Performance Optimization](../guides/performance.md)** - Production-ready optimizations
 - **[Security Guide](../guides/security.md)** - Protect sensitive data
 - **[Best Practices](../guides/best-practices.md)** - Professional deployment patterns

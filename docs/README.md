@@ -7,27 +7,23 @@ Welcome to the Syntha SDK documentation. Syntha is a production-ready, framework
 ## 🚀 Quick Navigation
 
 ### Getting Started
-
 - [Installation](guides/installation.md) - Get Syntha up and running
 - [Quick Start](guides/quick-start.md) - Build your first multi-agent system in 5 minutes
 - [Core Concepts](guides/core-concepts.md) - Understanding the Syntha architecture
 
 ### Tutorials
-
 - [Basic Usage](tutorials/basic-usage.md) - Learn the fundamentals
 - [Multi-Agent Communication](tutorials/agent-communication.md) - Agent-to-agent messaging
 - [Context Management](tutorials/context-management.md) - Shared knowledge systems
 - [LLM Integration](tutorials/llm-integration.md) - Connect with any LLM framework
 
 ### API Reference
-
 - [ContextMesh](api/context-mesh.md) - Shared memory system
 - [ToolHandler](api/tool-handler.md) - LLM function calling
 - [Prompt Builders](api/prompt-builders.md) - Context injection utilities
 - [Tool Schemas](api/tool-schemas.md) - All 7 standardized tools
 
 ### Advanced Guides
-
 - [Advanced Features](guides/advanced-features.md) - Message confirmations, threading, batch operations
 - [Performance Optimization](guides/performance.md) - Production-ready optimizations
 - [Security & Access Control](guides/security.md) - Protecting sensitive data
@@ -35,7 +31,6 @@ Welcome to the Syntha SDK documentation. Syntha is a production-ready, framework
 - [Troubleshooting](guides/troubleshooting.md) - Common issues and solutions
 
 ### Framework Integration
-
 - [OpenAI](guides/integrations/openai.md) - Function calling with GPT models
 - [Anthropic Claude](guides/integrations/anthropic.md) - Tools API integration
 - [LangGraph](guides/integrations/langgraph.md) - State management integration
@@ -43,7 +38,6 @@ Welcome to the Syntha SDK documentation. Syntha is a production-ready, framework
 - [Custom Frameworks](guides/integrations/custom.md) - Integrate with any LLM framework
 
 ### Examples
-
 - [E-commerce Platform](examples/ecommerce.md) - Multi-agent online store
 - [Development Team](examples/dev-team.md) - Coordinated software development
 - [Customer Support](examples/customer-support.md) - Automated support system
@@ -58,15 +52,13 @@ Welcome to the Syntha SDK documentation. Syntha is a production-ready, framework
 ## 🔑 Key Features
 
 ### Framework Agnostic
-
 - ✅ **OpenAI** (Function Calling API)
-- ✅ **Anthropic Claude** (Tools API)
+- ✅ **Anthropic Claude** (Tools API) 
 - ✅ **LangGraph** (State + Tools)
 - ✅ **Local LLMs** (Ollama, LM Studio, etc.)
 - ✅ **Any LLM** with function calling support
 
 ### Production-Grade
-
 - 🚀 **Performance**: 10x faster lookups with smart indexing
 - 🔒 **Thread-Safe**: Concurrent agent operations
 - ⏱️ **TTL Support**: Automatic expiry for time-sensitive data
@@ -74,7 +66,6 @@ Welcome to the Syntha SDK documentation. Syntha is a production-ready, framework
 - 📊 **Monitoring**: Built-in metrics and statistics
 
 ### Advanced Multi-Agent Features
-
 - 💬 **Direct Messaging**: Agents communicate directly
 - 🧵 **Message Threading**: Organize conversations
 - 📢 **Bulk Operations**: Broadcast to multiple agents
@@ -109,7 +100,6 @@ Welcome to the Syntha SDK documentation. Syntha is a production-ready, framework
 ## 📋 What's New
 
 ### Version 0.2.0 Features
-
 - **Advanced Messaging**: Threading, priorities, confirmations
 - **Batch Operations**: Atomic multi-operation transactions
 - **Outcome Logging**: Performance tracking and analytics
@@ -120,14 +110,12 @@ Welcome to the Syntha SDK documentation. Syntha is a production-ready, framework
 
 This documentation is set up for easy hosting with modern platforms:
 
-### GitHub Pages (Recommended)
-
+### GitHub Pages (Recommended) 
 1. Enable GitHub Pages in repository settings
 2. Set source to "GitHub Actions"
 3. Push to main branch - docs auto-deploy to `https://yourusername.github.io/syntha_v2`
 
 ### Local Development
-
 ```bash
 cd docs
 bundle install
@@ -136,9 +124,8 @@ bundle exec jekyll serve
 ```
 
 ### Alternative Platforms
-
 - **GitBook** - Connect repo for beautiful auto-generated docs
-- **Docusaurus** - Modern static site generator for documentation
+- **Docusaurus** - Modern static site generator for documentation  
 - **MkDocs** - Python-based documentation generator
 - **Sphinx** - Industry standard for Python projects
 

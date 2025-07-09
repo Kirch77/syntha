@@ -37,7 +37,7 @@ for i in range(10000):
 # Fast retrieval with indexing
 user = handler.handle_tool_call(
     "get_context",
-    agent_name="UserService",
+    agent_name="UserService", 
     key="user_5000"
 )
 ```
@@ -101,23 +101,23 @@ class SynthaConnectionPool:
         self.connections = []
         self.lock = threading.Lock()
         self.local = local()
-
+    
     def get_connection(self):
         """Get a connection from the pool"""
         if hasattr(self.local, 'handler'):
             return self.local.handler
-
+        
         with self.lock:
             if self.connections:
                 mesh, handler = self.connections.pop()
             else:
                 mesh = ContextMesh(enable_indexing=True, auto_cleanup=True)
                 handler = ToolHandler(mesh)
-
+            
             self.local.handler = handler
             self.local.mesh = mesh
             return handler
-
+    
     def return_connection(self, handler):
         """Return a connection to the pool"""
         with self.lock:
@@ -158,13 +158,13 @@ class ContextCache:
         self.cache_size = cache_size
         self.default_ttl = default_ttl
         self.lock = Lock()
-
+    
     def get_cached_context(self, agent_name, key, ttl=None):
         """Get context with caching"""
         cache_key = f"{agent_name}:{key}"
         current_time = time.time()
         ttl = ttl or self.default_ttl
-
+        
         with self.lock:
             # Check cache
             if cache_key in self.cache:
@@ -175,7 +175,7 @@ class ContextCache:
                     # Cache expired
                     del self.cache[cache_key]
                     del self.cache_times[cache_key]
-
+        
         # Cache miss - fetch from context mesh
         try:
             result = self.handler.handle_tool_call(
@@ -183,23 +183,23 @@ class ContextCache:
                 agent_name=agent_name,
                 key=key
             )
-
+            
             with self.lock:
                 # Add to cache
                 if len(self.cache) >= self.cache_size:
                     # Remove oldest entry
-                    oldest_key = min(self.cache_times.keys(),
+                    oldest_key = min(self.cache_times.keys(), 
                                    key=lambda k: self.cache_times[k])
                     del self.cache[oldest_key]
                     del self.cache_times[oldest_key]
-
+                
                 self.cache[cache_key] = result
                 self.cache_times[cache_key] = current_time
-
+            
             return result
         except Exception as e:
             return {"error": str(e)}
-
+    
     def invalidate_cache(self, agent_name=None, key=None):
         """Invalidate cache entries"""
         with self.lock:
@@ -209,7 +209,7 @@ class ContextCache:
                 self.cache_times.pop(cache_key, None)
             elif agent_name:
                 # Invalidate all entries for agent
-                keys_to_remove = [k for k in self.cache.keys()
+                keys_to_remove = [k for k in self.cache.keys() 
                                 if k.startswith(f"{agent_name}:")]
                 for key in keys_to_remove:
                     del self.cache[key]
@@ -234,7 +234,7 @@ class AsyncSynthaManager:
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.handlers = {}
         self.lock = threading.Lock()
-
+    
     def get_handler(self):
         """Get thread-local handler"""
         thread_id = threading.get_ident()
@@ -244,37 +244,37 @@ class AsyncSynthaManager:
                     mesh = ContextMesh(enable_indexing=True, auto_cleanup=True)
                     self.handlers[thread_id] = ToolHandler(mesh)
         return self.handlers[thread_id]
-
+    
     async def async_context_operation(self, tool_name, **kwargs):
         """Perform context operation asynchronously"""
         loop = asyncio.get_event_loop()
-
+        
         def sync_operation():
             handler = self.get_handler()
             return handler.handle_tool_call(tool_name, **kwargs)
-
+        
         return await loop.run_in_executor(self.executor, sync_operation)
-
+    
     async def batch_async_operations(self, operations):
         """Perform multiple operations concurrently"""
         tasks = []
         for op in operations:
             task = self.async_context_operation(op["tool"], **op["args"])
             tasks.append(task)
-
+        
         return await asyncio.gather(*tasks, return_exceptions=True)
 
 # Usage
 async def main():
     manager = AsyncSynthaManager()
-
+    
     # Concurrent context operations
     operations = [
         {"tool": "get_context", "args": {"agent_name": "Agent1", "key": "data1"}},
         {"tool": "get_context", "args": {"agent_name": "Agent2", "key": "data2"}},
         {"tool": "push_context", "args": {"agent_name": "Agent3", "key": "result", "value": {"status": "complete"}}}
     ]
-
+    
     results = await manager.batch_async_operations(operations)
     return results
 
@@ -296,7 +296,7 @@ import gzip
 class OptimizedContext:
     def __init__(self, handler):
         self.handler = handler
-
+    
     def store_compressed_data(self, agent_name, key, data, use_pickle=False):
         """Store large data with compression"""
         if use_pickle:
@@ -305,10 +305,10 @@ class OptimizedContext:
         else:
             # Use JSON for simple data
             serialized = json.dumps(data).encode('utf-8')
-
+        
         # Compress the data
         compressed = gzip.compress(serialized)
-
+        
         # Store compressed data
         return self.handler.handle_tool_call(
             "push_context",
@@ -322,7 +322,7 @@ class OptimizedContext:
                 "compressed_size": len(compressed)
             }
         )
-
+    
     def get_compressed_data(self, agent_name, key):
         """Retrieve and decompress data"""
         result = self.handler.handle_tool_call(
@@ -330,13 +330,13 @@ class OptimizedContext:
             agent_name=agent_name,
             key=f"compressed.{key}"
         )
-
+        
         metadata = result["value"]
         compressed = bytes.fromhex(metadata["data"])
-
+        
         # Decompress
         decompressed = gzip.decompress(compressed)
-
+        
         # Deserialize
         if metadata["serialization"] == "pickle":
             return pickle.loads(decompressed)
@@ -357,7 +357,7 @@ class MemoryMonitor:
     def __init__(self, handler):
         self.handler = handler
         self.memory_stats = defaultdict(list)
-
+    
     def get_memory_usage(self):
         """Get current memory usage"""
         process = psutil.Process()
@@ -367,22 +367,22 @@ class MemoryMonitor:
             "vms": memory_info.vms,  # Virtual Memory Size
             "percent": process.memory_percent()
         }
-
+    
     def monitor_operation(self, operation_name, operation_func):
         """Monitor memory usage during operation"""
         # Measure before
         gc.collect()  # Force garbage collection
         before = self.get_memory_usage()
-
+        
         # Perform operation
         start_time = time.time()
         result = operation_func()
         duration = time.time() - start_time
-
+        
         # Measure after
         gc.collect()
         after = self.get_memory_usage()
-
+        
         # Store stats
         stats = {
             "operation": operation_name,
@@ -392,9 +392,9 @@ class MemoryMonitor:
             "memory_delta": after["rss"] - before["rss"],
             "timestamp": time.time()
         }
-
+        
         self.memory_stats[operation_name].append(stats)
-
+        
         # Store in context for monitoring
         self.handler.handle_tool_call(
             "push_context",
@@ -403,9 +403,9 @@ class MemoryMonitor:
             value=stats,
             ttl=3600  # Keep for 1 hour
         )
-
+        
         return result
-
+    
     def get_memory_report(self):
         """Generate memory usage report"""
         report = {}
@@ -413,14 +413,14 @@ class MemoryMonitor:
             if stats_list:
                 avg_memory_delta = sum(s["memory_delta"] for s in stats_list) / len(stats_list)
                 avg_duration = sum(s["duration"] for s in stats_list) / len(stats_list)
-
+                
                 report[operation] = {
                     "average_memory_delta": avg_memory_delta,
                     "average_duration": avg_duration,
                     "operation_count": len(stats_list),
                     "total_memory_impact": sum(s["memory_delta"] for s in stats_list)
                 }
-
+        
         return report
 
 # Usage
@@ -454,10 +454,10 @@ class PerformanceBenchmark:
     def __init__(self, handler):
         self.handler = handler
         self.results = {}
-
+    
     def benchmark_context_operations(self, num_operations=1000):
         """Benchmark basic context operations"""
-
+        
         # Benchmark push operations
         start_time = time.time()
         for i in range(num_operations):
@@ -468,7 +468,7 @@ class PerformanceBenchmark:
                 value={"data": f"value_{i}", "index": i}
             )
         push_time = time.time() - start_time
-
+        
         # Benchmark get operations
         start_time = time.time()
         for i in range(num_operations):
@@ -478,7 +478,7 @@ class PerformanceBenchmark:
                 key=f"bench_key_{i}"
             )
         get_time = time.time() - start_time
-
+        
         # Benchmark list operations
         start_time = time.time()
         self.handler.handle_tool_call(
@@ -487,7 +487,7 @@ class PerformanceBenchmark:
             pattern="bench_key_*"
         )
         list_time = time.time() - start_time
-
+        
         return {
             "push_total_time": push_time,
             "push_ops_per_second": num_operations / push_time,
@@ -496,10 +496,10 @@ class PerformanceBenchmark:
             "list_time": list_time,
             "total_operations": num_operations
         }
-
+    
     def benchmark_concurrent_operations(self, num_threads=10, operations_per_thread=100):
         """Benchmark concurrent operations"""
-
+        
         def worker_function(thread_id):
             thread_times = []
             for i in range(operations_per_thread):
@@ -512,17 +512,17 @@ class PerformanceBenchmark:
                 )
                 thread_times.append(time.time() - start)
             return thread_times
-
+        
         start_time = time.time()
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = [executor.submit(worker_function, i) for i in range(num_threads)]
             all_times = []
             for future in futures:
                 all_times.extend(future.result())
-
+        
         total_time = time.time() - start_time
         total_operations = num_threads * operations_per_thread
-
+        
         return {
             "total_time": total_time,
             "total_operations": total_operations,
@@ -533,11 +533,11 @@ class PerformanceBenchmark:
             "max_operation_time": max(all_times),
             "num_threads": num_threads
         }
-
+    
     def benchmark_batch_operations(self, batch_sizes=[1, 10, 50, 100]):
         """Benchmark batch operation performance"""
         results = {}
-
+        
         for batch_size in batch_sizes:
             operations = []
             for i in range(batch_size):
@@ -546,7 +546,7 @@ class PerformanceBenchmark:
                     "key": f"batch_key_{i}",
                     "value": {"batch_item": i}
                 })
-
+            
             # Time batch operation
             start_time = time.time()
             self.handler.handle_tool_call(
@@ -556,7 +556,7 @@ class PerformanceBenchmark:
                 atomic=True
             )
             batch_time = time.time() - start_time
-
+            
             # Time individual operations
             start_time = time.time()
             for op in operations:
@@ -567,14 +567,14 @@ class PerformanceBenchmark:
                     value=op["value"]
                 )
             individual_time = time.time() - start_time
-
+            
             results[batch_size] = {
                 "batch_time": batch_time,
                 "individual_time": individual_time,
                 "speedup": individual_time / batch_time if batch_time > 0 else 0,
                 "batch_ops_per_second": batch_size / batch_time if batch_time > 0 else 0
             }
-
+        
         return results
 
 # Run benchmarks
@@ -611,7 +611,7 @@ def create_production_context():
         enable_metrics=True        # Track performance metrics
     )
 
-# Development configuration
+# Development configuration  
 def create_development_context():
     return ContextMesh(
         enable_indexing=False,     # Simpler debugging
@@ -631,11 +631,11 @@ class ProductionMonitor:
             "memory_usage_mb": 512,     # 512 MB
             "error_rate": 0.05          # 5% error rate
         }
-
+    
     def monitor_performance(self):
         """Monitor system performance"""
         start_time = time.time()
-
+        
         try:
             # Test operation
             self.handler.handle_tool_call(
@@ -643,28 +643,28 @@ class ProductionMonitor:
                 agent_name="HealthCheck",
                 key="system_status"
             )
-
+            
             operation_time = time.time() - start_time
-
+            
             # Check thresholds
             if operation_time > self.alert_thresholds["operation_time"]:
                 self.send_alert(f"Slow operation detected: {operation_time:.2f}s")
-
+            
             # Check memory usage
             memory_usage = psutil.Process().memory_info().rss / 1024 / 1024  # MB
             if memory_usage > self.alert_thresholds["memory_usage_mb"]:
                 self.send_alert(f"High memory usage: {memory_usage:.1f}MB")
-
+            
             return {
                 "status": "healthy",
                 "operation_time": operation_time,
                 "memory_usage_mb": memory_usage
             }
-
+            
         except Exception as e:
             self.send_alert(f"System error: {str(e)}")
             return {"status": "error", "error": str(e)}
-
+    
     def send_alert(self, message):
         """Send alert (implement your alerting system)"""
         print(f"ALERT: {message}")

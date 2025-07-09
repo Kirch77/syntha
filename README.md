@@ -266,14 +266,12 @@ response = anthropic.messages.create(
 ## � Documentation
 
 ### Quick Links
-
 - **[📖 Complete Documentation](docs/README.md)** - Comprehensive guides and API reference
 - **[🚀 Quick Start](docs/guides/quick-start.md)** - Get started in 5 minutes
 - **[📋 API Reference](docs/api/)** - Complete API documentation
 - **[🎯 Examples](docs/examples/)** - Real-world implementation patterns
 
 ### Key Guides
-
 - **[Installation](docs/guides/installation.md)** - Setup and configuration
 - **[Core Concepts](docs/guides/core-concepts.md)** - Understanding Syntha's architecture
 - **[Context Management](docs/tutorials/context-management.md)** - Managing shared data
@@ -283,14 +281,12 @@ response = anthropic.messages.create(
 - **[Best Practices](docs/guides/best-practices.md)** - Deployment patterns
 
 ### API Documentation
-
 - **[ContextMesh](docs/api/context-mesh.md)** - Shared memory system
 - **[ToolHandler](docs/api/tool-handler.md)** - LLM function calling
 - **[Tool Schemas](docs/api/tool-schemas.md)** - All 7 standardized tools
 - **[Prompt Builders](docs/api/prompt-builders.md)** - Context injection utilities
 
 ### Examples
-
 - **[E-commerce Platform](docs/examples/ecommerce.md)** - Complete multi-agent system
 - **[Customer Support](docs/examples/customer-support.md)** - Automated support system
 - **[Development Team](docs/examples/dev-team.md)** - Coordinated software development
@@ -341,6 +337,6 @@ MIT License - see LICENSE file for details.
 
 ---
 
-**Ready to build multi-agent systems that actually work together?**
+**Ready to build multi-agent systems that actually work together?** 
 
 👉 **[Start with the Documentation](docs/README.md)** or jump into the **[Quick Start Guide](docs/guides/quick-start.md)**

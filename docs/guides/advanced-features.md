@@ -58,14 +58,14 @@ class ConfirmationWorkflow:
         self.mesh = mesh
         self.handler = handler
         self.pending_confirmations = {}
-
+    
     def request_confirmation(self, from_agent, to_agent, action, timeout=300):
         """Request confirmation with timeout"""
         import uuid
         import time
-
+        
         confirmation_id = str(uuid.uuid4())
-
+        
         # Send confirmation request
         result = self.handler.handle_tool_call("send_message_to_agent",
             from_agent=from_agent,
@@ -74,7 +74,7 @@ class ConfirmationWorkflow:
             requires_confirmation=True,
             priority="high"
         )
-
+        
         # Track pending confirmation
         self.pending_confirmations[confirmation_id] = {
             "action": action,
@@ -83,34 +83,34 @@ class ConfirmationWorkflow:
             "timestamp": time.time(),
             "timeout": timeout
         }
-
+        
         return confirmation_id
-
+    
     def check_confirmations(self):
         """Check for received confirmations"""
         import time
         current_time = time.time()
-
+        
         for conf_id, conf_data in list(self.pending_confirmations.items()):
             # Check timeout
             if current_time - conf_data["timestamp"] > conf_data["timeout"]:
                 print(f"Confirmation timeout: {conf_data['action']}")
                 del self.pending_confirmations[conf_id]
                 continue
-
+            
             # Check for confirmation message
             messages = self.handler.handle_tool_call("get_messages_from_agents",
                 agent_name=conf_data["from_agent"],
                 unread_only=True
             )
-
+            
             for msg in messages["messages"]:
-                if (msg["from_agent"] == conf_data["to_agent"] and
+                if (msg["from_agent"] == conf_data["to_agent"] and 
                     msg["message_type"] == "confirmation"):
                     print(f"Confirmation received: {conf_data['action']}")
                     del self.pending_confirmations[conf_id]
                     return True
-
+        
         return False
 
 # Usage
@@ -166,34 +166,34 @@ class TemplateManager:
             Developer: {agent_name}
             Sprint: {context[sprint_name]}
             Story Points: {context[story_points]}
-
+            
             Task: {task}
             Code Guidelines: {context[coding_standards]}
             """,
-
+            
             "deployment": """
             DevOps Engineer: {agent_name}
             Environment: {context[environment]}
             Release Version: {context[release_version]}
-
+            
             Deployment Task: {task}
             Rollback Plan: {context[rollback_plan]}
             """,
-
+            
             "testing": """
             QA Engineer: {agent_name}
             Test Suite: {context[test_suite]}
             Coverage Target: {context[coverage_target]}
-
+            
             Testing Task: {task}
             Test Data: {context[test_data]}
             """
         }
-
+    
     def get_template(self, agent_type):
         """Get appropriate template based on agent type"""
         return self.templates.get(agent_type, self.templates["development"])
-
+    
     def build_prompt(self, agent_name, agent_type, mesh, **kwargs):
         """Build context-aware prompt"""
         template = self.get_template(agent_type)
@@ -227,12 +227,12 @@ class ThreadManager:
     def __init__(self, handler):
         self.handler = handler
         self.active_threads = {}
-
+    
     def create_thread(self, thread_type, description):
         """Create a new conversation thread"""
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         thread_id = f"{thread_type}_{timestamp}"
-
+        
         self.active_threads[thread_id] = {
             "type": thread_type,
             "description": description,
@@ -240,20 +240,20 @@ class ThreadManager:
             "participants": set(),
             "message_count": 0
         }
-
+        
         return thread_id
-
+    
     def send_to_thread(self, thread_id, from_agent, to_agent, message, **kwargs):
         """Send message to specific thread"""
         if thread_id not in self.active_threads:
             raise ValueError(f"Thread {thread_id} does not exist")
-
+        
         # Track participants
         thread_data = self.active_threads[thread_id]
         thread_data["participants"].add(from_agent)
         thread_data["participants"].add(to_agent)
         thread_data["message_count"] += 1
-
+        
         # Send message with thread ID
         return self.handler.handle_tool_call("send_message_to_agent",
             from_agent=from_agent,
@@ -262,7 +262,7 @@ class ThreadManager:
             thread_id=thread_id,
             **kwargs
         )
-
+    
     def get_thread_messages(self, thread_id, agent_name):
         """Get all messages in a thread for an agent"""
         return self.handler.handle_tool_call("get_messages_from_agents",
@@ -270,7 +270,7 @@ class ThreadManager:
             thread_id=thread_id,
             unread_only=False
         )
-
+    
     def list_threads(self, agent_name=None):
         """List active threads, optionally filtered by agent"""
         threads = []
@@ -318,19 +318,19 @@ class ThreadLifecycleManager(ThreadManager):
     def __init__(self, handler):
         super().__init__(handler)
         self.thread_states = {}  # active, paused, completed, archived
-
+    
     def set_thread_state(self, thread_id, state, reason=None):
         """Change thread state with optional reason"""
         valid_states = ["active", "paused", "completed", "archived"]
         if state not in valid_states:
             raise ValueError(f"Invalid state. Must be one of: {valid_states}")
-
+        
         self.thread_states[thread_id] = {
             "state": state,
             "reason": reason,
             "timestamp": datetime.datetime.now()
         }
-
+        
         # Notify participants of state change
         if thread_id in self.active_threads:
             participants = self.active_threads[thread_id]["participants"]
@@ -338,25 +338,25 @@ class ThreadLifecycleManager(ThreadManager):
                 self.handler.handle_tool_call("send_message_to_agent",
                     from_agent="System",
                     to_agent=participant,
-                    message=f"Thread {thread_id} is now {state}" +
+                    message=f"Thread {thread_id} is now {state}" + 
                            (f": {reason}" if reason else ""),
                     thread_id=thread_id,
                     message_type="system"
                 )
-
+    
     def auto_archive_completed_threads(self, days_old=7):
         """Automatically archive threads completed more than X days ago"""
         cutoff_date = datetime.datetime.now() - datetime.timedelta(days=days_old)
         archived_count = 0
-
+        
         for thread_id, state_data in list(self.thread_states.items()):
-            if (state_data["state"] == "completed" and
+            if (state_data["state"] == "completed" and 
                 state_data["timestamp"] < cutoff_date):
-
-                self.set_thread_state(thread_id, "archived",
+                
+                self.set_thread_state(thread_id, "archived", 
                                     f"Auto-archived after {days_old} days")
                 archived_count += 1
-
+        
         return archived_count
 
 # Usage
@@ -404,7 +404,7 @@ class BatchMessageProcessor:
     def __init__(self, handler):
         self.handler = handler
         self.message_queue = []
-
+    
     def queue_message(self, from_agent, to_agent, message, **kwargs):
         """Add message to batch queue"""
         self.message_queue.append({
@@ -413,18 +413,18 @@ class BatchMessageProcessor:
             "message": message,
             **kwargs
         })
-
+    
     def process_batch(self):
         """Send all queued messages at once"""
         results = []
         for msg_data in self.message_queue:
             result = self.handler.handle_tool_call("send_message_to_agent", **msg_data)
             results.append(result)
-
+        
         # Clear queue after processing
         processed_count = len(self.message_queue)
         self.message_queue.clear()
-
+        
         return {
             "processed": processed_count,
             "results": results
@@ -435,7 +435,7 @@ batch_processor = BatchMessageProcessor(handler)
 
 # Queue multiple messages
 batch_processor.queue_message("Scheduler", "Worker1", "Process queue batch 1")
-batch_processor.queue_message("Scheduler", "Worker2", "Process queue batch 2")
+batch_processor.queue_message("Scheduler", "Worker2", "Process queue batch 2") 
 batch_processor.queue_message("Scheduler", "Worker3", "Process queue batch 3")
 
 # Send all at once
@@ -454,31 +454,31 @@ class EventSystem:
     def __init__(self, handler):
         self.handler = handler
         self.subscribers = {}  # event_type -> [agent_names]
-
+    
     def subscribe(self, event_type, agent_name):
         """Subscribe agent to event type"""
         if event_type not in self.subscribers:
             self.subscribers[event_type] = []
-
+        
         if agent_name not in self.subscribers[event_type]:
             self.subscribers[event_type].append(agent_name)
-
+    
     def unsubscribe(self, event_type, agent_name):
         """Unsubscribe agent from event type"""
         if event_type in self.subscribers:
             self.subscribers[event_type] = [
-                agent for agent in self.subscribers[event_type]
+                agent for agent in self.subscribers[event_type] 
                 if agent != agent_name
             ]
-
+    
     def publish_event(self, event_type, event_data, from_agent="System"):
         """Publish event to all subscribers"""
         if event_type not in self.subscribers:
             return {"published": 0, "subscribers": []}
-
+        
         subscribers = self.subscribers[event_type]
         results = []
-
+        
         for subscriber in subscribers:
             result = self.handler.handle_tool_call("send_message_to_agent",
                 from_agent=from_agent,
@@ -488,7 +488,7 @@ class EventSystem:
                 priority="normal"
             )
             results.append(result)
-
+        
         return {
             "published": len(subscribers),
             "subscribers": subscribers,
@@ -529,27 +529,27 @@ class RoleBasedAccess:
         self.handler = handler
         self.roles = {}
         self.permissions = {}
-
+    
     def define_role(self, role_name, permissions):
         """Define a role with specific permissions"""
         self.roles[role_name] = permissions
-
+    
     def assign_role(self, agent_name, role_name):
         """Assign role to agent"""
         if role_name not in self.roles:
             raise ValueError(f"Role {role_name} not defined")
-
-        self.mesh.push(f"agent_role_{agent_name}", role_name,
+        
+        self.mesh.push(f"agent_role_{agent_name}", role_name, 
                       subscribers=[agent_name])
-        self.mesh.push(f"agent_permissions_{agent_name}",
+        self.mesh.push(f"agent_permissions_{agent_name}", 
                       self.roles[role_name],
                       subscribers=[agent_name])
-
+    
     def check_permission(self, agent_name, permission):
         """Check if agent has specific permission"""
         permissions = self.mesh.get(f"agent_permissions_{agent_name}")
         return permission in permissions if permissions else False
-
+    
     def secure_tool_call(self, agent_name, tool_name, required_permission, **kwargs):
         """Make tool call with permission check"""
         if not self.check_permission(agent_name, required_permission):
@@ -557,7 +557,7 @@ class RoleBasedAccess:
                 "success": False,
                 "error": f"Access denied: {agent_name} lacks {required_permission} permission"
             }
-
+        
         return self.handler.handle_tool_call(tool_name, **kwargs)
 
 # Usage
@@ -577,7 +577,7 @@ rbac.assign_role("Charlie", "viewer")
 result = rbac.secure_tool_call(
     "Alice", "send_message_to_agent", "write",
     from_agent="Alice",
-    to_agent="Bob",
+    to_agent="Bob", 
     message="Deploy to production"
 )
 ```

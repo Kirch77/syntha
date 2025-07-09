@@ -46,7 +46,7 @@ Retrieve context data for an agent.
           "description": "Name of the agent requesting the context"
         },
         "key": {
-          "type": "string",
+          "type": "string", 
           "description": "The context key to retrieve"
         }
       },
@@ -57,7 +57,6 @@ Retrieve context data for an agent.
 ```
 
 **Usage Example:**
-
 ```python
 result = handler.handle_tool_call(
     "get_context",
@@ -92,7 +91,7 @@ Store context data with optional access control and TTL.
         },
         "subscribers": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {"type": "string"},
           "description": "Optional list of agent names that can access this context"
         },
         "ttl": {
@@ -107,7 +106,6 @@ Store context data with optional access control and TTL.
 ```
 
 **Usage Example:**
-
 ```python
 result = handler.handle_tool_call(
     "push_context",
@@ -125,7 +123,7 @@ List all context keys accessible to an agent.
 
 ```json
 {
-  "type": "function",
+  "type": "function", 
   "function": {
     "name": "list_context_keys",
     "description": "List all context keys that an agent can access",
@@ -148,7 +146,6 @@ List all context keys accessible to an agent.
 ```
 
 **Usage Example:**
-
 ```python
 result = handler.handle_tool_call(
     "list_context_keys",
@@ -177,7 +174,7 @@ Send a direct message to another agent.
           "description": "Name of the agent sending the message"
         },
         "to_agent": {
-          "type": "string",
+          "type": "string", 
           "description": "Name of the agent receiving the message"
         },
         "message": {
@@ -210,12 +207,11 @@ Send a direct message to another agent.
 ```
 
 **Usage Example:**
-
 ```python
 result = handler.handle_tool_call(
     "send_message_to_agent",
     from_agent="TaskManager",
-    to_agent="DataProcessor",
+    to_agent="DataProcessor", 
     message="Please process the new user data file",
     message_type="task",
     priority="high",
@@ -250,7 +246,7 @@ Retrieve messages for an agent with filtering options.
           "description": "Filter by message priority"
         },
         "message_type": {
-          "type": "string",
+          "type": "string", 
           "enum": ["info", "task", "result", "error", "question"],
           "description": "Filter by message type"
         },
@@ -278,7 +274,6 @@ Retrieve messages for an agent with filtering options.
 ```
 
 **Usage Example:**
-
 ```python
 result = handler.handle_tool_call(
     "get_messages_from_agents",
@@ -298,7 +293,7 @@ Send a message to multiple agents simultaneously.
 {
   "type": "function",
   "function": {
-    "name": "broadcast_message_to_agents",
+    "name": "broadcast_message_to_agents", 
     "description": "Send a message to multiple agents simultaneously",
     "parameters": {
       "type": "object",
@@ -309,7 +304,7 @@ Send a message to multiple agents simultaneously.
         },
         "to_agents": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {"type": "string"},
           "description": "List of agent names to receive the message"
         },
         "message": {
@@ -323,7 +318,7 @@ Send a message to multiple agents simultaneously.
         },
         "priority": {
           "type": "string",
-          "enum": ["low", "normal", "high", "urgent"],
+          "enum": ["low", "normal", "high", "urgent"], 
           "description": "Priority level of the message"
         },
         "create_thread": {
@@ -342,7 +337,6 @@ Send a message to multiple agents simultaneously.
 ```
 
 **Usage Example:**
-
 ```python
 result = handler.handle_tool_call(
     "broadcast_message_to_agents",
@@ -368,7 +362,7 @@ Execute multiple context operations atomically.
     "name": "batch_context_operation",
     "description": "Execute multiple context operations in a single atomic transaction",
     "parameters": {
-      "type": "object",
+      "type": "object", 
       "properties": {
         "agent_name": {
           "type": "string",
@@ -393,7 +387,7 @@ Execute multiple context operations atomically.
               },
               "subscribers": {
                 "type": "array",
-                "items": { "type": "string" },
+                "items": {"type": "string"},
                 "description": "Subscribers for push operations"
               },
               "ttl": {
@@ -417,7 +411,6 @@ Execute multiple context operations atomically.
 ```
 
 **Usage Example:**
-
 ```python
 result = handler.handle_tool_call(
     "batch_context_operation",
@@ -490,15 +483,15 @@ from syntha import ToolHandler
 def create_syntha_node(context_mesh):
     handler = ToolHandler(context_mesh)
     tools = handler.get_schemas()
-
+    
     def syntha_node(state):
         # Use tools in LangGraph node
         result = handler.handle_tool_call(
-            state["tool_name"],
+            state["tool_name"], 
             **state["tool_args"]
         )
         return {"result": result}
-
+    
     return syntha_node
 ```
 
@@ -511,17 +504,17 @@ def validate_tool_call(tool_name, **kwargs):
     """Validate tool call parameters against schema"""
     handler = ToolHandler(context_mesh)
     schemas = {tool["function"]["name"]: tool["function"] for tool in handler.get_schemas()}
-
+    
     if tool_name not in schemas:
         raise ValueError(f"Unknown tool: {tool_name}")
-
+    
     schema = schemas[tool_name]
     required_params = schema["parameters"].get("required", [])
-
+    
     for param in required_params:
         if param not in kwargs:
             raise ValueError(f"Missing required parameter: {param}")
-
+    
     return True
 ```
 
@@ -534,15 +527,15 @@ def type_check_parameters(tool_name: str, parameters: Dict[str, Any]) -> bool:
     """Type check tool parameters"""
     handler = ToolHandler(context_mesh)
     schemas = {tool["function"]["name"]: tool["function"] for tool in handler.get_schemas()}
-
+    
     schema = schemas[tool_name]["parameters"]["properties"]
-
+    
     for param_name, param_value in parameters.items():
         if param_name in schema:
             expected_type = schema[param_name]["type"]
             if not _check_type(param_value, expected_type):
                 raise TypeError(f"Parameter {param_name} should be {expected_type}")
-
+    
     return True
 ```
 
@@ -567,7 +560,6 @@ All tools return consistent error formats:
 ```
 
 Common error codes:
-
 - `INVALID_AGENT`: Agent name not found
 - `ACCESS_DENIED`: Permission denied for context/message
 - `KEY_NOT_FOUND`: Context key doesn't exist

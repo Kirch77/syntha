@@ -18,12 +18,10 @@ class ContextMesh:
 Create a new context mesh instance.
 
 **Parameters:**
-
 - `enable_indexing` (bool, optional): Enable fast lookups for large datasets. Provides 10x performance improvement for systems with >100 context items. Default: `False`
 - `auto_cleanup` (bool, optional): Enable automatic TTL processing and memory management. Prevents memory leaks in long-running systems. Default: `False`
 
 **Example:**
-
 ```python
 # Basic usage
 mesh = ContextMesh()
@@ -39,7 +37,6 @@ mesh = ContextMesh(enable_indexing=True, auto_cleanup=True)
 Store context with optional access control and expiration.
 
 **Parameters:**
-
 - `key` (str): Unique identifier for the context
 - `value` (Any): Context data (automatically JSON serialized if needed)
 - `subscribers` (List[str], optional): List of agent names with access. If `None`, context is globally accessible
@@ -48,13 +45,12 @@ Store context with optional access control and expiration.
 **Returns:** `None`
 
 **Examples:**
-
 ```python
 # Global context
 mesh.push("company_name", "TechCorp")
 
 # Agent-specific context
-mesh.push("api_credentials", {"key": "secret"},
+mesh.push("api_credentials", {"key": "secret"}, 
           subscribers=["Backend", "API"])
 
 # Temporary context
@@ -73,14 +69,12 @@ mesh.push("user_data", {
 Retrieve context by key.
 
 **Parameters:**
-
 - `key` (str): Context key to retrieve
 - `default` (Any, optional): Default value if key not found
 
 **Returns:** Context value or default
 
 **Examples:**
-
 ```python
 # Basic retrieval
 company = mesh.get("company_name")
@@ -99,13 +93,11 @@ if api_key is None:
 Get all context accessible to a specific agent (respects subscriber permissions).
 
 **Parameters:**
-
 - `agent_name` (str): Name of the agent
 
 **Returns:** `Dict[str, Any]` - Dictionary of all accessible context
 
 **Examples:**
-
 ```python
 # Get all context for Backend agent
 backend_context = mesh.get_all_for_agent("Backend")
@@ -122,13 +114,11 @@ context_str = json.dumps(backend_context, indent=2)
 List available context keys, optionally filtered by agent permissions.
 
 **Parameters:**
-
 - `agent_name` (str, optional): Filter by agent permissions. If `None`, returns all keys
 
 **Returns:** `List[str]` - List of available context keys
 
 **Examples:**
-
 ```python
 # All keys
 all_keys = mesh.list_keys()
@@ -146,13 +136,11 @@ if "user_data" in mesh.list_keys("Frontend"):
 Remove context by key.
 
 **Parameters:**
-
 - `key` (str): Context key to remove
 
 **Returns:** `bool` - `True` if removed, `False` if key not found
 
 **Examples:**
-
 ```python
 # Remove context
 success = mesh.remove("old_data")
@@ -171,7 +159,6 @@ Remove all context from the mesh (use with caution).
 **Returns:** `None`
 
 **Examples:**
-
 ```python
 # Clear all context (development/testing only)
 mesh.clear_all()
@@ -191,7 +178,6 @@ Manually remove expired context items.
 **Returns:** `int` - Number of items removed
 
 **Examples:**
-
 ```python
 # Manual cleanup
 cleaned_count = mesh.cleanup_expired()
@@ -209,14 +195,12 @@ def periodic_cleanup():
 Get system statistics and performance metrics.
 
 **Returns:** `Dict` with keys:
-
 - `total_items` (int): Total context items stored
 - `agents_count` (int): Number of unique agents with context
 - `expired_items` (int): Number of expired items
 - `memory_usage` (float): Approximate memory usage in MB
 
 **Examples:**
-
 ```python
 # Monitor system health
 stats = mesh.get_stats()
@@ -226,7 +210,7 @@ print(f"Memory usage: {stats['memory_usage']:.2f} MB")
 # Performance monitoring
 if stats['total_items'] > 1000:
     print("Consider enabling indexing")
-
+    
 if stats['expired_items'] > 100:
     print("Consider enabling auto-cleanup")
 ```
@@ -240,7 +224,6 @@ Control indexing system at runtime.
 **Type:** `bool`
 
 **Examples:**
-
 ```python
 # Enable indexing for better performance
 mesh.enable_indexing = True
@@ -260,7 +243,6 @@ Control automatic cleanup system at runtime.
 **Type:** `bool`
 
 **Examples:**
-
 ```python
 # Enable auto-cleanup
 mesh.auto_cleanup = True
@@ -336,21 +318,18 @@ print(f"Total items: {mesh.get_stats()['total_items']}")
 ## Performance Characteristics
 
 ### Without Indexing
-
 - `push()`: O(1)
 - `get()`: O(1)
 - `get_all_for_agent()`: O(n) where n = total items
 - `list_keys()`: O(n)
 
 ### With Indexing
-
 - `push()`: O(1)
 - `get()`: O(1)
 - `get_all_for_agent()`: O(1) - 10x faster
 - `list_keys()`: O(1)
 
 ### Memory Usage
-
 - Base overhead: ~1KB per context item
 - Indexing overhead: ~500 bytes per agent
 - Auto-cleanup: Minimal CPU overhead
@@ -440,13 +419,13 @@ mesh.push("beta_feature", True, ttl=86400)  # 24 hours
 ```python
 def build_context_prompt(agent_name):
     context = mesh.get_all_for_agent(agent_name)
-
+    
     prompt = f"You are {agent_name}.\n\n"
     prompt += "Available context:\n"
-
+    
     for key, value in context.items():
         prompt += f"- {key}: {value}\n"
-
+    
     return prompt
 ```
 
@@ -455,13 +434,13 @@ def build_context_prompt(agent_name):
 ```python
 def monitor_mesh_health():
     stats = mesh.get_stats()
-
+    
     if stats['total_items'] > 10000:
         print("WARNING: High context count")
-
+    
     if stats['memory_usage'] > 100:
         print("WARNING: High memory usage")
-
+    
     if stats['expired_items'] > 500:
         print("INFO: Many expired items - consider cleanup")
 ```
