@@ -1,0 +1,52 @@
+# GitHub Pages Jekyll Configuration
+title: Syntha SDK Documentation
+description: Lightweight, framework-agnostic SDK for building multi-agent AI systems
+baseurl: ""
+url: "https://yourusername.github.io/syntha_v2"
+
+# Theme
+theme: minima
+# Or use a documentation theme:
+# remote_theme: pmarsceill/just-the-docs
+
+# Navigation
+header_pages:
+  - guides/installation.md
+  - guides/quick-start.md
+  - api/context-mesh.md
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Markdown processing
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Code highlighting
+highlighter: rouge
+
+# Collections for better organization
+collections:
+  guides:
+    output: true
+    permalink: /:collection/:name/
+  api:
+    output: true
+    permalink: /:collection/:name/
+  tutorials:
+    output: true
+    permalink: /:collection/:name/
+  examples:
+    output: true
+    permalink: /:collection/:name/
+
+# Exclude from processing
+exclude:
+  - generate_docs.py
+  - html/
+  - "*.py"
