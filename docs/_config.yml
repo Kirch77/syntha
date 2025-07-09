@@ -2,15 +2,16 @@
 title: Syntha SDK Documentation
 description: Lightweight, framework-agnostic SDK for building multi-agent AI systems
 baseurl: ""
-url: "https://yourusername.github.io/syntha_v2"
+url: ""
 
 # Theme
 theme: minima
 # Or use a documentation theme:
 # remote_theme: pmarsceill/just-the-docs
 
-# Navigation
+# Navigation - specify the main pages to include in header
 header_pages:
+  - index.md
   - guides/installation.md
   - guides/quick-start.md
   - api/context-mesh.md
@@ -45,8 +46,45 @@ collections:
     output: true
     permalink: /:collection/:name/
 
+# Default layout for different content types
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
+  - scope:
+      path: "guides"
+      type: "pages"
+    values:
+      layout: "page"
+      nav_section: "guides"
+  - scope:
+      path: "api"
+      type: "pages"  
+    values:
+      layout: "page"
+      nav_section: "api"
+  - scope:
+      path: "tutorials"
+      type: "pages"
+    values:
+      layout: "page"
+      nav_section: "tutorials"
+  - scope:
+      path: "examples"
+      type: "pages"
+    values:
+      layout: "page"
+      nav_section: "examples"
+
 # Exclude from processing
 exclude:
-  - generate_docs.py
-  - html/
   - "*.py"
+  - "*.pyc"
+  - "__pycache__/"
