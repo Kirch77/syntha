@@ -243,6 +243,7 @@ experiments/
 .dev/
 
 # Documentation build artifacts
+docs-new/
 docs/html/
 docs/_build/
 docs/build/

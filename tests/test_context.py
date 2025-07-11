@@ -40,7 +40,33 @@ class TestContextMesh:
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.mesh = ContextMesh()
+        # Use in-memory database for tests to ensure isolation
+        import tempfile
+        import os
+        self.temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+        self.temp_db.close()
+        self.mesh = ContextMesh(db_path=self.temp_db.name)
+    
+    def teardown_method(self):
+        """Clean up test fixtures."""
+        # Properly close the database connection first
+        if hasattr(self, 'mesh') and self.mesh.db_backend:
+            self.mesh.db_backend.close()
+        
+        # Clean up the temporary database
+        import os
+        import time
+        if hasattr(self, 'temp_db') and os.path.exists(self.temp_db.name):
+            try:
+                os.unlink(self.temp_db.name)
+            except PermissionError:
+                # On Windows, sometimes need to wait a bit for the file to be released
+                time.sleep(0.1)
+                try:
+                    os.unlink(self.temp_db.name)
+                except PermissionError:
+                    # If still locked, just skip cleanup - temp files will be cleaned up by OS
+                    pass
     
     def test_push_and_get(self):
         """Test basic push and get functionality."""

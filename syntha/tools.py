@@ -1,12 +1,33 @@
 """
-Real-Time Context Retrieval Tools for Syntha.
+Syntha Agent Tools - Essential Context Management
+
+Copyright 2025 Syntha
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
 Provides OpenAI-compatible function call schemas and handlers for agents
-to retrieve context from the ContextMesh during conversations.
+to manage and share context through topic-based routing.
+
+Core Tools:
+- get_context: Retrieve shared context data
+- push_context: Share context with topic subscribers  
+- list_context: Discover available context keys
+- subscribe_to_topics: Subscribe to topic-based context routing
+- discover_topics: Find available topics and subscriber counts
 """
 
 import json
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from .context import ContextMesh
 
 
@@ -22,21 +43,21 @@ def get_context_tool_schema() -> Dict[str, Any]:
     """
     return {
         "name": "get_context",
-        "description": "Retrieve context from Syntha's shared mesh. Use this to access shared knowledge, campaign data, company information, or any other context that might be relevant to your task.",
+        "description": """Retrieve specific context from the shared knowledge base.
+        
+        💡 TIP: Use 'list_context' first to see what's available!
+        
+        You don't need to specify your agent name - the system knows who you are.""",
         "parameters": {
             "type": "object",
             "properties": {
-                "agent_name": {
-                    "type": "string",
-                    "description": "The name of the agent requesting context (usually your own name)"
-                },
                 "keys": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Specific context keys to retrieve. Leave empty to get all accessible context."
+                    "description": "Specific context keys to retrieve. Use list_context to see available options."
                 }
             },
-            "required": ["agent_name"]
+            "required": []
         }
     }
 
@@ -51,7 +72,7 @@ def handle_get_context_call(
     
     Args:
         context_mesh: The ContextMesh instance to query
-        agent_name: Name of the requesting agent
+        agent_name: Name of the requesting agent (auto-injected by ToolHandler)
         keys: Optional list of specific keys to retrieve
         
     Returns:
@@ -74,7 +95,8 @@ def handle_get_context_call(
             "context": result,
             "agent_name": agent_name,
             "keys_requested": keys or list(result.keys()),
-            "keys_found": list(result.keys())
+            "keys_found": list(result.keys()),
+            "message": f"Retrieved {len(result)} context items"
         }
         
     except Exception as e:
@@ -89,38 +111,49 @@ def handle_get_context_call(
 
 def get_push_context_tool_schema() -> Dict[str, Any]:
     """
-    Get the function schema for pushing context to the mesh.
+    Get the function schema for pushing context to topics.
     
-    This allows agents to add or update shared context during conversations.
+    This allows agents to share context with other agents via topic-based routing.
     
     Returns:
-        Function schema dictionary for pushing context
+        Function schema dictionary for pushing context to topics
     """
     return {
         "name": "push_context",
-        "description": "Add or update context in Syntha's shared mesh. Use this to share information with other agents or update existing context.",
+        "description": """Share context with other agents by pushing to specific topics.
+        
+        💡 TIP: Use 'discover_topics' first to see what topics exist and have subscribers!
+        
+        Choose topics based on:
+        - Content relevance (e.g., 'sales' for pricing data, 'support' for customer issues)
+        - Subscriber count (more subscribers = broader reach)
+        - Common patterns: sales, marketing, support, product, analytics, customer_data
+        
+        For keys, use descriptive names like: 'q4_pricing', 'customer_feedback_summary', 'product_roadmap'
+        
+        You don't need to specify your agent name - the system knows who you are.""",
         "parameters": {
             "type": "object",
             "properties": {
                 "key": {
                     "type": "string",
-                    "description": "Unique identifier for the context item"
+                    "description": "Unique identifier for this context"
                 },
                 "value": {
-                    "type": "string",
-                    "description": "The context data to store (will be parsed as JSON if possible)"
+                    "type": "string", 
+                    "description": "The context data to share"
                 },
-                "subscribers": {
+                "topics": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "List of agent names that can access this context. Leave empty for global access."
+                    "description": "Topics to broadcast to (e.g., ['sales', 'marketing', 'support'])"
                 },
-                "ttl_seconds": {
+                "ttl_hours": {
                     "type": "number",
-                    "description": "Time-to-live in seconds. Context will expire after this time."
+                    "description": "How long context should remain available (hours). Default: 24 hours"
                 }
             },
-            "required": ["key", "value"]
+            "required": ["key", "value", "topics"]
         }
     }
 
@@ -129,18 +162,20 @@ def handle_push_context_call(
     context_mesh: ContextMesh,
     key: str,
     value: str,
-    subscribers: Optional[List[str]] = None,
-    ttl_seconds: Optional[float] = None
+    topics: List[str],
+    ttl_hours: float = 24.0,
+    sender_agent: str = None
 ) -> Dict[str, Any]:
     """
-    Handle a push_context function call from an agent.
+    Handle a push_context_to_topics function call from an agent.
     
     Args:
         context_mesh: The ContextMesh instance to update
         key: Context key to set
         value: Context value (will attempt JSON parsing)
-        subscribers: List of agents that can access this context
-        ttl_seconds: Time-to-live in seconds
+        topics: List of topics to broadcast to
+        ttl_hours: Time-to-live in hours
+        sender_agent: Agent sending the context (auto-injected by ToolHandler)
         
     Returns:
         Dictionary with operation status
@@ -152,31 +187,36 @@ def handle_push_context_call(
         except (json.JSONDecodeError, TypeError):
             parsed_value = value
         
+        ttl_seconds = ttl_hours * 3600 if ttl_hours > 0 else None
+        
+        # Use the unified push API with topics
         context_mesh.push(
             key=key,
             value=parsed_value,
-            subscribers=subscribers or [],
+            topics=topics,
             ttl=ttl_seconds
         )
         
         return {
             "success": True,
-            "message": f"Context '{key}' updated successfully",
+            "message": f"Context '{key}' shared with agents subscribed to topics: {', '.join(topics)}",
             "key": key,
             "value": parsed_value,
-            "subscribers": subscribers or [],
-            "ttl_seconds": ttl_seconds
+            "topics": topics,
+            "ttl_hours": ttl_hours,
+            "sender_agent": sender_agent
         }
         
     except Exception as e:
         return {
             "success": False,
             "error": str(e),
-            "key": key
+            "key": key,
+            "topics": topics
         }
 
 
-def get_list_context_keys_tool_schema() -> Dict[str, Any]:
+def get_list_context_tool_schema() -> Dict[str, Any]:
     """
     Get the function schema for listing available context keys.
     
@@ -184,22 +224,22 @@ def get_list_context_keys_tool_schema() -> Dict[str, Any]:
         Function schema dictionary for listing context keys
     """
     return {
-        "name": "list_context_keys",
-        "description": "List all context keys accessible by the agent. Useful for discovering available context.",
+        "name": "list_context",
+        "description": """List all context keys you have access to, organized by topic. 
+        
+        ⚠️ IMPORTANT: Use this tool FIRST before trying to retrieve context!
+        This shows you what context is available so you can decide which keys to retrieve.
+        
+        You don't need to specify your agent name - the system knows who you are.""",
         "parameters": {
-            "type": "object",
-            "properties": {
-                "agent_name": {
-                    "type": "string",
-                    "description": "The name of the agent requesting the key list"
-                }
-            },
-            "required": ["agent_name"]
+            "type": "object", 
+            "properties": {},
+            "required": []
         }
     }
 
 
-def handle_list_context_keys_call(
+def handle_list_context_call(
     context_mesh: ContextMesh,
     agent_name: str
 ) -> Dict[str, Any]:
@@ -208,19 +248,26 @@ def handle_list_context_keys_call(
     
     Args:
         context_mesh: The ContextMesh instance to query
-        agent_name: Name of the requesting agent
+        agent_name: Name of the requesting agent (auto-injected by ToolHandler)
         
     Returns:
-        Dictionary with available keys
+        Dictionary with available keys organized by topic
     """
     try:
-        keys = context_mesh.get_keys_for_agent(agent_name)
+        # Get keys organized by topic
+        keys_by_topic = context_mesh.get_available_keys_by_topic(agent_name)
+        
+        # Also get all accessible keys (for backward compatibility)
+        all_keys = context_mesh.get_keys_for_agent(agent_name)
         
         return {
             "success": True,
+            "keys_by_topic": keys_by_topic,
+            "all_accessible_keys": all_keys,
+            "topics_subscribed": context_mesh.get_topics_for_agent(agent_name),
+            "message": "Use these keys with get_context tool. Keys are organized by topics you're subscribed to.",
             "agent_name": agent_name,
-            "available_keys": keys,
-            "count": len(keys)
+            "total_keys": len(all_keys)
         }
         
     except Exception as e:
@@ -228,831 +275,263 @@ def handle_list_context_keys_call(
             "success": False,
             "error": str(e),
             "agent_name": agent_name,
-            "available_keys": []
+            "keys_by_topic": {},
+            "all_accessible_keys": []
         }
 
 
-def get_send_message_tool_schema() -> Dict[str, Any]:
+def get_subscribe_to_topics_tool_schema() -> Dict[str, Any]:
     """
-    Get the function schema for sending messages to other agents.
+    Get the function schema for registering topic interests.
+    
+    This allows agents to subscribe to specific topics to receive relevant context.
     
     Returns:
-        Function schema dictionary for sending messages between agents
+        Function schema dictionary for topic registration
     """
     return {
-        "name": "send_message_to_agent",
-        "description": "Send a specific message or context to another agent. Use this to share relevant information directly with a specific agent without broadcasting to everyone.",
+        "name": "subscribe_to_topics",
+        "description": """Subscribe to specific topics to receive relevant context.
+        
+        After subscribing, you'll automatically receive context that other agents push to these topics.
+        
+        You don't need to specify your agent name - the system knows who you are.""",
         "parameters": {
             "type": "object",
             "properties": {
-                "from_agent": {
-                    "type": "string",
-                    "description": "Your agent name (the sender)"
-                },
-                "to_agent": {
-                    "type": "string", 
-                    "description": "The name of the agent you want to send the message to"
-                },
-                "message": {
-                    "type": "string",
-                    "description": "The message or context you want to share with the other agent"
-                },
-                "message_type": {
-                    "type": "string",
-                    "enum": ["info", "request", "update", "question", "result"],
-                    "description": "Type of message: info (sharing information), request (asking for something), update (status update), question (asking a question), result (sharing results)"
-                },
-                "priority": {
-                    "type": "string",
-                    "enum": ["low", "normal", "high", "urgent"],
-                    "description": "Priority level of the message"
-                },
-                "ttl_hours": {
-                    "type": "number",
-                    "description": "Time-to-live in hours for the message (default: 24 hours). Use 0 for permanent messages."
-                },
-                "requires_confirmation": {
-                    "type": "boolean",
-                    "description": "Whether this message requires read confirmation from the recipient (default: false)"
-                },
-                "thread_id": {
-                    "type": "string",
-                    "description": "Optional thread ID to group related messages in a conversation"
+                "topics": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Topics you want to receive context for (e.g., ['sales', 'customer_data', 'pricing'])"
                 }
             },
-            "required": ["from_agent", "to_agent", "message"]
+            "required": ["topics"]
         }
     }
 
 
-def handle_send_message_call(
+def handle_subscribe_to_topics_call(
     context_mesh: ContextMesh,
-    from_agent: str,
-    to_agent: str,
-    message: str,
-    message_type: str = "info",
-    priority: str = "normal",
-    ttl_hours: float = 24.0,
-    requires_confirmation: bool = False,
-    thread_id: Optional[str] = None
+    topics: List[str],
+    agent_name: str
 ) -> Dict[str, Any]:
     """
-    Handle sending a message from one agent to another.
+    Handle a register_for_topics function call from an agent.
     
     Args:
-        context_mesh: The ContextMesh instance to store the message
-        from_agent: Name of the sending agent
-        to_agent: Name of the receiving agent
-        message: The message content
-        message_type: Type of message
-        priority: Priority level
-        ttl_hours: Time-to-live in hours (default 24, use 0 for permanent)
-        requires_confirmation: Whether the message requires read confirmation
-        thread_id: Optional thread ID for conversation grouping
+        context_mesh: The ContextMesh instance to update
+        topics: List of topics the agent wants to subscribe to
+        agent_name: Agent name (auto-injected by ToolHandler)
         
     Returns:
-        Dictionary with operation status
+        Dictionary with registration result
     """
     try:
-        import time
-        import uuid
-        
-        # Generate thread_id if not provided but needed
-        if thread_id is None and requires_confirmation:
-            thread_id = f"thread_{int(time.time() * 1000)}"
-        
-        # Create message data structure
-        message_data = {
-            "from": from_agent,
-            "to": to_agent,
-            "message": message,
-            "type": message_type,
-            "priority": priority,
-            "timestamp": time.time(),
-            "read": False,
-            "requires_confirmation": requires_confirmation,
-            "thread_id": thread_id,
-            "confirmed": False if requires_confirmation else None
-        }
-        
-        # Store message with a unique key for the receiving agent
-        # Use UUID to ensure uniqueness even for simultaneous messages
-        unique_id = str(uuid.uuid4())[:8]
-        message_key = f"_agent_message_{to_agent}_{unique_id}_{int(time.time() * 1000000)}"
-        
-        # Store message with TTL (convert hours to seconds, None for permanent)
-        ttl_seconds = None if ttl_hours == 0 else ttl_hours * 3600
-        context_mesh.push(
-            key=message_key,
-            value=message_data,
-            subscribers=[to_agent],  # Only the receiving agent can access
-            ttl=ttl_seconds
-        )
-        
+        context_mesh.register_agent_topics(agent_name, topics)
         return {
             "success": True,
-            "message": f"Message sent from {from_agent} to {to_agent}",
-            "from_agent": from_agent,
-            "to_agent": to_agent,
-            "message_type": message_type,
-            "priority": priority,
-            "ttl_hours": ttl_hours,
-            "message_id": message_key,
-            "thread_id": thread_id,
-            "requires_confirmation": requires_confirmation
+            "agent": agent_name,
+            "topics": topics,
+            "message": f"Successfully registered for topics: {', '.join(topics)}. You'll now receive context shared to these topics."
         }
-        
     except Exception as e:
         return {
             "success": False,
             "error": str(e),
-            "from_agent": from_agent,
-            "to_agent": to_agent
+            "agent": agent_name,
+            "topics": topics
         }
 
 
-def get_receive_messages_tool_schema() -> Dict[str, Any]:
+def get_discover_topics_tool_schema() -> Dict[str, Any]:
     """
-    Get the function schema for receiving messages from other agents.
+    Get the function schema for discovering available topics.
+    
+    This helps agents understand what topics exist and how many subscribers they have,
+    making it easier to choose appropriate topics for pushing context.
     
     Returns:
-        Function schema dictionary for receiving agent messages
+        Function schema dictionary for topic discovery
     """
     return {
-        "name": "get_messages_from_agents",
-        "description": "Retrieve messages that other agents have sent to you. Use this to check for communications from other agents in the system.",
+        "name": "discover_topics",
+        "description": """Discover available topics in the system and see subscriber counts.
+        
+        🎯 Use this BEFORE pushing context to understand:
+        - What topics exist in the system
+        - How many agents are subscribed to each topic
+        - Popular topics vs niche ones
+        
+        This helps you choose the right topics for your context.""",
         "parameters": {
             "type": "object",
             "properties": {
-                "agent_name": {
-                    "type": "string",
-                    "description": "Your agent name (the receiver)"
-                },
-                "unread_only": {
+                "include_subscriber_names": {
                     "type": "boolean",
-                    "description": "Whether to only retrieve unread messages (default: true)"
-                },
-                "from_agent": {
-                    "type": "string",
-                    "description": "Optional: only get messages from a specific agent"
-                },
-                "message_type": {
-                    "type": "string",
-                    "enum": ["info", "request", "update", "question", "result", "announcement"],
-                    "description": "Optional: only get messages of a specific type"
-                },
-                "mark_as_read": {
-                    "type": "boolean",
-                    "description": "Whether to mark retrieved messages as read (default: true)"
-                },
-                "thread_id": {
-                    "type": "string",
-                    "description": "Optional: only get messages from a specific thread/conversation"
-                },
-                "priority": {
-                    "type": "string",
-                    "enum": ["low", "normal", "high", "urgent"],
-                    "description": "Optional: filter by priority level"
-                },
-                "limit": {
-                    "type": "number",
-                    "description": "Maximum number of messages to return (default: 50)"
-                },
-                "sort_by_priority": {
-                    "type": "boolean",
-                    "description": "Whether to sort messages by priority (urgent first) instead of timestamp (default: false)"
-                },
-                "include_confirmations": {
-                    "type": "boolean",
-                    "description": "Whether to automatically send read confirmations for messages that require them (default: true)"
+                    "description": "Whether to include names of subscribers for each topic (default: false)"
                 }
             },
-            "required": ["agent_name"]
+            "required": []
         }
     }
 
 
-def handle_receive_messages_call(
+def handle_discover_topics_call(
     context_mesh: ContextMesh,
-    agent_name: str,
-    unread_only: bool = True,
-    from_agent: Optional[str] = None,
-    message_type: Optional[str] = None,
-    mark_as_read: bool = True,
-    thread_id: Optional[str] = None,
-    priority: Optional[str] = None,
-    limit: int = 50,
-    sort_by_priority: bool = False,
-    include_confirmations: bool = True
+    include_subscriber_names: bool = False
 ) -> Dict[str, Any]:
     """
-    Handle retrieving messages for an agent with enhanced filtering and performance.
+    Handle a discover_topics function call from an agent.
     
     Args:
         context_mesh: The ContextMesh instance to query
-        agent_name: Name of the receiving agent
-        unread_only: Only return unread messages
-        from_agent: Filter by sender
-        message_type: Filter by message type
-        mark_as_read: Mark messages as read after retrieval
-        thread_id: Filter by specific thread
-        priority: Filter by priority level
-        limit: Maximum number of messages to return
-        sort_by_priority: Sort by priority instead of timestamp
-        include_confirmations: Send read confirmations automatically
+        include_subscriber_names: Whether to include subscriber names
         
     Returns:
-        Dictionary with messages and metadata
+        Dictionary with available topics and their subscriber information
     """
     try:
-        import time
+        # Get all topics by examining the topic subscribers mapping
+        all_topics = {}
         
-        # Performance optimization: Get all context once
-        all_context = context_mesh.get_all_for_agent(agent_name)
+        # Access the internal topic mapping if available
+        if hasattr(context_mesh, '_topic_subscribers'):
+            for topic, agents in context_mesh._topic_subscribers.items():
+                subscriber_count = len(agents)
+                topic_info = {
+                    "subscriber_count": subscriber_count,
+                    "is_active": subscriber_count > 0
+                }
+                
+                if include_subscriber_names:
+                    topic_info["subscribers"] = list(agents)
+                
+                all_topics[topic] = topic_info
         
-        # Pre-filter message keys for better performance
-        message_keys = [
-            key for key in all_context.keys() 
-            if key.startswith(f"_agent_message_{agent_name}_") and 
-               not key.startswith(f"_agent_message_{agent_name}_to_")
-        ]
+        # Sort topics by subscriber count (most popular first)
+        sorted_topics = dict(sorted(all_topics.items(), 
+                                  key=lambda x: x[1]["subscriber_count"], 
+                                  reverse=True))
         
-        # Process messages with filters
-        messages = []
-        message_data_map = {}  # For efficient read marking
-        confirmations_to_send = []
-        
-        for key in message_keys:
-            value = all_context[key]
-            
-            # Validate message structure
-            if not isinstance(value, dict) or "from" not in value or "message" not in value:
-                continue
-            
-            # Apply filters efficiently
-            if unread_only and value.get("read", False):
-                continue
-            if from_agent and value.get("from") != from_agent:
-                continue
-            if message_type and value.get("type") != message_type:
-                continue
-            if thread_id and value.get("thread_id") != thread_id:
-                continue
-            if priority and value.get("priority") != priority:
-                continue
-            
-            # Add to results
-            messages.append(value)
-            message_data_map[key] = value
-            
-            # Track confirmations needed
-            if (include_confirmations and 
-                value.get("requires_confirmation") and 
-                not value.get("confirmed", False)):
-                confirmations_to_send.append({
-                    "original_sender": value.get("from"),
-                    "thread_id": value.get("thread_id"),
-                    "message_id": key
-                })
-        
-        # Sort messages
-        if sort_by_priority:
-            # Priority order: urgent, high, normal, low
-            priority_order = {"urgent": 0, "high": 1, "normal": 2, "low": 3}
-            messages.sort(key=lambda x: (
-                priority_order.get(x.get("priority", "normal"), 2),
-                -x.get("timestamp", 0)
-            ))
-        else:
-            # Sort by timestamp (newest first)
-            messages.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
-        
-        # Apply limit
-        if limit > 0:
-            messages = messages[:limit]
-            # Update message_data_map to match limited messages
-            limited_keys = set()
-            for msg in messages:
-                for key, value in message_data_map.items():
-                    if value is msg:
-                        limited_keys.add(key)
-                        break
-            message_data_map = {k: v for k, v in message_data_map.items() if k in limited_keys}
-        
-        # Mark messages as read if requested
-        read_confirmations_sent = 0
-        if mark_as_read:
-            for key, message_data in message_data_map.items():
-                if not message_data.get("read", False):
-                    message_data["read"] = True
-                    
-                    # Preserve original TTL
-                    original_item = context_mesh._data.get(key)
-                    original_ttl = None
-                    if original_item and original_item.ttl:
-                        elapsed = time.time() - original_item.created_at
-                        remaining_ttl = original_item.ttl - elapsed
-                        original_ttl = max(0, remaining_ttl) if remaining_ttl > 0 else None
-                    
-                    context_mesh.push(
-                        key=key,
-                        value=message_data,
-                        subscribers=[agent_name],
-                        ttl=original_ttl
-                    )
-            
-            # Send read confirmations
-            if include_confirmations:
-                for confirmation in confirmations_to_send:
-                    try:
-                        # Send confirmation message back to original sender
-                        confirmation_result = handle_send_message_call(
-                            context_mesh=context_mesh,
-                            from_agent=agent_name,
-                            to_agent=confirmation["original_sender"],
-                            message=f"Message confirmed as read",
-                            message_type="result",
-                            priority="low",
-                            ttl_hours=1,  # Short TTL for confirmations
-                            thread_id=confirmation["thread_id"]
-                        )
-                        
-                        if confirmation_result["success"]:
-                            read_confirmations_sent += 1
-                            
-                    except Exception:
-                        # Don't fail the whole operation if confirmation fails
-                        pass
-        
-        # Group messages by thread if any have thread_ids
-        threads = {}
-        unthreaded_messages = []
-        
-        for msg in messages:
-            thread_id = msg.get("thread_id")
-            if thread_id:
-                if thread_id not in threads:
-                    threads[thread_id] = []
-                threads[thread_id].append(msg)
-            else:
-                unthreaded_messages.append(msg)
+        # Generate suggestions
+        popular_topics = [topic for topic, info in sorted_topics.items() 
+                         if info["subscriber_count"] >= 2]
         
         return {
             "success": True,
-            "agent_name": agent_name,
-            "messages": messages,
-            "count": len(messages),
-            "total_available": len(message_keys),
-            "threads": threads if threads else None,
-            "unthreaded_messages": unthreaded_messages if threads else None,
-            "confirmations_sent": read_confirmations_sent,
-            "filters_applied": {
-                "unread_only": unread_only,
-                "from_agent": from_agent,
-                "message_type": message_type,
-                "thread_id": thread_id,
-                "priority": priority,
-                "limit": limit
+            "topics": sorted_topics,
+            "total_topics": len(all_topics),
+            "popular_topics": popular_topics,
+            "suggestions": {
+                "for_broad_reach": popular_topics[:3] if popular_topics else [],
+                "common_patterns": ["sales", "marketing", "support", "product", "analytics", "customer_data"]
             },
-            "performance": {
-                "sort_by_priority": sort_by_priority,
-                "total_keys_checked": len(message_keys),
-                "messages_after_filter": len(messages)
-            }
+            "message": f"Found {len(all_topics)} topics. Popular topics (2+ subscribers): {', '.join(popular_topics[:5])}"
         }
         
     except Exception as e:
         return {
             "success": False,
             "error": str(e),
-            "agent_name": agent_name,
-            "messages": []
-        }
-
-
-def get_broadcast_message_tool_schema() -> Dict[str, Any]:
-    """
-    Get the function schema for broadcasting messages to multiple agents.
-    
-    Returns:
-        Function schema dictionary for broadcasting messages
-    """
-    return {
-        "name": "broadcast_message_to_agents",
-        "description": "Send the same message to multiple agents at once. Efficient for announcements, updates, or sharing information with a team.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "from_agent": {
-                    "type": "string",
-                    "description": "Your agent name (the sender)"
-                },
-                "to_agents": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "List of agent names to send the message to"
-                },
-                "message": {
-                    "type": "string",
-                    "description": "The message to broadcast to all agents"
-                },
-                "message_type": {
-                    "type": "string",
-                    "enum": ["info", "request", "update", "question", "result", "announcement"],
-                    "description": "Type of message being broadcast"
-                },
-                "priority": {
-                    "type": "string",
-                    "enum": ["low", "normal", "high", "urgent"],
-                    "description": "Priority level of the broadcast"
-                },
-                "ttl_hours": {
-                    "type": "number",
-                    "description": "Time-to-live in hours for the broadcast (default: 24 hours)"
-                },
-                "create_thread": {
-                    "type": "boolean",
-                    "description": "Whether to create a shared thread for responses (default: false)"
-                },
-                "exclude_sender": {
-                    "type": "boolean",
-                    "description": "Whether to exclude the sender from receiving the broadcast (default: true)"
-                }
-            },
-            "required": ["from_agent", "to_agents", "message"]
-        }
-    }
-
-
-def handle_broadcast_message_call(
-    context_mesh: ContextMesh,
-    from_agent: str,
-    to_agents: List[str],
-    message: str,
-    message_type: str = "announcement",
-    priority: str = "normal",
-    ttl_hours: float = 24.0,
-    create_thread: bool = False,
-    exclude_sender: bool = True
-) -> Dict[str, Any]:
-    """
-    Handle broadcasting a message to multiple agents.
-    
-    Args:
-        context_mesh: The ContextMesh instance to store messages
-        from_agent: Name of the sending agent
-        to_agents: List of receiving agent names
-        message: The message content
-        message_type: Type of message
-        priority: Priority level
-        ttl_hours: Time-to-live in hours
-        create_thread: Whether to create a shared thread
-        exclude_sender: Whether to exclude sender from recipients
-        
-    Returns:
-        Dictionary with broadcast results
-    """
-    try:
-        import time
-        import uuid
-        
-        # Filter out sender if requested
-        if exclude_sender and from_agent in to_agents:
-            to_agents = [agent for agent in to_agents if agent != from_agent]
-        
-        # Generate thread ID if creating a thread
-        thread_id = None
-        if create_thread:
-            thread_id = f"broadcast_thread_{int(time.time() * 1000)}"
-        
-        # Store each message individually for better performance and access control
-        results = []
-        broadcast_id = str(uuid.uuid4())[:8]
-        
-        for to_agent in to_agents:
-            try:
-                # Create individual message
-                message_data = {
-                    "from": from_agent,
-                    "to": to_agent,
-                    "message": message,
-                    "type": message_type,
-                    "priority": priority,
-                    "timestamp": time.time(),
-                    "read": False,
-                    "thread_id": thread_id,
-                    "broadcast_id": broadcast_id,
-                    "is_broadcast": True
-                }
-                
-                # Unique key for each recipient
-                unique_id = str(uuid.uuid4())[:8]
-                message_key = f"_agent_message_{to_agent}_{unique_id}_{int(time.time() * 1000000)}"
-                
-                # Store with TTL
-                ttl_seconds = None if ttl_hours == 0 else ttl_hours * 3600
-                context_mesh.push(
-                    key=message_key,
-                    value=message_data,
-                    subscribers=[to_agent],
-                    ttl=ttl_seconds
-                )
-                
-                results.append({
-                    "agent": to_agent,
-                    "success": True,
-                    "message_id": message_key
-                })
-                
-            except Exception as e:
-                results.append({
-                    "agent": to_agent,
-                    "success": False,
-                    "error": str(e)
-                })
-        
-        successful_sends = len([r for r in results if r["success"]])
-        
-        return {
-            "success": True,
-            "broadcast_id": broadcast_id,
-            "from_agent": from_agent,
-            "total_recipients": len(to_agents),
-            "successful_sends": successful_sends,
-            "failed_sends": len(to_agents) - successful_sends,
-            "thread_id": thread_id,
-            "message_type": message_type,
-            "priority": priority,
-            "results": results
-        }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "from_agent": from_agent,
-            "to_agents": to_agents
-        }
-
-
-def get_batch_context_tool_schema() -> Dict[str, Any]:
-    """
-    Get the function schema for batch context operations.
-    
-    Returns:
-        Function schema dictionary for batch context operations
-    """
-    return {
-        "name": "batch_context_operation",
-        "description": "Perform multiple context operations in a single call for better performance. Supports getting, pushing, and removing multiple context items efficiently.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "agent_name": {
-                    "type": "string",
-                    "description": "The name of the agent performing the operations"
-                },
-                "operations": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "type": "string",
-                                "enum": ["get", "push", "remove"],
-                                "description": "Type of operation to perform"
-                            },
-                            "key": {
-                                "type": "string",
-                                "description": "Context key to operate on"
-                            },
-                            "value": {
-                                "description": "Value to push (only for push operations)"
-                            },
-                            "subscribers": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": "Subscribers for push operations (optional)"
-                            },
-                            "ttl": {
-                                "type": "number",
-                                "description": "TTL in seconds for push operations (optional)"
-                            }
-                        },
-                        "required": ["type", "key"]
-                    },
-                    "description": "List of operations to perform in batch"
-                },
-                "atomic": {
-                    "type": "boolean",
-                    "description": "Whether all operations should succeed or all fail (default: false)"
-                },
-                "continue_on_error": {
-                    "type": "boolean",
-                    "description": "Whether to continue processing if one operation fails (default: true)"
-                }
-            },
-            "required": ["agent_name", "operations"]
-        }
-    }
-
-
-def handle_batch_context_call(
-    context_mesh: ContextMesh,
-    agent_name: str,
-    operations: List[Dict[str, Any]],
-    atomic: bool = False,
-    continue_on_error: bool = True
-) -> Dict[str, Any]:
-    """
-    Handle batch context operations for improved performance.
-    
-    Args:
-        context_mesh: The ContextMesh instance
-        agent_name: Name of the requesting agent
-        operations: List of operations to perform
-        atomic: Whether all operations must succeed
-        continue_on_error: Whether to continue on individual failures
-        
-    Returns:
-        Dictionary with batch operation results
-    """
-    try:
-        results = []
-        successful_ops = 0
-        failed_ops = 0
-        
-        # Store original state for atomic rollback
-        original_state = {}
-        if atomic:
-            for op in operations:
-                if op["type"] in ["push", "remove"]:
-                    key = op["key"]
-                    original_state[key] = context_mesh.get(key)
-        
-        for i, operation in enumerate(operations):
-            try:
-                op_type = operation["type"]
-                key = operation["key"]
-                
-                if op_type == "get":
-                    value = context_mesh.get(key, agent_name)
-                    results.append({
-                        "operation": i,
-                        "type": op_type,
-                        "key": key,
-                        "success": True,
-                        "value": value
-                    })
-                    successful_ops += 1
-                    
-                elif op_type == "push":
-                    value = operation.get("value")
-                    subscribers = operation.get("subscribers")
-                    ttl = operation.get("ttl")
-                    
-                    context_mesh.push(
-                        key=key,
-                        value=value,
-                        subscribers=subscribers,
-                        ttl=ttl
-                    )
-                    
-                    results.append({
-                        "operation": i,
-                        "type": op_type,
-                        "key": key,
-                        "success": True,
-                        "pushed": True
-                    })
-                    successful_ops += 1
-                    
-                elif op_type == "remove":
-                    removed = context_mesh.remove(key)
-                    results.append({
-                        "operation": i,
-                        "type": op_type,
-                        "key": key,
-                        "success": True,
-                        "removed": removed
-                    })
-                    successful_ops += 1
-                    
-            except Exception as e:
-                failed_ops += 1
-                results.append({
-                    "operation": i,
-                    "type": operation["type"],
-                    "key": operation["key"],
-                    "success": False,
-                    "error": str(e)
-                })
-                
-                if atomic or not continue_on_error:
-                    # Rollback if atomic or not continuing on error
-                    if atomic:
-                        for rollback_key, rollback_value in original_state.items():
-                            if rollback_value is not None:
-                                context_mesh.push(rollback_key, rollback_value)
-                            else:
-                                context_mesh.remove(rollback_key)
-                    
-                    return {
-                        "success": False,
-                        "error": f"Operation {i} failed: {str(e)}",
-                        "agent_name": agent_name,
-                        "completed_operations": i,
-                        "results": results[:i+1]
-                    }
-        
-        return {
-            "success": True,
-            "agent_name": agent_name,
-            "total_operations": len(operations),
-            "successful_operations": successful_ops,
-            "failed_operations": failed_ops,
-            "atomic": atomic,
-            "results": results
-        }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "agent_name": agent_name,
-            "operations": len(operations)
+            "topics": {},
+            "total_topics": 0
         }
 
 
 def get_all_tool_schemas() -> List[Dict[str, Any]]:
     """
-    Get all available tool schemas for Syntha context operations.
+    Get all essential tool schemas for Syntha context operations.
     
     Returns:
-        List of all function schemas
+        List of core function schemas for topic-based context management
     """
     return [
         get_context_tool_schema(),
-        get_push_context_tool_schema(),
-        get_list_context_keys_tool_schema(),
-        get_send_message_tool_schema(),
-        get_receive_messages_tool_schema(),
-        get_broadcast_message_tool_schema(),
-        get_batch_context_tool_schema()
+        get_push_context_tool_schema(), 
+        get_list_context_tool_schema(),
+        get_subscribe_to_topics_tool_schema(),
+        get_discover_topics_tool_schema()
     ]
 
 
 class ToolHandler:
     """
-    Convenience class for handling Syntha tool calls.
+    Handler for Syntha context management tools with automatic agent identification.
     
-    This provides a unified interface for processing function calls
-    from various LLM frameworks.
+    Provides a unified interface for processing function calls from LLM frameworks
+    and automatically injects agent names for context operations.
     """
     
-    def __init__(self, context_mesh: ContextMesh):
+    def __init__(self, context_mesh: ContextMesh, agent_name: str = None):
+        """
+        Initialize the tool handler.
+        
+        Args:
+            context_mesh: The shared context mesh instance
+            agent_name: Agent name for automatic injection
+        """
         self.context_mesh = context_mesh
+        self.agent_name = agent_name
         self.handlers = {
             "get_context": self.handle_get_context,
             "push_context": self.handle_push_context,
-            "list_context_keys": self.handle_list_context_keys,
-            "send_message_to_agent": self.handle_send_message,
-            "get_messages_from_agents": self.handle_receive_messages,
-            "broadcast_message_to_agents": self.handle_broadcast_message,
-            "batch_context_operation": self.handle_batch_context
+            "list_context": self.handle_list_context,
+            "subscribe_to_topics": self.handle_subscribe_to_topics,
+            "discover_topics": self.handle_discover_topics
         }
+    
+    def set_agent_name(self, agent_name: str):
+        """Set the agent name for this tool handler instance."""
+        self.agent_name = agent_name
+    
+    def _check_agent_name(self) -> Dict[str, Any]:
+        """Check if agent name is set, return error dict if not."""
+        if not self.agent_name:
+            return {"success": False, "error": "Agent name not set"}
+        return None
     
     def handle_get_context(self, **kwargs) -> Dict[str, Any]:
         """Handle get_context tool call."""
+        error = self._check_agent_name()
+        if error:
+            return error
+        kwargs["agent_name"] = self.agent_name
         return handle_get_context_call(self.context_mesh, **kwargs)
     
     def handle_push_context(self, **kwargs) -> Dict[str, Any]:
         """Handle push_context tool call."""
+        error = self._check_agent_name()
+        if error:
+            return error
+        kwargs["sender_agent"] = self.agent_name
         return handle_push_context_call(self.context_mesh, **kwargs)
     
-    def handle_list_context_keys(self, **kwargs) -> Dict[str, Any]:
-        """Handle list_context_keys tool call."""
-        return handle_list_context_keys_call(self.context_mesh, **kwargs)
+    def handle_list_context(self, **kwargs) -> Dict[str, Any]:
+        """Handle list_context tool call."""
+        error = self._check_agent_name()
+        if error:
+            return error
+        kwargs["agent_name"] = self.agent_name
+        return handle_list_context_call(self.context_mesh, **kwargs)
     
-    def handle_send_message(self, **kwargs) -> Dict[str, Any]:
-        """Handle send_message_to_agent tool call."""
-        return handle_send_message_call(self.context_mesh, **kwargs)
+    def handle_subscribe_to_topics(self, **kwargs) -> Dict[str, Any]:
+        """Handle subscribe_to_topics tool call."""
+        error = self._check_agent_name()
+        if error:
+            return error
+        kwargs["agent_name"] = self.agent_name
+        return handle_subscribe_to_topics_call(self.context_mesh, **kwargs)
     
-    def handle_receive_messages(self, **kwargs) -> Dict[str, Any]:
-        """Handle get_messages_from_agents tool call."""
-        return handle_receive_messages_call(self.context_mesh, **kwargs)
-    
-    def handle_broadcast_message(self, **kwargs) -> Dict[str, Any]:
-        """Handle broadcast_message_to_agents tool call."""
-        return handle_broadcast_message_call(self.context_mesh, **kwargs)
-    
-    def handle_batch_context(self, **kwargs) -> Dict[str, Any]:
-        """Handle batch_context_operation tool call."""
-        return handle_batch_context_call(self.context_mesh, **kwargs)
+    def handle_discover_topics(self, **kwargs) -> Dict[str, Any]:
+        """Handle discover_topics tool call."""
+        error = self._check_agent_name()
+        if error:
+            return error
+        return handle_discover_topics_call(self.context_mesh, **kwargs)
     
     def handle_tool_call(self, tool_name: str, **kwargs) -> Dict[str, Any]:
         """
-        Route a tool call to the appropriate handler.
+        Route a tool call to the appropriate handler with automatic agent name injection.
         
         Args:
             tool_name: Name of the tool being called
@@ -1070,6 +549,164 @@ class ToolHandler:
         
         return self.handlers[tool_name](**kwargs)
     
-    def get_schemas(self) -> List[Dict[str, Any]]:
-        """Get all tool schemas."""
+    def get_schemas(self, merge_with: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+        """
+        Get all tool schemas for the topic-based context system.
+        
+        Args:
+            merge_with: Optional list of existing tool schemas to merge with Syntha tools
+            
+        Returns:
+            List of tool schemas (existing tools + Syntha tools, avoiding conflicts)
+        """
+        syntha_schemas = get_all_tool_schemas()
+        
+        if merge_with is None:
+            return syntha_schemas
+        
+        # Start with user's existing tools
+        all_schemas = merge_with.copy()
+        existing_names = {schema.get("name") for schema in merge_with}
+        
+        # Add Syntha tools that don't conflict
+        for schema in syntha_schemas:
+            tool_name = schema.get("name")
+            if tool_name not in existing_names:
+                all_schemas.append(schema)
+            else:
+                # Rename Syntha tool to avoid conflict
+                renamed_schema = schema.copy()
+                renamed_schema["name"] = f"syntha_{tool_name}"
+                renamed_schema["description"] = f"[Syntha] {schema.get('description', '')}"
+                all_schemas.append(renamed_schema)
+                print(f"Info: Renamed Syntha tool '{tool_name}' to 'syntha_{tool_name}' to avoid conflict")
+        
+        return all_schemas
+    
+    def get_syntha_schemas_only(self) -> List[Dict[str, Any]]:
+        """Get only Syntha's context management tool schemas."""
         return get_all_tool_schemas()
+    
+    def create_hybrid_handler(self, user_tool_handler=None):
+        """
+        Create a hybrid tool handler that can handle both Syntha and user tools.
+        
+        Args:
+            user_tool_handler: Function that handles user's custom tools
+                             Should accept (tool_name, **kwargs) and return result dict
+        
+        Returns:
+            Function that can handle both Syntha and user tools
+        """
+        def hybrid_handler(tool_name: str, **kwargs) -> Dict[str, Any]:
+            # Handle Syntha tools first
+            if tool_name in self.handlers:
+                return self.handlers[tool_name](**kwargs)
+            
+            # Handle renamed Syntha tools
+            if tool_name.startswith("syntha_"):
+                original_name = tool_name[7:]  # Remove "syntha_" prefix
+                if original_name in self.handlers:
+                    return self.handlers[original_name](**kwargs)
+            
+            # Fallback to user's tools
+            if user_tool_handler:
+                try:
+                    return user_tool_handler(tool_name, **kwargs)
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": f"User tool handler error: {str(e)}"
+                    }
+            
+            return {
+                "success": False,
+                "error": f"Unknown tool: {tool_name}",
+                "syntha_tools": list(self.handlers.keys())
+            }
+        
+        # Add utility methods to the hybrid handler
+        hybrid_handler.get_syntha_schemas = self.get_syntha_schemas_only
+        hybrid_handler.handle_syntha_tool = self.handle_tool_call
+        hybrid_handler.syntha_handler = self
+        
+        return hybrid_handler
+
+
+# Integration utility functions for existing systems
+def merge_tool_schemas(syntha_tools: List[Dict[str, Any]], 
+                      user_tools: List[Dict[str, Any]], 
+                      handle_conflicts: str = "warn") -> List[Dict[str, Any]]:
+    """
+    Merge Syntha tool schemas with user's existing tool schemas.
+    
+    Args:
+        syntha_tools: Syntha's context management tools
+        user_tools: User's existing tools
+        handle_conflicts: How to handle name conflicts ("warn", "skip", "prefix")
+        
+    Returns:
+        Combined list of tool schemas
+    """
+    syntha_names = {tool["name"] for tool in syntha_tools}
+    combined_tools = syntha_tools.copy()
+    
+    for tool in user_tools:
+        tool_name = tool.get("name")
+        
+        if tool_name in syntha_names:
+            if handle_conflicts == "warn":
+                print(f"Warning: Tool name conflict '{tool_name}' - user tool skipped")
+                continue
+            elif handle_conflicts == "skip":
+                continue
+            elif handle_conflicts == "prefix":
+                tool = tool.copy()
+                tool["name"] = f"user_{tool_name}"
+                combined_tools.append(tool)
+        else:
+            combined_tools.append(tool)
+    
+    return combined_tools
+
+
+def create_hybrid_tool_handler(context_mesh, agent_name: str, user_tool_handler=None):
+    """
+    Create a tool handler that combines Syntha tools with user's existing tools.
+    
+    Args:
+        context_mesh: ContextMesh instance
+        agent_name: Name of the agent
+        user_tool_handler: User's existing tool handler function
+        
+    Returns:
+        Function that can handle both Syntha and user tools
+    """
+    syntha_handler = ToolHandler(context_mesh, agent_name)
+    
+    def hybrid_handler(tool_name: str, **kwargs):
+        """Handle both Syntha and user tools."""
+        # Try Syntha tools first
+        if tool_name in syntha_handler.handlers:
+            return syntha_handler.handle_tool_call(tool_name, **kwargs)
+        
+        # Fallback to user's tools
+        if user_tool_handler:
+            try:
+                return user_tool_handler(tool_name, **kwargs)
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": f"User tool handler error: {str(e)}"
+                }
+        
+        return {
+            "success": False,
+            "error": f"Unknown tool: {tool_name}"
+        }
+    
+    # Add utility methods
+    hybrid_handler.get_syntha_schemas = syntha_handler.get_syntha_schemas_only
+    hybrid_handler.handle_syntha_tool = syntha_handler.handle_tool_call
+    
+    return hybrid_handler

@@ -45,17 +45,30 @@ class TestPromptBuilders:
     
     def test_build_system_prompt_no_context(self):
         """Test system prompt when agent has no accessible context."""
-        # Create a fresh mesh with no global context
-        empty_mesh = ContextMesh()
-        empty_mesh.push("private_only", "secret", subscribers=["OtherAgent"])
+        # Create a fresh mesh with no global context (use temporary database)
+        import tempfile
+        import os
+        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+        temp_db.close()
         
-        prompt = build_system_prompt("UnknownAgent", empty_mesh)
-        assert prompt == ""
-        
-        # With template
-        template = "Default prompt: {context}"
-        prompt = build_system_prompt("UnknownAgent", empty_mesh, template=template)
-        assert prompt == "Default prompt: "
+        try:
+            empty_mesh = ContextMesh(db_path=temp_db.name)
+            empty_mesh.push("private_only", "secret", subscribers=["OtherAgent"])
+            
+            prompt = build_system_prompt("UnknownAgent", empty_mesh)
+            assert prompt == ""
+            
+            # With template
+            template = "Default prompt: {context}"
+            prompt = build_system_prompt("UnknownAgent", empty_mesh, template=template)
+            assert prompt == "Default prompt: "
+        finally:
+            # Clean up
+            if os.path.exists(temp_db.name):
+                try:
+                    os.unlink(temp_db.name)
+                except PermissionError:
+                    pass  # Ignore on Windows if file is still locked
     
     def test_build_message_prompt(self):
         """Test message prompt building."""

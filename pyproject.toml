@@ -8,11 +8,11 @@ version = "0.2.0"
 description = "Prompt-based multi-agent context framework"
 readme = "README.md"
 authors = [{name = "Syntha Team", email = "contact@syntha.ai"}]
-license = {text = "MIT"}
+license = {text = "Apache-2.0"}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
