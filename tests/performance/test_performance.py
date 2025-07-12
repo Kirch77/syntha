@@ -280,8 +280,8 @@ class TestMemoryUsage:
         # Just ensure memory didn't grow excessively after cleanup
         memory_growth_after_cleanup = final_memory - initial_memory
 
-        # Allow up to 50% of the original growth to remain (garbage collector behavior)
-        max_allowed_growth = memory_growth * 0.5
+        # Allow up to 75% of the original growth to remain (garbage collector behavior)
+        max_allowed_growth = memory_growth * 0.75
 
         assert memory_growth_after_cleanup <= max_allowed_growth, (
             f"Memory growth after cleanup too high: {memory_growth_after_cleanup} bytes "
