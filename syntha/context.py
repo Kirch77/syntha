@@ -20,6 +20,7 @@ optional time-to-live (TTL) functionality, and persistent database storage.
 """
 
 import time
+import copy
 from typing import Any, Dict, List, Optional
 from threading import Lock
 from .persistence import create_database_backend
@@ -34,8 +35,10 @@ class ContextItem:
         subscribers: List[str] = None, 
         ttl: Optional[float] = None
     ):
-        self.value = value
-        self.subscribers = subscribers or []  # Empty list = global context
+        # Deep copy the value to prevent external modifications
+        self.value = copy.deepcopy(value)
+        # Copy the subscribers list to prevent external modifications
+        self.subscribers = (subscribers or []).copy()
         self.created_at = time.time()
         self.ttl = ttl
         
@@ -49,6 +52,11 @@ class ContextItem:
         """Check if the given agent can access this context item."""
         if self.is_expired():
             return False
+        
+        # Special marker for topic-based context with no subscribers
+        if self.subscribers == ["__NO_SUBSCRIBERS__"]:
+            return False
+            
         # Empty subscribers list means global context
         return len(self.subscribers) == 0 or agent_name in self.subscribers
 
@@ -251,8 +259,12 @@ class ContextMesh:
         # Track which topics this key was pushed to
         self._key_topics[key] = topics.copy()
         
-        # Push to those agents (convert set to list)
-        self._push_internal(key, value, subscribers=list(interested_agents), ttl=ttl)
+        # If no interested agents, use special marker to indicate this is topic-based
+        # context with no subscribers (stored but not accessible by any agent)
+        if not interested_agents:
+            self._push_internal(key, value, subscribers=["__NO_SUBSCRIBERS__"], ttl=ttl)
+        else:
+            self._push_internal(key, value, subscribers=list(interested_agents), ttl=ttl)
     
     def get(self, key: str, agent_name: Optional[str] = None) -> Optional[Any]:
         """
@@ -272,11 +284,11 @@ class ContextMesh:
                 
             # If no agent specified, skip access control (for system use)
             if agent_name is None:
-                return item.value if not item.is_expired() else None
+                return copy.deepcopy(item.value) if not item.is_expired() else None
                 
             # Check if agent has access
             if item.is_accessible_by(agent_name):
-                return item.value
+                return copy.deepcopy(item.value)
                 
             return None
     
@@ -304,13 +316,13 @@ class ContextMesh:
                 for key in agent_keys:
                     item = self._data.get(key)
                     if item and item.is_accessible_by(agent_name):
-                        result[key] = item.value
+                        result[key] = copy.deepcopy(item.value)
                 
                 # Get global context keys
                 for key in self._global_keys:
                     item = self._data.get(key)
                     if item and item.is_accessible_by(agent_name):
-                        result[key] = item.value
+                        result[key] = copy.deepcopy(item.value)
                 
                 return result
             else:
@@ -318,7 +330,7 @@ class ContextMesh:
                 result = {}
                 for key, item in self._data.items():
                     if item.is_accessible_by(agent_name):
-                        result[key] = item.value
+                        result[key] = copy.deepcopy(item.value)
                 return result
     
     def get_keys_for_agent(self, agent_name: str) -> List[str]:

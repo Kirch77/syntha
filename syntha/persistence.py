@@ -141,13 +141,54 @@ class SQLiteBackend(DatabaseBackend):
     
     def connect(self) -> None:
         """Establish SQLite connection."""
-        self.connection = sqlite3.connect(self.db_path, check_same_thread=False, timeout=10.0)
-        # Use DELETE mode instead of WAL to avoid Windows file locking issues
-        self.connection.execute("PRAGMA journal_mode=DELETE")
-        self.connection.execute("PRAGMA synchronous=NORMAL")  # Better performance
-        self.connection.execute("PRAGMA foreign_keys=ON")  # Enable foreign keys
-        self.connection.execute("PRAGMA busy_timeout=5000")  # 5 second timeout
-        self.initialize_schema()
+        import os
+        
+        try:
+            self.connection = sqlite3.connect(self.db_path, check_same_thread=False, timeout=10.0)
+            # Use DELETE mode instead of WAL to avoid Windows file locking issues
+            self.connection.execute("PRAGMA journal_mode=DELETE")
+            self.connection.execute("PRAGMA synchronous=NORMAL")  # Better performance
+            self.connection.execute("PRAGMA foreign_keys=ON")  # Enable foreign keys
+            self.connection.execute("PRAGMA busy_timeout=5000")  # 5 second timeout
+            self.initialize_schema()
+        except sqlite3.DatabaseError as e:
+            # Handle database corruption by backing up the corrupted file and starting fresh
+            if "file is not a database" in str(e).lower() or "database disk image is malformed" in str(e).lower():
+                # Close any existing connection
+                if self.connection:
+                    try:
+                        self.connection.close()
+                    except:
+                        pass
+                    self.connection = None
+                
+                # Backup the corrupted file
+                if os.path.exists(self.db_path):
+                    backup_path = f"{self.db_path}.corrupted.{int(time.time())}"
+                    try:
+                        os.rename(self.db_path, backup_path)
+                        print(f"Warning: Database file was corrupted and backed up to {backup_path}")
+                    except Exception:
+                        # If backup fails, just remove the corrupted file
+                        try:
+                            os.remove(self.db_path)
+                            print(f"Warning: Database file was corrupted and removed. Starting fresh.")
+                        except Exception:
+                            pass
+                
+                # Try to create a new database
+                try:
+                    self.connection = sqlite3.connect(self.db_path, check_same_thread=False, timeout=10.0)
+                    self.connection.execute("PRAGMA journal_mode=DELETE")
+                    self.connection.execute("PRAGMA synchronous=NORMAL")
+                    self.connection.execute("PRAGMA foreign_keys=ON")
+                    self.connection.execute("PRAGMA busy_timeout=5000")
+                    self.initialize_schema()
+                except Exception as retry_error:
+                    raise Exception(f"Failed to create new database after corruption: {retry_error}")
+            else:
+                # Re-raise other database errors
+                raise e
     
     def close(self) -> None:
         """Close SQLite connection."""
@@ -364,7 +405,7 @@ class SQLiteBackend(DatabaseBackend):
             # Connection is broken, reconnect
             self.close()
             self.connect()
-    
+
 
 class PostgreSQLBackend(DatabaseBackend):
     """PostgreSQL database backend implementation."""

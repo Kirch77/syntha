@@ -91,27 +91,27 @@ class TestAgentOutcome:
     def test_agent_outcome_equality(self):
         """Test AgentOutcome equality comparison."""
         outcome1 = AgentOutcome(
+            timestamp=123.0,
             agent_name="agent1",
-            task_id="task1",
-            outcome_type="success",
-            details="details1",
-            timestamp=123.0
+            task_type="success",
+            success=True,
+            duration_seconds=1.0
         )
         
         outcome2 = AgentOutcome(
+            timestamp=123.0,
             agent_name="agent1",
-            task_id="task1",
-            outcome_type="success",
-            details="details1",
-            timestamp=123.0
+            task_type="success",
+            success=True,
+            duration_seconds=1.0
         )
         
         outcome3 = AgentOutcome(
+            timestamp=123.0,
             agent_name="agent2",
-            task_id="task1",
-            outcome_type="success",
-            details="details1",
-            timestamp=123.0
+            task_type="success",
+            success=True,
+            duration_seconds=1.0
         )
         
         assert outcome1 == outcome2
@@ -123,334 +123,280 @@ class TestOutcomeLogger:
     
     def test_outcome_logger_creation(self):
         """Test creating OutcomeLogger."""
-        logger = OutcomeLogger()
-        assert logger.outcomes == []
-        assert logger.max_outcomes == 1000
+        logger = OutcomeLogger(storage_type="memory")
+        assert logger.storage_type == "memory"
+        assert logger._memory_outcomes == []
     
-    def test_outcome_logger_with_custom_max(self):
-        """Test OutcomeLogger with custom max outcomes."""
-        logger = OutcomeLogger(max_outcomes=500)
-        assert logger.max_outcomes == 500
+    def test_outcome_logger_with_file_storage(self):
+        """Test OutcomeLogger with file storage."""
+        logger = OutcomeLogger(storage_type="file", file_path="test.log")
+        assert logger.storage_type == "file"
+        assert logger.file_path == "test.log"
     
     def test_log_outcome(self):
         """Test logging outcomes."""
-        logger = OutcomeLogger()
+        logger = OutcomeLogger(storage_type="memory")
         
-        outcome = AgentOutcome(
+        logger.log_outcome(
             agent_name="test_agent",
-            task_id="task_123",
-            outcome_type="success",
-            details="Task completed"
+            task_type="data_processing",
+            success=True,
+            duration_seconds=1.5
         )
         
-        logger.log_outcome(outcome)
-        
-        assert len(logger.outcomes) == 1
-        assert logger.outcomes[0] == outcome
+        assert len(logger._memory_outcomes) == 1
+        outcome = logger._memory_outcomes[0]
+        assert outcome.agent_name == "test_agent"
+        assert outcome.task_type == "data_processing"
+        assert outcome.success is True
+        assert outcome.duration_seconds == 1.5
     
     def test_log_multiple_outcomes(self):
         """Test logging multiple outcomes."""
-        logger = OutcomeLogger()
+        logger = OutcomeLogger(storage_type="memory")
         
-        outcomes = [
-            AgentOutcome("agent1", "task1", "success", "Completed"),
-            AgentOutcome("agent2", "task2", "failure", "Failed"),
-            AgentOutcome("agent1", "task3", "success", "Completed"),
-        ]
+        logger.log_outcome("agent1", "task1", True, 1.0)
+        logger.log_outcome("agent2", "task2", False, 2.0)
+        logger.log_outcome("agent1", "task3", True, 1.5)
         
-        for outcome in outcomes:
-            logger.log_outcome(outcome)
-        
-        assert len(logger.outcomes) == 3
-        assert logger.outcomes == outcomes
+        assert len(logger._memory_outcomes) == 3
+        assert logger._memory_outcomes[0].agent_name == "agent1"
+        assert logger._memory_outcomes[1].agent_name == "agent2"
+        assert logger._memory_outcomes[2].agent_name == "agent1"
     
-    def test_max_outcomes_limit(self):
-        """Test that max outcomes limit is enforced."""
-        logger = OutcomeLogger(max_outcomes=3)
+    def test_log_outcome_with_metadata(self):
+        """Test logging outcome with metadata."""
+        logger = OutcomeLogger(storage_type="memory")
         
-        # Add more outcomes than the limit
-        for i in range(5):
-            outcome = AgentOutcome(
-                agent_name=f"agent_{i}",
-                task_id=f"task_{i}",
-                outcome_type="success",
-                details=f"Task {i} completed"
-            )
-            logger.log_outcome(outcome)
+        metadata = {"tools_used": ["tool1", "tool2"]}
+        logger.log_outcome(
+            agent_name="test_agent",
+            task_type="analysis",
+            success=True,
+            duration_seconds=2.0,
+            metadata=metadata
+        )
         
-        # Should only keep the last 3 outcomes
-        assert len(logger.outcomes) == 3
-        assert logger.outcomes[0].agent_name == "agent_2"
-        assert logger.outcomes[1].agent_name == "agent_3"
-        assert logger.outcomes[2].agent_name == "agent_4"
+        assert len(logger._memory_outcomes) == 1
+        outcome = logger._memory_outcomes[0]
+        assert outcome.metadata == metadata
     
     def test_get_recent_outcomes(self):
         """Test getting recent outcomes."""
-        logger = OutcomeLogger()
+        logger = OutcomeLogger(storage_type="memory")
         
         # Add outcomes with different timestamps
-        for i in range(5):
-            outcome = AgentOutcome(
-                agent_name=f"agent_{i}",
-                task_id=f"task_{i}",
-                outcome_type="success",
-                details=f"Task {i}",
-                timestamp=time.time() + i  # Different timestamps
-            )
-            logger.log_outcome(outcome)
+        current_time = time.time()
         
-        # Get recent outcomes
-        recent = logger.get_recent_outcomes(count=3)
+        # Old outcome (more than 24 hours ago)
+        old_outcome = AgentOutcome(
+            timestamp=current_time - 25 * 3600,  # 25 hours ago
+            agent_name="agent1",
+            task_type="old_task",
+            success=True
+        )
+        logger._memory_outcomes.append(old_outcome)
         
-        assert len(recent) == 3
-        # Should be in reverse chronological order (most recent first)
-        assert recent[0].agent_name == "agent_4"
-        assert recent[1].agent_name == "agent_3"
-        assert recent[2].agent_name == "agent_2"
+        # Recent outcome
+        logger.log_outcome("agent2", "recent_task", True, 1.0)
+        
+        recent_outcomes = logger.get_recent_outcomes(hours=24)
+        assert len(recent_outcomes) == 1
+        assert recent_outcomes[0].task_type == "recent_task"
     
     def test_get_recent_outcomes_by_agent(self):
         """Test getting recent outcomes filtered by agent."""
-        logger = OutcomeLogger()
+        logger = OutcomeLogger(storage_type="memory")
         
-        # Add outcomes for different agents
-        outcomes = [
-            AgentOutcome("agent1", "task1", "success", "Task 1", timestamp=1.0),
-            AgentOutcome("agent2", "task2", "failure", "Task 2", timestamp=2.0),
-            AgentOutcome("agent1", "task3", "success", "Task 3", timestamp=3.0),
-            AgentOutcome("agent2", "task4", "success", "Task 4", timestamp=4.0),
-            AgentOutcome("agent1", "task5", "failure", "Task 5", timestamp=5.0),
-        ]
+        logger.log_outcome("agent1", "task1", True, 1.0)
+        logger.log_outcome("agent2", "task2", True, 2.0)
+        logger.log_outcome("agent1", "task3", False, 1.5)
         
-        for outcome in outcomes:
-            logger.log_outcome(outcome)
-        
-        # Get recent outcomes for agent1
-        agent1_outcomes = logger.get_recent_outcomes(agent_name="agent1", count=2)
-        
+        agent1_outcomes = logger.get_recent_outcomes(hours=24, agent_name="agent1")
         assert len(agent1_outcomes) == 2
-        assert agent1_outcomes[0].task_id == "task5"  # Most recent
-        assert agent1_outcomes[1].task_id == "task3"
         assert all(outcome.agent_name == "agent1" for outcome in agent1_outcomes)
     
     def test_get_recent_outcomes_by_type(self):
-        """Test getting recent outcomes filtered by type."""
-        logger = OutcomeLogger()
+        """Test getting recent outcomes filtered by task type."""
+        logger = OutcomeLogger(storage_type="memory")
         
-        # Add outcomes with different types
-        outcomes = [
-            AgentOutcome("agent1", "task1", "success", "Success 1", timestamp=1.0),
-            AgentOutcome("agent1", "task2", "failure", "Failure 1", timestamp=2.0),
-            AgentOutcome("agent1", "task3", "success", "Success 2", timestamp=3.0),
-            AgentOutcome("agent1", "task4", "error", "Error 1", timestamp=4.0),
-            AgentOutcome("agent1", "task5", "success", "Success 3", timestamp=5.0),
-        ]
+        logger.log_outcome("agent1", "analysis", True, 1.0)
+        logger.log_outcome("agent2", "processing", True, 2.0)
+        logger.log_outcome("agent1", "analysis", False, 1.5)
         
-        for outcome in outcomes:
-            logger.log_outcome(outcome)
-        
-        # Get recent success outcomes
-        success_outcomes = logger.get_recent_outcomes(outcome_type="success", count=2)
-        
-        assert len(success_outcomes) == 2
-        assert success_outcomes[0].task_id == "task5"  # Most recent success
-        assert success_outcomes[1].task_id == "task3"
-        assert all(outcome.outcome_type == "success" for outcome in success_outcomes)
+        analysis_outcomes = logger.get_recent_outcomes(hours=24, task_type="analysis")
+        assert len(analysis_outcomes) == 2
+        assert all(outcome.task_type == "analysis" for outcome in analysis_outcomes)
     
     def test_get_performance_metrics(self):
         """Test getting performance metrics."""
-        logger = OutcomeLogger()
+        logger = OutcomeLogger(storage_type="memory")
         
-        # Add various outcomes
-        outcomes = [
-            AgentOutcome("agent1", "task1", "success", "Success", timestamp=time.time() - 3600),  # 1 hour ago
-            AgentOutcome("agent1", "task2", "failure", "Failure", timestamp=time.time() - 1800),  # 30 min ago
-            AgentOutcome("agent1", "task3", "success", "Success", timestamp=time.time() - 900),   # 15 min ago
-            AgentOutcome("agent2", "task4", "success", "Success", timestamp=time.time() - 600),   # 10 min ago
-            AgentOutcome("agent1", "task5", "error", "Error", timestamp=time.time() - 300),       # 5 min ago
-        ]
+        # Add some test outcomes
+        logger.log_outcome("agent1", "task1", True, 1.0)
+        logger.log_outcome("agent1", "task2", True, 2.0)
+        logger.log_outcome("agent1", "task3", False, 1.5)
+        logger.log_outcome("agent2", "task4", True, 3.0)
         
-        for outcome in outcomes:
-            logger.log_outcome(outcome)
+        metrics = logger.get_performance_metrics(hours=24)
         
-        # Get metrics for agent1
-        metrics = logger.get_performance_metrics(agent_name="agent1")
+        assert "total_tasks" in metrics
+        assert "success_rate" in metrics
+        assert "average_duration" in metrics
+        assert "agents_summary" in metrics
+        assert "tasks_by_type" in metrics
         
-        assert metrics["total_outcomes"] == 4
-        assert metrics["success_count"] == 2
-        assert metrics["failure_count"] == 1
-        assert metrics["error_count"] == 1
-        assert metrics["success_rate"] == 0.5  # 2/4 = 0.5
-        
-        # Get overall metrics
-        overall_metrics = logger.get_performance_metrics()
-        
-        assert overall_metrics["total_outcomes"] == 5
-        assert overall_metrics["success_count"] == 3
-        assert overall_metrics["success_rate"] == 0.6  # 3/5 = 0.6
+        assert metrics["total_tasks"] == 4
+        assert metrics["success_rate"] == 0.75  # 3/4 successful
+        assert metrics["average_duration"] == 1.875  # (1+2+1.5+3)/4
     
     def test_get_performance_metrics_time_window(self):
-        """Test getting performance metrics within time window."""
-        logger = OutcomeLogger()
+        """Test performance metrics with time window."""
+        logger = OutcomeLogger(storage_type="memory")
         
         current_time = time.time()
         
-        # Add outcomes at different times
-        outcomes = [
-            AgentOutcome("agent1", "task1", "success", "Old success", timestamp=current_time - 7200),  # 2 hours ago
-            AgentOutcome("agent1", "task2", "success", "Recent success", timestamp=current_time - 1800),  # 30 min ago
-            AgentOutcome("agent1", "task3", "failure", "Recent failure", timestamp=current_time - 900),   # 15 min ago
-        ]
+        # Old outcome (outside time window)
+        old_outcome = AgentOutcome(
+            timestamp=current_time - 25 * 3600,  # 25 hours ago
+            agent_name="agent1",
+            task_type="old_task",
+            success=True,
+            duration_seconds=1.0
+        )
+        logger._memory_outcomes.append(old_outcome)
         
-        for outcome in outcomes:
-            logger.log_outcome(outcome)
+        # Recent outcome
+        logger.log_outcome("agent1", "recent_task", True, 2.0)
         
-        # Get metrics for last hour (3600 seconds)
-        metrics = logger.get_performance_metrics(agent_name="agent1", time_window_seconds=3600)
+        metrics = logger.get_performance_metrics(hours=24)
         
-        assert metrics["total_outcomes"] == 2  # Only recent outcomes
-        assert metrics["success_count"] == 1
-        assert metrics["failure_count"] == 1
-        assert metrics["success_rate"] == 0.5
+        # Should only include recent outcome
+        assert metrics["total_tasks"] == 1
+        assert metrics["average_duration"] == 2.0
     
     def test_clear_outcomes(self):
-        """Test clearing all outcomes."""
-        logger = OutcomeLogger()
+        """Test clearing outcomes."""
+        logger = OutcomeLogger(storage_type="memory")
         
-        # Add some outcomes
-        for i in range(5):
-            outcome = AgentOutcome(f"agent_{i}", f"task_{i}", "success", f"Task {i}")
-            logger.log_outcome(outcome)
+        logger.log_outcome("agent1", "task1", True, 1.0)
+        logger.log_outcome("agent2", "task2", True, 2.0)
         
-        assert len(logger.outcomes) == 5
+        assert len(logger._memory_outcomes) == 2
         
-        # Clear outcomes
-        logger.clear_outcomes()
-        
-        assert len(logger.outcomes) == 0
+        cleared_count = logger.clear_outcomes()
+        assert cleared_count == 2
+        assert len(logger._memory_outcomes) == 0
     
-    def test_clear_outcomes_by_agent(self):
-        """Test clearing outcomes for specific agent."""
-        logger = OutcomeLogger()
+    def test_clear_outcomes_by_time(self):
+        """Test clearing outcomes older than specified time."""
+        logger = OutcomeLogger(storage_type="memory")
         
-        # Add outcomes for different agents
-        outcomes = [
-            AgentOutcome("agent1", "task1", "success", "Task 1"),
-            AgentOutcome("agent2", "task2", "success", "Task 2"),
-            AgentOutcome("agent1", "task3", "success", "Task 3"),
-            AgentOutcome("agent3", "task4", "success", "Task 4"),
-        ]
+        current_time = time.time()
         
-        for outcome in outcomes:
-            logger.log_outcome(outcome)
+        # Old outcome
+        old_outcome = AgentOutcome(
+            timestamp=current_time - 25 * 3600,  # 25 hours ago
+            agent_name="agent1",
+            task_type="old_task",
+            success=True
+        )
+        logger._memory_outcomes.append(old_outcome)
         
-        assert len(logger.outcomes) == 4
+        # Recent outcome
+        logger.log_outcome("agent1", "recent_task", True, 1.0)
         
-        # Clear outcomes for agent1
-        logger.clear_outcomes(agent_name="agent1")
+        assert len(logger._memory_outcomes) == 2
         
-        assert len(logger.outcomes) == 2
-        remaining_agents = [outcome.agent_name for outcome in logger.outcomes]
-        assert "agent1" not in remaining_agents
-        assert "agent2" in remaining_agents
-        assert "agent3" in remaining_agents
+        cleared_count = logger.clear_outcomes(older_than_hours=24)
+        assert cleared_count == 1
+        assert len(logger._memory_outcomes) == 1
+        assert logger._memory_outcomes[0].task_type == "recent_task"
 
 
 class TestOutcomeLoggerEdgeCases:
-    """Test edge cases in outcome logging."""
+    """Test edge cases and error conditions."""
     
     def test_empty_logger_metrics(self):
         """Test metrics on empty logger."""
-        logger = OutcomeLogger()
+        logger = OutcomeLogger(storage_type="memory")
         
         metrics = logger.get_performance_metrics()
         
-        assert metrics["total_outcomes"] == 0
-        assert metrics["success_count"] == 0
-        assert metrics["failure_count"] == 0
-        assert metrics["error_count"] == 0
+        assert metrics["total_tasks"] == 0
         assert metrics["success_rate"] == 0.0
+        assert metrics["average_duration"] == 0.0
+        assert metrics["agents_summary"] == {}
+        assert metrics["tasks_by_type"] == {}
     
     def test_single_outcome_metrics(self):
         """Test metrics with single outcome."""
-        logger = OutcomeLogger()
+        logger = OutcomeLogger(storage_type="memory")
         
-        outcome = AgentOutcome("agent1", "task1", "success", "Single task")
-        logger.log_outcome(outcome)
+        logger.log_outcome("agent1", "task1", True, 1.5)
         
         metrics = logger.get_performance_metrics()
         
-        assert metrics["total_outcomes"] == 1
-        assert metrics["success_count"] == 1
+        assert metrics["total_tasks"] == 1
         assert metrics["success_rate"] == 1.0
+        assert metrics["average_duration"] == 1.5
     
     def test_get_recent_outcomes_empty(self):
         """Test getting recent outcomes from empty logger."""
-        logger = OutcomeLogger()
+        logger = OutcomeLogger(storage_type="memory")
         
-        recent = logger.get_recent_outcomes(count=5)
-        
-        assert recent == []
+        recent_outcomes = logger.get_recent_outcomes(hours=24)
+        assert len(recent_outcomes) == 0
     
     def test_get_recent_outcomes_more_than_available(self):
-        """Test requesting more recent outcomes than available."""
-        logger = OutcomeLogger()
+        """Test getting more outcomes than available."""
+        logger = OutcomeLogger(storage_type="memory")
         
-        # Add only 2 outcomes
-        for i in range(2):
-            outcome = AgentOutcome(f"agent_{i}", f"task_{i}", "success", f"Task {i}")
-            logger.log_outcome(outcome)
+        logger.log_outcome("agent1", "task1", True, 1.0)
+        logger.log_outcome("agent2", "task2", True, 2.0)
         
-        # Request 5 recent outcomes
-        recent = logger.get_recent_outcomes(count=5)
-        
-        assert len(recent) == 2  # Should return all available
+        # Request more outcomes than available
+        recent_outcomes = logger.get_recent_outcomes(hours=24)
+        assert len(recent_outcomes) == 2
     
     def test_outcome_with_large_metadata(self):
         """Test outcome with large metadata."""
-        logger = OutcomeLogger()
+        logger = OutcomeLogger(storage_type="memory")
         
-        # Create large metadata
         large_metadata = {
-            "large_data": "x" * 10000,  # 10KB string
-            "nested": {
-                "level1": {
-                    "level2": ["item"] * 1000  # Large nested structure
-                }
-            }
+            "large_data": ["item"] * 1000,
+            "nested": {"deep": {"data": "x" * 1000}}
         }
         
-        outcome = AgentOutcome(
+        logger.log_outcome(
             agent_name="test_agent",
-            task_id="large_task",
-            outcome_type="success",
-            details="Task with large metadata",
+            task_type="large_data_task",
+            success=True,
+            duration_seconds=2.0,
             metadata=large_metadata
         )
         
-        logger.log_outcome(outcome)
-        
-        assert len(logger.outcomes) == 1
-        assert logger.outcomes[0].metadata["large_data"] == "x" * 10000
+        assert len(logger._memory_outcomes) == 1
+        outcome = logger._memory_outcomes[0]
+        assert len(outcome.metadata["large_data"]) == 1000
     
     def test_outcome_with_special_characters(self):
-        """Test outcome with special characters in strings."""
-        logger = OutcomeLogger()
+        """Test outcome with special characters in fields."""
+        logger = OutcomeLogger(storage_type="memory")
         
-        special_chars_outcome = AgentOutcome(
-            agent_name="агент_测试",  # Unicode characters
-            task_id="task_🚀_🎯",     # Emoji
-            outcome_type="success",
-            details="Task with special chars: \n\t\"quotes\" & symbols!",
-            metadata={"unicode": "测试数据", "emoji": "🎉✨"}
+        logger.log_outcome(
+            agent_name="test_agent_🤖",
+            task_type="unicode_task_❤️",
+            success=True,
+            duration_seconds=1.0,
+            error_message="Error with special chars: 中文, русский, 🚀"
         )
         
-        logger.log_outcome(special_chars_outcome)
-        
-        assert len(logger.outcomes) == 1
-        retrieved = logger.outcomes[0]
-        assert retrieved.agent_name == "агент_测试"
-        assert retrieved.task_id == "task_🚀_🎯"
-        assert retrieved.metadata["unicode"] == "测试数据"
+        assert len(logger._memory_outcomes) == 1
+        outcome = logger._memory_outcomes[0]
+        assert "🤖" in outcome.agent_name
+        assert "❤️" in outcome.task_type
+        assert "🚀" in outcome.error_message
 
 
 if __name__ == "__main__":
