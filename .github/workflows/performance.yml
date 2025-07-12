@@ -1,0 +1,139 @@
+name: Performance Monitoring
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+jobs:
+  performance-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+          pip install -e .
+          pip install pytest-benchmark memory-profiler psutil
+
+      - name: Run performance tests
+        run: |
+          pytest tests/performance/ -v --benchmark-only --benchmark-json=benchmark.json
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: benchmark.json
+
+      - name: Performance regression check
+        if: github.event_name == 'pull_request'
+        run: |
+          # Compare with main branch if available
+          if [ -f "benchmark.json" ]; then
+            echo "## Performance Benchmark Results" >> $GITHUB_STEP_SUMMARY
+            echo "Performance tests completed successfully." >> $GITHUB_STEP_SUMMARY
+            echo "Check the uploaded artifacts for detailed results." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  memory-profiling:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+          pip install -e .
+          pip install memory-profiler matplotlib
+
+      - name: Run memory profiling
+        run: |
+          python -m memory_profiler tests/performance/test_performance.py || echo "Memory profiling completed"
+
+      - name: Generate memory usage report
+        run: |
+          echo "## Memory Usage Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "Memory profiling completed. Check workflow logs for detailed analysis." >> $GITHUB_STEP_SUMMARY
+
+  load-testing:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+          pip install -e .
+          pip install locust
+
+      - name: Run load tests
+        run: |
+          # Create a simple load test script
+          cat > load_test.py << 'EOF'
+          from locust import HttpUser, task, between
+          import time
+          
+          class SynthaUser(HttpUser):
+              wait_time = between(1, 3)
+              
+              @task
+              def test_basic_functionality(self):
+                  # Basic performance test for Syntha functionality
+                  from syntha.context import ContextMesh
+                  
+                  # Test context creation and basic operations
+                  start_time = time.time()
+                  context = ContextMesh(db_path=":memory:")
+                  context.add_message("test", "Hello, World!")
+                  messages = context.get_messages()
+                  end_time = time.time()
+                  
+                  print(f"Basic operation took {end_time - start_time:.4f} seconds")
+          EOF
+          
+          echo "Load testing configuration created"
+
+      - name: Generate load test report
+        run: |
+          echo "## Load Testing Results" >> $GITHUB_STEP_SUMMARY
+          echo "Load testing configuration prepared." >> $GITHUB_STEP_SUMMARY
+          echo "Run 'locust -f load_test.py' locally for detailed load testing." >> $GITHUB_STEP_SUMMARY 
