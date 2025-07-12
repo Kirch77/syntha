@@ -4,11 +4,14 @@ Test configuration and shared fixtures for the Syntha test suite.
 This module provides common test configuration, fixtures, and utilities
 used across all test modules.
 """
-import pytest
-import tempfile
-import shutil
+
 import os
+import shutil
+import tempfile
 from pathlib import Path
+
+import pytest
+
 from syntha.context import ContextMesh
 from syntha.tools import ToolHandler
 
@@ -39,9 +42,7 @@ def context_mesh_memory():
 def context_mesh_sqlite(sqlite_db_path):
     """Provide a ContextMesh instance with SQLite persistence."""
     mesh = ContextMesh(
-        enable_persistence=True,
-        db_backend="sqlite",
-        db_path=sqlite_db_path
+        enable_persistence=True, db_backend="sqlite", db_path=sqlite_db_path
     )
     yield mesh
     mesh.close()
@@ -78,8 +79,8 @@ def large_dataset():
             "metadata": {
                 "timestamp": 1234567890 + i,
                 "category": f"category_{i % 10}",
-                "tags": [f"tag_{j}" for j in range(i % 5)]
-            }
+                "tags": [f"tag_{j}" for j in range(i % 5)],
+            },
         }
         for i in range(1000)
     }
@@ -87,14 +88,14 @@ def large_dataset():
 
 class DatabaseTestMixin:
     """Mixin class for database-related test utilities."""
-    
+
     @staticmethod
     def verify_persistence(mesh1, mesh2, test_key, expected_value):
         """Verify that data persists between mesh instances."""
         # Store data in first mesh
         mesh1.push(test_key, expected_value)
         mesh1.close()
-        
+
         # Verify data exists in second mesh
         retrieved_value = mesh2.get(test_key)
         assert retrieved_value == expected_value
@@ -103,27 +104,28 @@ class DatabaseTestMixin:
 
 class PerformanceTestMixin:
     """Mixin class for performance test utilities."""
-    
+
     @staticmethod
     def time_operation(operation, *args, **kwargs):
         """Time a specific operation and return duration and result."""
         import time
+
         start_time = time.time()
         result = operation(*args, **kwargs)
         duration = time.time() - start_time
         return duration, result
-    
+
     @staticmethod
     def assert_performance(duration, max_duration, operation_name):
         """Assert that an operation completed within expected time."""
         assert duration < max_duration, (
-            f"{operation_name} took {duration:.3f}s, "
-            f"expected < {max_duration}s"
+            f"{operation_name} took {duration:.3f}s, " f"expected < {max_duration}s"
         )
 
 
 # Test markers for different test categories
 pytest_plugins = []
+
 
 def pytest_configure(config):
     """Configure pytest with custom markers."""
@@ -157,17 +159,26 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.integration)
         elif "performance" in str(item.fspath):
             item.add_marker(pytest.mark.performance)
-        
+
         # Mark slow tests
-        if any(keyword in item.name.lower() for keyword in ["large", "stress", "concurrent", "massive"]):
+        if any(
+            keyword in item.name.lower()
+            for keyword in ["large", "stress", "concurrent", "massive"]
+        ):
             item.add_marker(pytest.mark.slow)
-        
+
         # Mark database tests
-        if any(keyword in item.name.lower() for keyword in ["persistence", "database", "sqlite", "postgresql"]):
+        if any(
+            keyword in item.name.lower()
+            for keyword in ["persistence", "database", "sqlite", "postgresql"]
+        ):
             item.add_marker(pytest.mark.database)
-        
+
         # Mark concurrent tests
-        if any(keyword in item.name.lower() for keyword in ["concurrent", "thread", "parallel"]):
+        if any(
+            keyword in item.name.lower()
+            for keyword in ["concurrent", "thread", "parallel"]
+        ):
             item.add_marker(pytest.mark.concurrent)
 
 
@@ -180,7 +191,7 @@ def pytest_runtest_setup(item):
             postgres_url = os.getenv("POSTGRES_URL")
             if not postgres_url:
                 pytest.skip("PostgreSQL not available (set POSTGRES_URL)")
-    
+
     # Skip slow tests in fast mode
     if item.get_closest_marker("slow"):
         if item.config.getoption("--fast", default=False):
@@ -193,26 +204,26 @@ def pytest_addoption(parser):
         "--fast",
         action="store_true",
         default=False,
-        help="Run only fast tests, skip slow tests"
+        help="Run only fast tests, skip slow tests",
     )
     parser.addoption(
         "--integration",
-        action="store_true", 
+        action="store_true",
         default=False,
-        help="Run integration tests"
+        help="Run integration tests",
     )
     parser.addoption(
         "--performance",
         action="store_true",
-        default=False, 
-        help="Run performance tests"
+        default=False,
+        help="Run performance tests",
     )
 
 
 # Custom assertions for Syntha-specific testing
 class SynthaAssertions:
     """Custom assertions for Syntha testing."""
-    
+
     @staticmethod
     def assert_context_accessible(mesh, key, agent, expected_value):
         """Assert that context is accessible by agent with expected value."""
@@ -221,7 +232,7 @@ class SynthaAssertions:
             f"Agent '{agent}' should have access to key '{key}' "
             f"with value {expected_value}, got {actual_value}"
         )
-    
+
     @staticmethod
     def assert_context_not_accessible(mesh, key, agent):
         """Assert that context is not accessible by agent."""
@@ -230,7 +241,7 @@ class SynthaAssertions:
             f"Agent '{agent}' should not have access to key '{key}', "
             f"but got {actual_value}"
         )
-    
+
     @staticmethod
     def assert_agent_keys_count(mesh, agent, expected_count):
         """Assert that agent has access to expected number of keys."""
@@ -240,7 +251,7 @@ class SynthaAssertions:
             f"Agent '{agent}' should have access to {expected_count} keys, "
             f"got {actual_count}: {keys}"
         )
-    
+
     @staticmethod
     def assert_mesh_stats(mesh, **expected_stats):
         """Assert mesh statistics match expected values."""
@@ -263,19 +274,29 @@ def syntha_assert():
 # Test data generators
 class TestDataGenerators:
     """Generators for test data."""
-    
+
     @staticmethod
     def agent_names(count=5):
         """Generate agent names."""
         return [f"agent_{i}" for i in range(count)]
-    
+
     @staticmethod
     def topic_names(count=5):
         """Generate topic names."""
-        topics = ["sales", "analytics", "workflow", "alerts", "reports", 
-                 "notifications", "logs", "metrics", "events", "data"]
+        topics = [
+            "sales",
+            "analytics",
+            "workflow",
+            "alerts",
+            "reports",
+            "notifications",
+            "logs",
+            "metrics",
+            "events",
+            "data",
+        ]
         return topics[:count]
-    
+
     @staticmethod
     def context_items(count=10):
         """Generate context items."""
@@ -283,19 +304,16 @@ class TestDataGenerators:
             f"key_{i}": {
                 "id": i,
                 "value": f"test_value_{i}",
-                "timestamp": 1234567890 + i
+                "timestamp": 1234567890 + i,
             }
             for i in range(count)
         }
-    
+
     @staticmethod
     def large_context_value(size_mb=1):
         """Generate large context value for testing."""
         size_bytes = size_mb * 1024 * 1024
-        return {
-            "large_data": "x" * size_bytes,
-            "metadata": {"size_mb": size_mb}
-        }
+        return {"large_data": "x" * size_bytes, "metadata": {"size_mb": size_mb}}
 
 
 @pytest.fixture

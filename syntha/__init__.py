@@ -29,36 +29,40 @@ Production-ready features:
 
 # Core components
 from .context import ContextMesh
-from .prompts import build_system_prompt, build_message_prompt, inject_context_into_prompt
-from .tools import ToolHandler, get_all_tool_schemas
-from .reports import OutcomeLogger
-from .persistence import DatabaseBackend, SQLiteBackend, create_database_backend
-
-# Logging framework
-from .logging import (
-    get_logger,
-    get_context_logger,
-    get_performance_logger,
-    get_security_logger,
-    configure_logging
-)
 
 # Error handling
 from .exceptions import (
-    SynthaError,
+    ErrorHandler,
     SynthaConfigurationError,
     SynthaConnectionError,
-    SynthaValidationError,
-    SynthaPermissionError,
     SynthaContextError,
-    SynthaPersistenceError,
-    SynthaToolError,
-    SynthaSecurityError,
+    SynthaError,
     SynthaPerformanceError,
+    SynthaPermissionError,
+    SynthaPersistenceError,
+    SynthaSecurityError,
     SynthaTimeoutError,
-    ErrorHandler,
-    handle_syntha_error
+    SynthaToolError,
+    SynthaValidationError,
+    handle_syntha_error,
 )
+
+# Logging framework
+from .logging import (
+    configure_logging,
+    get_context_logger,
+    get_logger,
+    get_performance_logger,
+    get_security_logger,
+)
+from .persistence import DatabaseBackend, SQLiteBackend, create_database_backend
+from .prompts import (
+    build_message_prompt,
+    build_system_prompt,
+    inject_context_into_prompt,
+)
+from .reports import OutcomeLogger
+from .tools import ToolHandler, get_all_tool_schemas
 
 __version__ = "0.2.0"
 __author__ = "Syntha Team"
@@ -66,23 +70,21 @@ __author__ = "Syntha Team"
 __all__ = [
     # Core components
     "ContextMesh",
-    "build_system_prompt", 
+    "build_system_prompt",
     "build_message_prompt",
     "inject_context_into_prompt",
     "ToolHandler",
     "get_all_tool_schemas",
     "OutcomeLogger",
     "DatabaseBackend",
-    "SQLiteBackend", 
+    "SQLiteBackend",
     "create_database_backend",
-    
     # Logging
     "get_logger",
     "get_context_logger",
     "get_performance_logger",
     "get_security_logger",
     "configure_logging",
-    
     # Error handling
     "SynthaError",
     "SynthaConfigurationError",
@@ -96,5 +98,5 @@ __all__ = [
     "SynthaPerformanceError",
     "SynthaTimeoutError",
     "ErrorHandler",
-    "handle_syntha_error"
+    "handle_syntha_error",
 ]

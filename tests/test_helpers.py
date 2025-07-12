@@ -4,42 +4,45 @@ Test helpers and utilities for providing clear error messages to contributors.
 This module provides custom assertions, error reporting, and debugging utilities
 to help contributors understand test failures and fix issues quickly.
 """
-import time
+
 import threading
+import time
 import traceback
-from typing import Any, List, Dict, Optional, Callable
 from contextlib import contextmanager
+from typing import Any, Callable, Dict, List, Optional
 
 
 class ContributorFriendlyAssertions:
     """
     Custom assertions that provide clear, actionable error messages for contributors.
-    
+
     These assertions go beyond basic pytest assertions to explain:
     - What was expected vs what actually happened
     - Why the assertion matters for the codebase
     - How to fix common issues
     - Context about the test scenario
     """
-    
+
     @staticmethod
-    def assert_context_item_immutable(original_list: List[str], context_item, field_name: str = "subscribers"):
+    def assert_context_item_immutable(
+        original_list: List[str], context_item, field_name: str = "subscribers"
+    ):
         """
         Assert that ContextItem properly copies mutable inputs to prevent external modification.
-        
+
         Args:
             original_list: The original list that was passed to ContextItem
             context_item: The ContextItem instance to check
             field_name: Name of the field being tested
-            
+
         Raises:
             AssertionError: With detailed explanation if immutability is violated
         """
         original_length = len(original_list)
-        
+
         # Modify the original list
         original_list.append("test_modification")
-        
+
         # Check if the context item was affected
         item_field = getattr(context_item, field_name)
         if len(item_field) != original_length:
@@ -59,13 +62,14 @@ class ContributorFriendlyAssertions:
                 f"   modify the context data, leading to hard-to-debug issues in production.\n"
                 f"   This is a critical data integrity requirement for the Syntha SDK."
             )
-    
+
     @staticmethod
-    def assert_agent_access_control(mesh, key: str, agent: str, should_have_access: bool, 
-                                   context: str = ""):
+    def assert_agent_access_control(
+        mesh, key: str, agent: str, should_have_access: bool, context: str = ""
+    ):
         """
         Assert that agent access control works correctly with clear error messages.
-        
+
         Args:
             mesh: ContextMesh instance
             key: The context key being accessed
@@ -90,11 +94,13 @@ class ContributorFriendlyAssertions:
                 f"   - Non-existent keys\n"
                 f"   - Null/empty parameters\n"
             )
-        
+
         if has_access != should_have_access:
             access_status = "HAS ACCESS" if has_access else "NO ACCESS"
-            expected_status = "SHOULD HAVE ACCESS" if should_have_access else "SHOULD NOT HAVE ACCESS"
-            
+            expected_status = (
+                "SHOULD HAVE ACCESS" if should_have_access else "SHOULD NOT HAVE ACCESS"
+            )
+
             raise AssertionError(
                 f"\n❌ ACCESS CONTROL VIOLATION!\n"
                 f"📍 Issue: Agent access permissions are not working correctly\n"
@@ -113,12 +119,14 @@ class ContributorFriendlyAssertions:
                 f"   Proper access control ensures agents only see data they're supposed to,\n"
                 f"   which is critical for security and data isolation in multi-agent systems."
             )
-    
+
     @staticmethod
-    def assert_data_integrity(original_data: Any, retrieved_data: Any, operation: str = "storage/retrieval"):
+    def assert_data_integrity(
+        original_data: Any, retrieved_data: Any, operation: str = "storage/retrieval"
+    ):
         """
         Assert that data maintains integrity through operations with detailed error reporting.
-        
+
         Args:
             original_data: The data that was originally stored
             retrieved_data: The data that was retrieved
@@ -140,13 +148,14 @@ class ContributorFriendlyAssertions:
                 f"   Data integrity is fundamental - if data changes unexpectedly,\n"
                 f"   it can cause silent failures and corrupt agent interactions."
             )
-    
+
     @staticmethod
-    def assert_performance_within_limits(duration_seconds: float, max_seconds: float, 
-                                       operation: str, context: str = ""):
+    def assert_performance_within_limits(
+        duration_seconds: float, max_seconds: float, operation: str, context: str = ""
+    ):
         """
         Assert that operations complete within performance limits.
-        
+
         Args:
             duration_seconds: Actual duration of the operation
             max_seconds: Maximum allowed duration
@@ -178,21 +187,26 @@ class ContributorFriendlyAssertions:
 class ExecutionReporter:
     """
     Provides detailed test execution reporting for contributors.
-    
+
     This class helps contributors understand what tests are running,
     why they might be failing, and what the expected behavior should be.
     """
-    
+
     def __init__(self):
         self.test_start_time = None
         self.test_context = {}
-    
+
     @contextmanager
-    def test_scenario(self, scenario_name: str, description: str, 
-                     expected_behavior: str = "", setup_notes: str = ""):
+    def test_scenario(
+        self,
+        scenario_name: str,
+        description: str,
+        expected_behavior: str = "",
+        setup_notes: str = "",
+    ):
         """
         Context manager for running test scenarios with clear reporting.
-        
+
         Args:
             scenario_name: Name of the test scenario
             description: What this test is checking
@@ -206,15 +220,15 @@ class ExecutionReporter:
         if setup_notes:
             print(f"⚙️  Setup: {setup_notes}")
         print("─" * 60)
-        
+
         self.test_start_time = time.time()
         self.test_context = {
-            'scenario': scenario_name,
-            'description': description,
-            'expected': expected_behavior,
-            'setup': setup_notes
+            "scenario": scenario_name,
+            "description": description,
+            "expected": expected_behavior,
+            "setup": setup_notes,
         }
-        
+
         try:
             yield self
             duration = time.time() - self.test_start_time
@@ -223,10 +237,10 @@ class ExecutionReporter:
             duration = time.time() - self.test_start_time
             print(f"❌ FAILED: {scenario_name} ({duration:.3f}s)")
             print(f"💥 Error: {type(e).__name__}: {e}")
-            
+
             # Add context to the error
-            if hasattr(e, 'args') and e.args:
-                if not str(e).startswith('\n❌'):  # If not already a detailed error
+            if hasattr(e, "args") and e.args:
+                if not str(e).startswith("\n❌"):  # If not already a detailed error
                     enhanced_error = (
                         f"\n❌ TEST FAILURE in {scenario_name}\n"
                         f"📋 What this test checks: {description}\n"
@@ -242,21 +256,22 @@ class ExecutionReporter:
                     # Replace the original error message
                     e.args = (enhanced_error,)
             raise
-    
+
     def _get_current_test_name(self):
         """Get the current test name from the call stack."""
         import inspect
+
         for frame_info in inspect.stack():
-            if frame_info.function.startswith('test_'):
+            if frame_info.function.startswith("test_"):
                 return f"{frame_info.filename}::{frame_info.function}"
         return "unknown_test"
-    
+
     def log_step(self, step: str, details: str = ""):
         """Log a test step for debugging."""
         print(f"   🔍 {step}")
         if details:
             print(f"      💡 {details}")
-    
+
     def log_data(self, label: str, data: Any):
         """Log data values for debugging."""
         print(f"   📊 {label}: {data} (type: {type(data).__name__})")
@@ -265,30 +280,30 @@ class ExecutionReporter:
 def debug_context_mesh_state(mesh, label: str = "ContextMesh State"):
     """
     Debug utility to print the current state of a ContextMesh for troubleshooting.
-    
+
     Args:
         mesh: ContextMesh instance to debug
         label: Label for the debug output
     """
     print(f"\n🔍 DEBUG: {label}")
     print("─" * 40)
-    
+
     try:
         # Try to access internal state (adjust based on actual ContextMesh implementation)
-        if hasattr(mesh, '_contexts'):
+        if hasattr(mesh, "_contexts"):
             print(f"📦 Total contexts: {len(mesh._contexts)}")
             for key, item in mesh._contexts.items():
                 print(f"   🔑 '{key}': {item.value} (subscribers: {item.subscribers})")
-        
-        if hasattr(mesh, '_agent_topics'):
+
+        if hasattr(mesh, "_agent_topics"):
             print(f"👥 Agent topics: {mesh._agent_topics}")
-            
-        if hasattr(mesh, '_topic_subscribers'):
+
+        if hasattr(mesh, "_topic_subscribers"):
             print(f"📢 Topic subscribers: {mesh._topic_subscribers}")
-            
+
     except Exception as e:
         print(f"⚠️  Could not debug mesh state: {e}")
-    
+
     print("─" * 40)
 
 
@@ -346,8 +361,8 @@ def create_test_summary_report():
 
 # Export the main utilities
 __all__ = [
-    'ContributorFriendlyAssertions', 
-    'ExecutionReporter', 
-    'debug_context_mesh_state',
-    'create_test_summary_report'
+    "ContributorFriendlyAssertions",
+    "ExecutionReporter",
+    "debug_context_mesh_state",
+    "create_test_summary_report",
 ]
