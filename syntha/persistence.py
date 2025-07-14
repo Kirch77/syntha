@@ -165,6 +165,11 @@ class SQLiteBackend(DatabaseBackend):
             self.connection.execute("PRAGMA foreign_keys=ON")  # Enable foreign keys
             self.connection.execute("PRAGMA busy_timeout=5000")  # 5 second timeout
             self.initialize_schema()
+
+            # Set secure file permissions on POSIX systems
+            if os.name == "posix" and os.path.exists(self.db_path):
+                # Set permissions to 0o600 (read/write for owner only)
+                os.chmod(self.db_path, 0o600)
         except sqlite3.DatabaseError as e:
             # Handle database corruption by backing up the corrupted file and starting fresh
             if (
@@ -209,6 +214,11 @@ class SQLiteBackend(DatabaseBackend):
                     self.connection.execute("PRAGMA foreign_keys=ON")
                     self.connection.execute("PRAGMA busy_timeout=5000")
                     self.initialize_schema()
+
+                    # Set secure file permissions on POSIX systems
+                    if os.name == "posix" and os.path.exists(self.db_path):
+                        # Set permissions to 0o600 (read/write for owner only)
+                        os.chmod(self.db_path, 0o600)
                 except Exception as retry_error:
                     raise Exception(
                         f"Failed to create new database after corruption: {retry_error}"
