@@ -727,7 +727,9 @@ class PostgreSQLBackend(DatabaseBackend):
 
             result = {}
             for agent_name, allowed_topics in cursor.fetchall():
-                result[agent_name] = allowed_topics if allowed_topics is not None else []
+                result[agent_name] = (
+                    allowed_topics if allowed_topics is not None else []
+                )
 
             return result
 
