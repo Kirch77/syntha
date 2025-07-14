@@ -34,7 +34,25 @@ class TestDatabaseIntegration:
             db_config = {"db_path": str(tmp_path / "test.db")}
 
         # Create mesh with persistence
-        mesh1 = ContextMesh(enable_persistence=True, db_backend=db_backend, **db_config)
+        try:
+            mesh1 = ContextMesh(enable_persistence=True, db_backend=db_backend, **db_config)
+        except ImportError as e:
+            if "psycopg2" in str(e):
+                pytest.skip(f"PostgreSQL backend not available: {e}")
+            else:
+                raise
+        except Exception as e:
+            if db_backend == "postgresql":
+                # Handle various PostgreSQL connection errors
+                error_str = str(e).lower()
+                if any(msg in error_str for msg in [
+                    "could not connect", "connection refused", "connection failed", 
+                    "password authentication failed", "database does not exist",
+                    "connection timeout", "no route to host", "no such host",
+                    "could not translate host name"
+                ]):
+                    pytest.skip(f"PostgreSQL server not available: {e}")
+            raise
 
         # Add various types of data
         test_data = [
@@ -67,7 +85,25 @@ class TestDatabaseIntegration:
         mesh1.close()
 
         # Create new mesh with same config - should load persisted data
-        mesh2 = ContextMesh(enable_persistence=True, db_backend=db_backend, **db_config)
+        try:
+            mesh2 = ContextMesh(enable_persistence=True, db_backend=db_backend, **db_config)
+        except ImportError as e:
+            if "psycopg2" in str(e):
+                pytest.skip(f"PostgreSQL backend not available: {e}")
+            else:
+                raise
+        except Exception as e:
+            if db_backend == "postgresql":
+                # Handle various PostgreSQL connection errors
+                error_str = str(e).lower()
+                if any(msg in error_str for msg in [
+                    "could not connect", "connection refused", "connection failed", 
+                    "password authentication failed", "database does not exist",
+                    "connection timeout", "no route to host", "no such host",
+                    "could not translate host name"
+                ]):
+                    pytest.skip(f"PostgreSQL server not available: {e}")
+            raise
 
         # Verify data persisted correctly
         assert mesh2.get("simple_string") == "hello world"

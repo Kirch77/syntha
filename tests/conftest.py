@@ -187,7 +187,9 @@ def pytest_runtest_setup(item):
     """Setup for individual tests based on markers."""
     # Skip database tests if no database available
     if item.get_closest_marker("database"):
-        if "postgresql" in item.name.lower():
+        # Only skip PostgreSQL tests if they're specifically marked as requiring PostgreSQL
+        # Integration tests should handle PostgreSQL unavailability gracefully
+        if item.get_closest_marker("requires_postgresql"):
             postgres_url = os.getenv("POSTGRES_URL")
             if not postgres_url:
                 pytest.skip("PostgreSQL not available (set POSTGRES_URL)")

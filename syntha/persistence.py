@@ -463,7 +463,9 @@ class SQLiteBackend(DatabaseBackend):
         """Ensure database connection is alive, reconnect if needed."""
         if self.connection is None:
             self.connect()
-            return
+
+        if self.connection is None:
+            raise RuntimeError("Failed to establish database connection")
 
         try:
             # Test the connection
@@ -472,9 +474,8 @@ class SQLiteBackend(DatabaseBackend):
             # Connection is broken, reconnect
             self.close()
             self.connect()
-
-        # Assert for mypy that connection is not None after ensuring it
-        assert self.connection is not None
+            if self.connection is None:
+                raise RuntimeError("Failed to re-establish database connection")
 
 
 class PostgreSQLBackend(DatabaseBackend):

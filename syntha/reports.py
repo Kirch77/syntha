@@ -194,7 +194,7 @@ class OutcomeLogger:
         if self.storage_type == "memory":
             outcomes = [o for o in self._memory_outcomes if o.timestamp >= cutoff_time]
         elif self.storage_type == "sqlite":
-            outcomes = self._query_sqlite("timestamp >= ?", [cutoff_time])
+            outcomes = self._query_sqlite_recent(cutoff_time)
         else:  # file
             outcomes = self._read_from_file()
             outcomes = [o for o in outcomes if o.timestamp >= cutoff_time]
@@ -222,21 +222,21 @@ class OutcomeLogger:
                     continue
         return outcomes
 
-    def _query_sqlite(self, where_clause: str, params: List[Any]) -> List[AgentOutcome]:
-        """Query outcomes from SQLite database."""
+    def _query_sqlite_recent(self, cutoff_time: float) -> List[AgentOutcome]:
+        """Query recent outcomes from SQLite database."""
         if not self.db_path:
             return []
 
         conn = sqlite3.connect(self.db_path)
         cursor = conn.execute(
-            f"""
+            """
             SELECT timestamp, agent_name, task_type, success, duration_seconds,
                    input_context, output_data, error_message, metadata
             FROM outcomes 
-            WHERE {where_clause}
+            WHERE timestamp >= ?
             ORDER BY timestamp DESC
         """,
-            params,
+            (cutoff_time,),
         )
 
         outcomes = []
