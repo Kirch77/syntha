@@ -69,6 +69,8 @@ class OutcomeLogger:
 
     def _init_sqlite_db(self):
         """Initialize SQLite database with outcomes table."""
+        if self.db_path is None:
+            raise ValueError("db_path cannot be None when using SQLite storage")
         conn = sqlite3.connect(self.db_path)
         conn.execute(
             """
@@ -341,6 +343,8 @@ class OutcomeLogger:
                 self._memory_outcomes.clear()
                 return count
             elif self.storage_type == "sqlite":
+                if self.db_path is None:
+                    raise ValueError("db_path cannot be None when using SQLite storage")
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.execute("SELECT COUNT(*) FROM outcomes")
                 count = cursor.fetchone()[0]
@@ -365,6 +369,8 @@ class OutcomeLogger:
                 ]
                 return old_count - len(self._memory_outcomes)
             elif self.storage_type == "sqlite":
+                if self.db_path is None:
+                    raise ValueError("db_path cannot be None when using SQLite storage")
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.execute(
                     "SELECT COUNT(*) FROM outcomes WHERE timestamp < ?", (cutoff_time,)

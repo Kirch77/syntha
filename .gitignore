@@ -171,6 +171,7 @@ cython_debug/
 Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
+syntha_context.db
 ehthumbs_vista.db
 *.tmp
 *.temp

@@ -160,7 +160,7 @@ def handle_push_context_call(
     value: str,
     topics: List[str],
     ttl_hours: float = 24.0,
-    sender_agent: str = None,
+    sender_agent: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Handle a push_context_to_topics function call from an agent.
@@ -376,7 +376,7 @@ def handle_discover_topics_call(
         if hasattr(context_mesh, "_topic_subscribers"):
             for topic, agents in context_mesh._topic_subscribers.items():
                 subscriber_count = len(agents)
-                topic_info = {
+                topic_info: Dict[str, Any] = {
                     "subscriber_count": subscriber_count,
                     "is_active": subscriber_count > 0,
                 }
@@ -447,7 +447,7 @@ class ToolHandler:
     and automatically injects agent names for context operations.
     """
 
-    def __init__(self, context_mesh: ContextMesh, agent_name: str = None):
+    def __init__(self, context_mesh: ContextMesh, agent_name: Optional[str] = None):
         """
         Initialize the tool handler.
 
@@ -469,7 +469,7 @@ class ToolHandler:
         """Set the agent name for this tool handler instance."""
         self.agent_name = agent_name
 
-    def _check_agent_name(self) -> Dict[str, Any]:
+    def _check_agent_name(self) -> Optional[Dict[str, Any]]:
         """Check if agent name is set, return error dict if not."""
         if not self.agent_name:
             return {"success": False, "error": "Agent name not set"}

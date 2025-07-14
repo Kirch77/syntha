@@ -69,6 +69,12 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
 
+      - name: Clean up test artifacts
+        run: |
+          git checkout -- syntha_context.db || true
+          git checkout -- . || true
+          git clean -fd || true
+
   integration-tests:
     runs-on: ubuntu-latest
     services:
@@ -116,6 +122,12 @@ jobs:
         run: |
           pytest tests/integration/ -v --cov=syntha
 
+      - name: Clean up test artifacts
+        run: |
+          git checkout -- syntha_context.db || true
+          git checkout -- . || true
+          git clean -fd || true
+
   performance-tests:
     runs-on: ubuntu-latest
     steps:
@@ -135,6 +147,12 @@ jobs:
       - name: Run performance tests
         run: |
           pytest tests/performance/ -v --benchmark-only --benchmark-json=benchmark.json
+
+      - name: Clean up uncommitted changes
+        run: |
+          git checkout -- syntha_context.db || true
+          git checkout -- . || true
+          git clean -fd || true
 
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1
@@ -163,6 +181,13 @@ jobs:
         run: |
           cd docs-new
           mkdocs build --strict
+
+      - name: Clean up uncommitted changes
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git checkout -- syntha_context.db || true
+          git checkout -- . || true
+          git clean -fd || true
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main'

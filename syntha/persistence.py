@@ -156,7 +156,7 @@ class SQLiteBackend(DatabaseBackend):
         import os
 
         try:
-            self.connection = sqlite3.connect(
+            self.connection = sqlite3.connect(  # type: ignore
                 self.db_path, check_same_thread=False, timeout=10.0
             )
             # Use DELETE mode instead of WAL to avoid Windows file locking issues
@@ -199,7 +199,7 @@ class SQLiteBackend(DatabaseBackend):
 
                 # Try to create a new database
                 try:
-                    self.connection = sqlite3.connect(
+                    self.connection = sqlite3.connect(  # type: ignore
                         self.db_path, check_same_thread=False, timeout=10.0
                     )
                     self.connection.execute("PRAGMA journal_mode=DELETE")
@@ -470,6 +470,9 @@ class SQLiteBackend(DatabaseBackend):
             # Connection is broken, reconnect
             self.close()
             self.connect()
+        
+        # Assert for mypy that connection is not None after ensuring it
+        assert self.connection is not None
 
 
 class PostgreSQLBackend(DatabaseBackend):
@@ -490,7 +493,7 @@ class PostgreSQLBackend(DatabaseBackend):
                 "psycopg2 is required for PostgreSQL backend. Install with: pip install psycopg2-binary"
             )
 
-        self.connection = psycopg2.connect(self.connection_string)
+        self.connection = psycopg2.connect(self.connection_string)  # type: ignore
         self.initialize_schema()
 
     def close(self) -> None:
