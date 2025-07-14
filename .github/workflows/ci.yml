@@ -109,6 +109,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Clean up test artifacts
+        shell: bash
         run: |
           git checkout -- syntha_context.db 2>/dev/null || true
           git checkout -- . 2>/dev/null || true
@@ -149,6 +150,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
+        shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
@@ -172,6 +174,7 @@ jobs:
           pytest tests/integration/ -v --cov=syntha
 
       - name: Clean up test artifacts
+        shell: bash
         run: |
           git checkout -- syntha_context.db 2>/dev/null || true
           git checkout -- . 2>/dev/null || true
@@ -200,6 +203,7 @@ jobs:
           ls -la benchmark.json || echo "Warning: benchmark.json not found after tests"
 
       - name: Clean up uncommitted changes before benchmark storage
+        shell: bash
         run: |
           # Remove any generated database files
           rm -f syntha_context.db syntha_context.db-* *.db 2>/dev/null || true
