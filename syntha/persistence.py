@@ -175,7 +175,8 @@ class SQLiteBackend(DatabaseBackend):
                 if self.connection:
                     try:
                         self.connection.close()
-                    except:
+                    except (sqlite3.Error, OSError, AttributeError):
+                        # Ignore errors during connection cleanup
                         pass
                     self.connection = None
 
@@ -187,14 +188,15 @@ class SQLiteBackend(DatabaseBackend):
                         print(
                             f"Warning: Database file was corrupted and backed up to {backup_path}"
                         )
-                    except Exception:
+                    except (OSError, FileNotFoundError, PermissionError):
                         # If backup fails, just remove the corrupted file
                         try:
                             os.remove(self.db_path)
                             print(
                                 f"Warning: Database file was corrupted and removed. Starting fresh."
                             )
-                        except Exception:
+                        except (OSError, FileNotFoundError, PermissionError):
+                            # If we can't remove the file, continue anyway
                             pass
 
                 # Try to create a new database
