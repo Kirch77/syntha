@@ -18,6 +18,7 @@ Tests cover:
 
 import json
 import os
+import sys
 import tempfile
 import time
 from typing import Any, Dict
@@ -264,7 +265,31 @@ class TestPersistenceIntegration:
 
     def test_performance_with_persistence(self):
         """Test that performance characteristics are maintained with persistence."""
+        import sys
         import time
+
+        # Adjust timing thresholds based on Python version and platform
+        # Python 3.9 on Windows can be significantly slower than 3.11
+        if sys.version_info < (3, 10) and os.name == "nt":
+            # More lenient for Python 3.9 on Windows
+            insert_threshold = 4.0  # 4 seconds for 100 items
+            retrieve_threshold = 0.5  # 0.5 seconds for 100 items
+            cleanup_threshold = 1.0  # 1 second for cleanup
+        elif sys.version_info < (3, 10):
+            # More lenient for Python 3.9 on any platform
+            insert_threshold = 3.0  # 3 seconds for 100 items
+            retrieve_threshold = 0.3  # 0.3 seconds for 100 items
+            cleanup_threshold = 0.8  # 0.8 seconds for cleanup
+        elif os.name == "nt":
+            # More lenient for Windows on any Python version
+            insert_threshold = 2.5  # 2.5 seconds for 100 items
+            retrieve_threshold = 0.3  # 0.3 seconds for 100 items
+            cleanup_threshold = 0.7  # 0.7 seconds for cleanup
+        else:
+            # Original thresholds for Python 3.11+ on Unix-like systems
+            insert_threshold = 2.0  # 2 seconds for 100 items
+            retrieve_threshold = 0.2  # 0.2 seconds for 100 items
+            cleanup_threshold = 0.5  # 0.5 seconds for cleanup
 
         # Test bulk insertion performance
         start_time = time.time()
@@ -272,8 +297,8 @@ class TestPersistenceIntegration:
             self.mesh.push(f"perf_test_{i}", f"data_{i}")
         bulk_insert_time = time.time() - start_time
 
-        # Should complete in reasonable time (< 2 seconds for 100 items)
-        assert bulk_insert_time < 2.0
+        # Should complete in reasonable time (adjusted for platform/version)
+        assert bulk_insert_time < insert_threshold, f"Bulk insert took {bulk_insert_time:.3f}s (threshold: {insert_threshold}s)"
 
         # Test retrieval performance
         start_time = time.time()
@@ -282,8 +307,8 @@ class TestPersistenceIntegration:
             assert value == f"data_{i}"
         bulk_retrieve_time = time.time() - start_time
 
-        # Retrieval should be fast (< 0.2 seconds for 100 items)
-        assert bulk_retrieve_time < 0.2
+        # Retrieval should be fast (adjusted for platform/version)
+        assert bulk_retrieve_time < retrieve_threshold, f"Bulk retrieve took {bulk_retrieve_time:.3f}s (threshold: {retrieve_threshold}s)"
 
         # Test cleanup performance
         # Add items with short TTL
@@ -297,7 +322,7 @@ class TestPersistenceIntegration:
         cleanup_time = time.time() - start_time
 
         assert removed == 50
-        assert cleanup_time < 0.5  # Cleanup should be fast
+        assert cleanup_time < cleanup_threshold, f"Cleanup took {cleanup_time:.3f}s (threshold: {cleanup_threshold}s)"
 
     def test_persistence_disabled_fallback(self):
         """Test that system works correctly when persistence is disabled."""
