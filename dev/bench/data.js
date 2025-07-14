@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1752526886754,
+  "lastUpdate": 1752527570082,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -564,6 +564,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00003852931596585988",
             "extra": "mean: 840.6107468563526 usec\nrounds: 1193"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "distinct": true,
+          "id": "387396f0e79e14854b76e7d0679c50fc68b2d21c",
+          "message": "Enhance SQLiteBackend with secure file permissions and improve memory usage tests\n\n- Added functionality to set secure file permissions (0o600) for the database file on POSIX systems during initialization and recovery.\n- Improved memory usage tests by adding error handling for the optional 'psutil' dependency, allowing tests to skip gracefully if not available.\n\nThese changes enhance security for database files and improve the robustness of memory usage testing.",
+          "timestamp": "2025-07-14T17:11:01-04:00",
+          "tree_id": "1c1270ba13a1de0350e5a67937f15c467f31e226",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/387396f0e79e14854b76e7d0679c50fc68b2d21c"
+        },
+        "date": 1752527569262,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 312630.42317087436,
+            "unit": "iter/sec",
+            "range": "stddev: 7.861685282135532e-7",
+            "extra": "mean: 3.1986650238880627 usec\nrounds: 27190"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 467703.29518122855,
+            "unit": "iter/sec",
+            "range": "stddev: 4.803471323087019e-7",
+            "extra": "mean: 2.1381076642030363 usec\nrounds: 129133"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2252.8240551793397,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00003565760626593731",
+            "extra": "mean: 443.8873056690588 usec\nrounds: 2434"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4774.797750946435,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000012673812319224698",
+            "extra": "mean: 209.43295447472832 usec\nrounds: 4481"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 724.843734363734,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00006538845245991997",
+            "extra": "mean: 1.3796077038284635 msec\nrounds: 601"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1875.8197642571088,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000028415825863871954",
+            "extra": "mean: 533.1002578470195 usec\nrounds: 2963"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 543141.9811220177,
+            "unit": "iter/sec",
+            "range": "stddev: 5.058684027143594e-7",
+            "extra": "mean: 1.8411392136071107 usec\nrounds: 1372"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 23.36683438001457,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00507628863303238",
+            "extra": "mean: 42.79569854165999 msec\nrounds: 24"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 102501.07525651755,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000013988014301242178",
+            "extra": "mean: 9.755995217585925 usec\nrounds: 20908"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1195.5496679482271,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000014352458605724011",
+            "extra": "mean: 836.4353458574208 usec\nrounds: 1171"
           }
         ]
       }
