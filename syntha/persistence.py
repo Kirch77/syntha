@@ -574,7 +574,7 @@ class PostgreSQLBackend(DatabaseBackend):
                     ttl = EXCLUDED.ttl,
                     created_at = EXCLUDED.created_at
                 """,
-                (key, json.dumps(value), json.dumps(subscribers), ttl, created_at),
+                (key, value, subscribers, ttl, created_at),
             )
             self.connection.commit()  # type: ignore
 
@@ -593,11 +593,10 @@ class PostgreSQLBackend(DatabaseBackend):
             if row is None:
                 return None
 
-            value_json, subscribers_json, ttl, created_at = row
-            value = json.loads(value_json) if value_json is not None else None
-            subscribers = (
-                json.loads(subscribers_json) if subscribers_json is not None else []
-            )
+            value, subscribers, ttl, created_at = row
+            # psycopg2 automatically deserializes JSONB to Python objects
+            value = value if value is not None else None
+            subscribers = subscribers if subscribers is not None else []
 
             return (value, subscribers, ttl, created_at)
 
@@ -622,11 +621,10 @@ class PostgreSQLBackend(DatabaseBackend):
 
             result = {}
             for row in cursor.fetchall():
-                key, value_json, subscribers_json, ttl, created_at = row
-                value = json.loads(value_json) if value_json is not None else None
-                subscribers = (
-                    json.loads(subscribers_json) if subscribers_json is not None else []
-                )
+                key, value, subscribers, ttl, created_at = row
+                # psycopg2 automatically deserializes JSONB to Python objects
+                value = value if value is not None else None
+                subscribers = subscribers if subscribers is not None else []
                 result[key] = (value, subscribers, ttl, created_at)
 
             return result
@@ -660,7 +658,7 @@ class PostgreSQLBackend(DatabaseBackend):
                 VALUES (%s, %s)
                 ON CONFLICT (agent_name) DO UPDATE SET topics = EXCLUDED.topics
                 """,
-                (agent_name, json.dumps(topics)),
+                (agent_name, topics),
             )
             self.connection.commit()  # type: ignore
 
@@ -676,7 +674,7 @@ class PostgreSQLBackend(DatabaseBackend):
             if row is None:
                 return []
 
-            return json.loads(row[0]) if row[0] is not None else []
+            return row[0] if row[0] is not None else []
 
     def get_all_agent_topics(self) -> Dict[str, List[str]]:
         """Get all agent topics from PostgreSQL."""
@@ -685,10 +683,8 @@ class PostgreSQLBackend(DatabaseBackend):
             cursor.execute("SELECT agent_name, topics FROM agent_topics")
 
             result = {}
-            for agent_name, topics_json in cursor.fetchall():
-                result[agent_name] = (
-                    json.loads(topics_json) if topics_json is not None else []
-                )
+            for agent_name, topics in cursor.fetchall():
+                result[agent_name] = topics if topics is not None else []
 
             return result
 
@@ -704,7 +700,7 @@ class PostgreSQLBackend(DatabaseBackend):
                 VALUES (%s, %s)
                 ON CONFLICT (agent_name) DO UPDATE SET allowed_topics = EXCLUDED.allowed_topics
                 """,
-                (agent_name, json.dumps(allowed_topics)),
+                (agent_name, allowed_topics),
             )
             self.connection.commit()  # type: ignore
 
@@ -721,7 +717,7 @@ class PostgreSQLBackend(DatabaseBackend):
             if row is None:
                 return []
 
-            return json.loads(row[0]) if row[0] is not None else []
+            return row[0] if row[0] is not None else []
 
     def get_all_agent_permissions(self) -> Dict[str, List[str]]:
         """Get all agent permissions from PostgreSQL."""
@@ -730,12 +726,8 @@ class PostgreSQLBackend(DatabaseBackend):
             cursor.execute("SELECT agent_name, allowed_topics FROM agent_permissions")
 
             result = {}
-            for agent_name, allowed_topics_json in cursor.fetchall():
-                result[agent_name] = (
-                    json.loads(allowed_topics_json)
-                    if allowed_topics_json is not None
-                    else []
-                )
+            for agent_name, allowed_topics in cursor.fetchall():
+                result[agent_name] = allowed_topics if allowed_topics is not None else []
 
             return result
 
