@@ -298,7 +298,9 @@ class TestPersistenceIntegration:
         bulk_insert_time = time.time() - start_time
 
         # Should complete in reasonable time (adjusted for platform/version)
-        assert bulk_insert_time < insert_threshold, f"Bulk insert took {bulk_insert_time:.3f}s (threshold: {insert_threshold}s)"
+        assert (
+            bulk_insert_time < insert_threshold
+        ), f"Bulk insert took {bulk_insert_time:.3f}s (threshold: {insert_threshold}s)"
 
         # Test retrieval performance
         start_time = time.time()
@@ -308,7 +310,9 @@ class TestPersistenceIntegration:
         bulk_retrieve_time = time.time() - start_time
 
         # Retrieval should be fast (adjusted for platform/version)
-        assert bulk_retrieve_time < retrieve_threshold, f"Bulk retrieve took {bulk_retrieve_time:.3f}s (threshold: {retrieve_threshold}s)"
+        assert (
+            bulk_retrieve_time < retrieve_threshold
+        ), f"Bulk retrieve took {bulk_retrieve_time:.3f}s (threshold: {retrieve_threshold}s)"
 
         # Test cleanup performance
         # Add items with short TTL
@@ -322,7 +326,9 @@ class TestPersistenceIntegration:
         cleanup_time = time.time() - start_time
 
         assert removed == 50
-        assert cleanup_time < cleanup_threshold, f"Cleanup took {cleanup_time:.3f}s (threshold: {cleanup_threshold}s)"
+        assert (
+            cleanup_time < cleanup_threshold
+        ), f"Cleanup took {cleanup_time:.3f}s (threshold: {cleanup_threshold}s)"
 
     def test_persistence_disabled_fallback(self):
         """Test that system works correctly when persistence is disabled."""
