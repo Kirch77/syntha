@@ -480,7 +480,7 @@ class PostgreSQLBackend(DatabaseBackend):
 
     def __init__(self, connection_string: str):
         self.connection_string = connection_string
-        self.connection = None
+        self.connection: Optional[Any] = None
         self._lock = Lock()
 
     def connect(self) -> None:
@@ -493,7 +493,7 @@ class PostgreSQLBackend(DatabaseBackend):
                 "psycopg2 is required for PostgreSQL backend. Install with: pip install psycopg2-binary"
             )
 
-        self.connection = psycopg2.connect(self.connection_string)  # type: ignore
+        self.connection = psycopg2.connect(self.connection_string)
         self.initialize_schema()
 
     def close(self) -> None:
@@ -505,7 +505,7 @@ class PostgreSQLBackend(DatabaseBackend):
     def initialize_schema(self) -> None:
         """Create PostgreSQL tables and indexes."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
 
             # Context items table
             cursor.execute(
@@ -548,7 +548,7 @@ class PostgreSQLBackend(DatabaseBackend):
                 "CREATE INDEX IF NOT EXISTS idx_context_ttl ON context_items(ttl)"
             )
 
-            self.connection.commit()
+            self.connection.commit()  # type: ignore
 
     def save_context_item(
         self,
@@ -560,27 +560,27 @@ class PostgreSQLBackend(DatabaseBackend):
     ) -> None:
         """Save a context item to PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
                 """
-                INSERT INTO context_items (key, value, subscribers, ttl, created_at) 
+                INSERT INTO context_items (key, value, subscribers, ttl, created_at)
                 VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT (key) DO UPDATE SET
                     value = EXCLUDED.value,
                     subscribers = EXCLUDED.subscribers,
                     ttl = EXCLUDED.ttl,
                     created_at = EXCLUDED.created_at
-            """,
+                """,
                 (key, json.dumps(value), json.dumps(subscribers), ttl, created_at),
             )
-            self.connection.commit()
+            self.connection.commit()  # type: ignore
 
     def get_context_item(
         self, key: str
     ) -> Optional[Tuple[Any, List[str], Optional[float], float]]:
         """Retrieve a context item from PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
                 "SELECT value, subscribers, ttl, created_at FROM context_items WHERE key = %s",
                 (key,),
@@ -599,17 +599,18 @@ class PostgreSQLBackend(DatabaseBackend):
     def delete_context_item(self, key: str) -> bool:
         """Delete a context item from PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute("DELETE FROM context_items WHERE key = %s", (key,))
-            self.connection.commit()
-            return cursor.rowcount > 0
+            deleted = cursor.rowcount > 0
+            self.connection.commit()  # type: ignore
+            return deleted
 
     def get_all_context_items(
         self,
     ) -> Dict[str, Tuple[Any, List[str], Optional[float], float]]:
         """Get all context items from PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
                 "SELECT key, value, subscribers, ttl, created_at FROM context_items"
             )
@@ -624,46 +625,42 @@ class PostgreSQLBackend(DatabaseBackend):
             return result
 
     def cleanup_expired(self, current_time: float) -> int:
-        """Remove expired items from PostgreSQL."""
+        """Remove expired context items from PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
-                """
-                DELETE FROM context_items 
-                WHERE ttl IS NOT NULL AND (created_at + ttl) < %s
-            """,
+                "DELETE FROM context_items WHERE ttl IS NOT NULL AND ttl < %s",
                 (current_time,),
             )
-            self.connection.commit()
-            return cursor.rowcount
+            deleted_count = cursor.rowcount
+            self.connection.commit()  # type: ignore
+            return deleted_count
 
     def clear_all(self) -> None:
-        """Remove all context items from PostgreSQL."""
+        """Clear all context items from PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute("DELETE FROM context_items")
-            cursor.execute("DELETE FROM agent_topics")
-            cursor.execute("DELETE FROM agent_permissions")
-            self.connection.commit()
+            self.connection.commit()  # type: ignore
 
     def save_agent_topics(self, agent_name: str, topics: List[str]) -> None:
-        """Save agent topic subscriptions to PostgreSQL."""
+        """Save agent topics to PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
                 """
-                INSERT INTO agent_topics (agent_name, topics) 
+                INSERT INTO agent_topics (agent_name, topics)
                 VALUES (%s, %s)
                 ON CONFLICT (agent_name) DO UPDATE SET topics = EXCLUDED.topics
-            """,
+                """,
                 (agent_name, json.dumps(topics)),
             )
-            self.connection.commit()
+            self.connection.commit()  # type: ignore
 
     def get_agent_topics(self, agent_name: str) -> List[str]:
-        """Get agent topic subscriptions from PostgreSQL."""
+        """Get agent topics from PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
                 "SELECT topics FROM agent_topics WHERE agent_name = %s", (agent_name,)
             )
@@ -675,9 +672,9 @@ class PostgreSQLBackend(DatabaseBackend):
             return json.loads(row[0])
 
     def get_all_agent_topics(self) -> Dict[str, List[str]]:
-        """Get all agent topic mappings from PostgreSQL."""
+        """Get all agent topics from PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute("SELECT agent_name, topics FROM agent_topics")
 
             result = {}
@@ -689,23 +686,23 @@ class PostgreSQLBackend(DatabaseBackend):
     def save_agent_permissions(
         self, agent_name: str, allowed_topics: List[str]
     ) -> None:
-        """Save agent posting permissions to PostgreSQL."""
+        """Save agent permissions to PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
                 """
-                INSERT INTO agent_permissions (agent_name, allowed_topics) 
+                INSERT INTO agent_permissions (agent_name, allowed_topics)
                 VALUES (%s, %s)
                 ON CONFLICT (agent_name) DO UPDATE SET allowed_topics = EXCLUDED.allowed_topics
-            """,
+                """,
                 (agent_name, json.dumps(allowed_topics)),
             )
-            self.connection.commit()
+            self.connection.commit()  # type: ignore
 
     def get_agent_permissions(self, agent_name: str) -> List[str]:
-        """Get agent posting permissions from PostgreSQL."""
+        """Get agent permissions from PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
                 "SELECT allowed_topics FROM agent_permissions WHERE agent_name = %s",
                 (agent_name,),
@@ -718,9 +715,9 @@ class PostgreSQLBackend(DatabaseBackend):
             return json.loads(row[0])
 
     def get_all_agent_permissions(self) -> Dict[str, List[str]]:
-        """Get all agent permission mappings from PostgreSQL."""
+        """Get all agent permissions from PostgreSQL."""
         with self._lock:
-            cursor = self.connection.cursor()
+            cursor = self.connection.cursor()  # type: ignore
             cursor.execute("SELECT agent_name, allowed_topics FROM agent_permissions")
 
             result = {}

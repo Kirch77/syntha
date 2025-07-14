@@ -24,3 +24,4 @@ bandit>=1.7.5
 
 # Type stubs
 types-requests>=2.31.0
+types-psycopg2>=2.9.9
