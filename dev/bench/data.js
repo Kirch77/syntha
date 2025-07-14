@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1752523851211,
+  "lastUpdate": 1752525394840,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -282,6 +282,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000038614030399801186",
             "extra": "mean: 842.02677813933 usec\nrounds: 1235"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "distinct": true,
+          "id": "aab8b43d9445fac14c3f2a191b22e3a1c9c73e3b",
+          "message": "Update PostgreSQLBackend to ensure JSON serialization for database interactions\n\n- Modified the PostgreSQLBackend methods to explicitly serialize values, subscribers, topics, and allowed_topics to JSON format before database insertion.\n- This change enhances data integrity and ensures proper handling of JSONB types in PostgreSQL.\n\nThese updates improve the reliability of data storage and retrieval in the PostgreSQL backend.",
+          "timestamp": "2025-07-14T16:34:55-04:00",
+          "tree_id": "8505f2577816514caaecfcc5552880448be99c90",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/aab8b43d9445fac14c3f2a191b22e3a1c9c73e3b"
+        },
+        "date": 1752525394523,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 306039.3045829707,
+            "unit": "iter/sec",
+            "range": "stddev: 6.619555467198276e-7",
+            "extra": "mean: 3.2675541508064327 usec\nrounds: 26260"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 471323.223159961,
+            "unit": "iter/sec",
+            "range": "stddev: 5.498108186825272e-7",
+            "extra": "mean: 2.1216862460023806 usec\nrounds: 110048"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2247.5812603519425,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000010816363450257355",
+            "extra": "mean: 444.92273433682783 usec\nrounds: 2458"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4875.714950563871,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000011093211105159782",
+            "extra": "mean: 205.0981261495509 usec\nrounds: 4241"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 715.285684776782,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00006256970644330094",
+            "extra": "mean: 1.398042797839675 msec\nrounds: 648"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1808.4560828064155,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00005514144868934507",
+            "extra": "mean: 552.9578569849319 usec\nrounds: 2713"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 507759.59152639745,
+            "unit": "iter/sec",
+            "range": "stddev: 5.008898346759682e-7",
+            "extra": "mean: 1.969435962782816 usec\nrounds: 1179"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 15.076633260425536,
+            "unit": "iter/sec",
+            "range": "stddev: 0.012389298059016946",
+            "extra": "mean: 66.32780560000005 msec\nrounds: 15"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 103052.79632530773,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000014333810141676734",
+            "extra": "mean: 9.703763853658959 usec\nrounds: 18912"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1175.7218953592776,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000610737058853429",
+            "extra": "mean: 850.5412750643889 usec\nrounds: 1167"
           }
         ]
       }
