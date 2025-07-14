@@ -9,7 +9,7 @@ import ast
 import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 
 
 def analyze_test_coverage():
@@ -131,7 +131,7 @@ def analyze_test_coverage():
     return coverage_report
 
 
-def extract_functions_and_classes(file_path: Path) -> tuple[Set[str], Set[str]]:
+def extract_functions_and_classes(file_path: Path) -> Tuple[Set[str], Set[str]]:
     """Extract function and class names from a Python file."""
     try:
         with open(file_path, "r", encoding="utf-8") as f:
