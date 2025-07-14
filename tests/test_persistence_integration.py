@@ -269,27 +269,33 @@ class TestPersistenceIntegration:
         import time
 
         # Adjust timing thresholds based on Python version and platform
-        # Python 3.9 on Windows can be significantly slower than 3.11
+        # Windows CI environment can be significantly slower than Unix-like systems
+        is_ci = (
+            os.getenv("CI", "false").lower() == "true"
+            or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
+        )
+        ci_multiplier = 1.5 if is_ci else 1.0  # Extra time for CI environments
+
         if sys.version_info < (3, 10) and os.name == "nt":
-            # More lenient for Python 3.9 on Windows
-            insert_threshold = 4.0  # 4 seconds for 100 items
-            retrieve_threshold = 0.5  # 0.5 seconds for 100 items
-            cleanup_threshold = 1.0  # 1 second for cleanup
+            # Most lenient for Python 3.9 on Windows
+            insert_threshold = 5.0 * ci_multiplier  # 5+ seconds for 100 items
+            retrieve_threshold = 0.8 * ci_multiplier  # 0.8+ seconds for 100 items
+            cleanup_threshold = 1.5 * ci_multiplier  # 1.5+ seconds for cleanup
         elif sys.version_info < (3, 10):
             # More lenient for Python 3.9 on any platform
-            insert_threshold = 3.0  # 3 seconds for 100 items
-            retrieve_threshold = 0.3  # 0.3 seconds for 100 items
-            cleanup_threshold = 0.8  # 0.8 seconds for cleanup
+            insert_threshold = 3.0 * ci_multiplier  # 3+ seconds for 100 items
+            retrieve_threshold = 0.3 * ci_multiplier  # 0.3+ seconds for 100 items
+            cleanup_threshold = 0.8 * ci_multiplier  # 0.8+ seconds for cleanup
         elif os.name == "nt":
-            # More lenient for Windows on any Python version
-            insert_threshold = 2.5  # 2.5 seconds for 100 items
-            retrieve_threshold = 0.3  # 0.3 seconds for 100 items
-            cleanup_threshold = 0.7  # 0.7 seconds for cleanup
+            # More lenient for Windows on any Python version (including 3.11+)
+            insert_threshold = 4.0 * ci_multiplier  # 4+ seconds for 100 items
+            retrieve_threshold = 0.6 * ci_multiplier  # 0.6+ seconds for 100 items
+            cleanup_threshold = 1.2 * ci_multiplier  # 1.2+ seconds for cleanup
         else:
             # Original thresholds for Python 3.11+ on Unix-like systems
-            insert_threshold = 2.0  # 2 seconds for 100 items
-            retrieve_threshold = 0.2  # 0.2 seconds for 100 items
-            cleanup_threshold = 0.5  # 0.5 seconds for cleanup
+            insert_threshold = 2.0 * ci_multiplier  # 2+ seconds for 100 items
+            retrieve_threshold = 0.2 * ci_multiplier  # 0.2+ seconds for 100 items
+            cleanup_threshold = 0.5 * ci_multiplier  # 0.5+ seconds for cleanup
 
         # Test bulk insertion performance
         start_time = time.time()
