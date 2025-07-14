@@ -35,7 +35,9 @@ class TestDatabaseIntegration:
 
         # Create mesh with persistence
         try:
-            mesh1 = ContextMesh(enable_persistence=True, db_backend=db_backend, **db_config)
+            mesh1 = ContextMesh(
+                enable_persistence=True, db_backend=db_backend, **db_config
+            )
         except ImportError as e:
             if "psycopg2" in str(e):
                 pytest.skip(f"PostgreSQL backend not available: {e}")
@@ -45,12 +47,20 @@ class TestDatabaseIntegration:
             if db_backend == "postgresql":
                 # Handle various PostgreSQL connection errors
                 error_str = str(e).lower()
-                if any(msg in error_str for msg in [
-                    "could not connect", "connection refused", "connection failed", 
-                    "password authentication failed", "database does not exist",
-                    "connection timeout", "no route to host", "no such host",
-                    "could not translate host name"
-                ]):
+                if any(
+                    msg in error_str
+                    for msg in [
+                        "could not connect",
+                        "connection refused",
+                        "connection failed",
+                        "password authentication failed",
+                        "database does not exist",
+                        "connection timeout",
+                        "no route to host",
+                        "no such host",
+                        "could not translate host name",
+                    ]
+                ):
                     pytest.skip(f"PostgreSQL server not available: {e}")
             raise
 
@@ -86,7 +96,9 @@ class TestDatabaseIntegration:
 
         # Create new mesh with same config - should load persisted data
         try:
-            mesh2 = ContextMesh(enable_persistence=True, db_backend=db_backend, **db_config)
+            mesh2 = ContextMesh(
+                enable_persistence=True, db_backend=db_backend, **db_config
+            )
         except ImportError as e:
             if "psycopg2" in str(e):
                 pytest.skip(f"PostgreSQL backend not available: {e}")
@@ -96,12 +108,20 @@ class TestDatabaseIntegration:
             if db_backend == "postgresql":
                 # Handle various PostgreSQL connection errors
                 error_str = str(e).lower()
-                if any(msg in error_str for msg in [
-                    "could not connect", "connection refused", "connection failed", 
-                    "password authentication failed", "database does not exist",
-                    "connection timeout", "no route to host", "no such host",
-                    "could not translate host name"
-                ]):
+                if any(
+                    msg in error_str
+                    for msg in [
+                        "could not connect",
+                        "connection refused",
+                        "connection failed",
+                        "password authentication failed",
+                        "database does not exist",
+                        "connection timeout",
+                        "no route to host",
+                        "no such host",
+                        "could not translate host name",
+                    ]
+                ):
                     pytest.skip(f"PostgreSQL server not available: {e}")
             raise
 
