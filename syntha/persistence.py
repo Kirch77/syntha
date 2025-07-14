@@ -591,8 +591,10 @@ class PostgreSQLBackend(DatabaseBackend):
                 return None
 
             value_json, subscribers_json, ttl, created_at = row
-            value = json.loads(value_json)
-            subscribers = json.loads(subscribers_json)
+            value = json.loads(value_json) if value_json is not None else None
+            subscribers = (
+                json.loads(subscribers_json) if subscribers_json is not None else []
+            )
 
             return (value, subscribers, ttl, created_at)
 
@@ -618,8 +620,10 @@ class PostgreSQLBackend(DatabaseBackend):
             result = {}
             for row in cursor.fetchall():
                 key, value_json, subscribers_json, ttl, created_at = row
-                value = json.loads(value_json)
-                subscribers = json.loads(subscribers_json)
+                value = json.loads(value_json) if value_json is not None else None
+                subscribers = (
+                    json.loads(subscribers_json) if subscribers_json is not None else []
+                )
                 result[key] = (value, subscribers, ttl, created_at)
 
             return result
@@ -669,7 +673,7 @@ class PostgreSQLBackend(DatabaseBackend):
             if row is None:
                 return []
 
-            return json.loads(row[0])
+            return json.loads(row[0]) if row[0] is not None else []
 
     def get_all_agent_topics(self) -> Dict[str, List[str]]:
         """Get all agent topics from PostgreSQL."""
@@ -679,7 +683,9 @@ class PostgreSQLBackend(DatabaseBackend):
 
             result = {}
             for agent_name, topics_json in cursor.fetchall():
-                result[agent_name] = json.loads(topics_json)
+                result[agent_name] = (
+                    json.loads(topics_json) if topics_json is not None else []
+                )
 
             return result
 
@@ -712,7 +718,7 @@ class PostgreSQLBackend(DatabaseBackend):
             if row is None:
                 return []
 
-            return json.loads(row[0])
+            return json.loads(row[0]) if row[0] is not None else []
 
     def get_all_agent_permissions(self) -> Dict[str, List[str]]:
         """Get all agent permissions from PostgreSQL."""
@@ -722,7 +728,11 @@ class PostgreSQLBackend(DatabaseBackend):
 
             result = {}
             for agent_name, allowed_topics_json in cursor.fetchall():
-                result[agent_name] = json.loads(allowed_topics_json)
+                result[agent_name] = (
+                    json.loads(allowed_topics_json)
+                    if allowed_topics_json is not None
+                    else []
+                )
 
             return result
 
