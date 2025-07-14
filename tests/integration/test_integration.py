@@ -62,7 +62,10 @@ class TestDatabaseIntegration:
                     ]
                 ):
                     pytest.skip(f"PostgreSQL server not available: {e}")
-            raise
+                else:
+                    raise
+            else:
+                raise
 
         # Add various types of data
         test_data = [
@@ -123,7 +126,10 @@ class TestDatabaseIntegration:
                     ]
                 ):
                     pytest.skip(f"PostgreSQL server not available: {e}")
-            raise
+                else:
+                    raise
+            else:
+                raise
 
         # Verify data persisted correctly
         assert mesh2.get("simple_string") == "hello world"

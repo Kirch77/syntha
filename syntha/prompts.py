@@ -20,7 +20,7 @@ from the ContextMesh into agent conversations.
 """
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from .context import ContextMesh
 
@@ -212,7 +212,7 @@ def build_message_prompt(
 def build_custom_prompt(
     agent_name: str,
     context_mesh: ContextMesh,
-    keys: list[str],
+    keys: List[str],
     template: str,
     fallback_text: str = "",
 ) -> str:

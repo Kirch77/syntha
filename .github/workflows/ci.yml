@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -167,12 +172,17 @@ jobs:
           ls -la benchmark.json 2>/dev/null || echo "benchmark.json not found"
 
       - name: Store benchmark results
-        if: success() && hashFiles('benchmark.json') != ''
+        if: success() && hashFiles('benchmark.json') != '' && github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: "pytest"
           output-file-path: benchmark.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
+          alert-threshold: "200%"
+          comment-on-alert: true
+          fail-on-alert: true
+          benchmark-data-dir-path: dev/bench
+          gh-pages-branch: gh-pages
 
 
