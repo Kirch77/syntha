@@ -148,6 +148,8 @@ jobs:
       - name: Run performance tests
         run: |
           pytest tests/performance/ -v --benchmark-only --benchmark-json=benchmark.json
+          echo "Benchmark file created:"
+          ls -la benchmark.json || echo "Warning: benchmark.json not found after tests"
 
       - name: Clean up uncommitted changes before benchmark storage
         run: |
@@ -156,13 +158,16 @@ jobs:
           # Reset any tracked file changes
           git checkout -- syntha_context.db 2>/dev/null || true
           git checkout -- . 2>/dev/null || true
-          # Clean untracked files and directories
-          git clean -fd 2>/dev/null || true
+          # Clean untracked files and directories (preserve benchmark.json)
+          git clean -fd -e benchmark.json 2>/dev/null || true
           # Show final status for debugging
           echo "Git status after cleanup:"
           git status
+          echo "Benchmark file status:"
+          ls -la benchmark.json 2>/dev/null || echo "benchmark.json not found"
 
       - name: Store benchmark results
+        if: success() && hashFiles('benchmark.json') != ''
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: "pytest"
