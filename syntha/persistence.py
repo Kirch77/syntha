@@ -389,6 +389,9 @@ class SQLiteBackend(DatabaseBackend):
             except Exception:
                 raise
 
+        # If all retries failed, return None (not found)
+        return None
+
     def delete_context_item(self, key: str) -> bool:
         """Delete a context item from SQLite."""
         with self._lock:
