@@ -31,7 +31,10 @@ class ContextItem:
     """Represents a single context item with value, subscribers, and TTL."""
 
     def __init__(
-        self, value: Any, subscribers: Optional[List[str]] = None, ttl: Optional[float] = None
+        self,
+        value: Any,
+        subscribers: Optional[List[str]] = None,
+        ttl: Optional[float] = None,
     ):
         # Deep copy the value to prevent external modifications
         self.value = copy.deepcopy(value)
@@ -84,7 +87,9 @@ class ContextMesh:
         self.enable_persistence = enable_persistence
 
         # Agent-based indexes for faster lookups (only if indexing enabled)
-        self._agent_index: Optional[Dict[str, List[str]]] = {} if enable_indexing else None
+        self._agent_index: Optional[Dict[str, List[str]]] = (
+            {} if enable_indexing else None
+        )
         self._global_keys: Optional[List[str]] = [] if enable_indexing else None
 
         # Topic-based routing system
@@ -318,7 +323,11 @@ class ContextMesh:
                 self._cleanup_expired()
 
             # Use index for faster lookup if enabled
-            if self.enable_indexing and self._agent_index is not None and self._global_keys is not None:
+            if (
+                self.enable_indexing
+                and self._agent_index is not None
+                and self._global_keys is not None
+            ):
                 result = {}
 
                 # Get keys from agent index
@@ -361,7 +370,11 @@ class ContextMesh:
         Internal method to get keys for agent, assumes lock is already held.
         """
         # Use index for faster lookup if enabled
-        if self.enable_indexing and self._agent_index is not None and self._global_keys is not None:
+        if (
+            self.enable_indexing
+            and self._agent_index is not None
+            and self._global_keys is not None
+        ):
             keys = []
 
             # Get keys from agent index
@@ -444,7 +457,11 @@ class ContextMesh:
             self._data.clear()
 
             # Clear indexes
-            if self.enable_indexing and self._agent_index is not None and self._global_keys is not None:
+            if (
+                self.enable_indexing
+                and self._agent_index is not None
+                and self._global_keys is not None
+            ):
                 self._agent_index.clear()
                 self._global_keys.clear()
 
@@ -572,7 +589,11 @@ class ContextMesh:
 
     def _add_to_index(self, key: str, subscribers: List[str]) -> None:
         """Add key to appropriate indexes."""
-        if not self.enable_indexing or self._agent_index is None or self._global_keys is None:
+        if (
+            not self.enable_indexing
+            or self._agent_index is None
+            or self._global_keys is None
+        ):
             return
 
         if len(subscribers) == 0:
@@ -589,7 +610,11 @@ class ContextMesh:
 
     def _remove_from_index(self, key: str, item: ContextItem) -> None:
         """Remove key from all indexes."""
-        if not self.enable_indexing or self._agent_index is None or self._global_keys is None:
+        if (
+            not self.enable_indexing
+            or self._agent_index is None
+            or self._global_keys is None
+        ):
             return
 
         # Remove from global keys

@@ -11,7 +11,7 @@ Comprehensive error handling for the Syntha SDK with:
 
 import traceback
 from datetime import datetime
-from typing import Any, Dict, Optional, Union, List
+from typing import Any, Dict, List, Optional, Union
 
 
 class SynthaError(Exception):
@@ -111,17 +111,21 @@ class SynthaConnectionError(SynthaError):
         # Add connection-specific context
         if service:
             self.context["service"] = service
-            self.suggestions.extend([
-                f"Check {service} service availability",
-                "Verify network connectivity",
-                "Check authentication credentials",
-            ])
+            self.suggestions.extend(
+                [
+                    f"Check {service} service availability",
+                    "Verify network connectivity",
+                    "Check authentication credentials",
+                ]
+            )
 
 
 class SynthaValidationError(SynthaError):
     """Data validation errors."""
 
-    def __init__(self, message: str, field: Optional[str] = None, value: Any = None, **kwargs):
+    def __init__(
+        self, message: str, field: Optional[str] = None, value: Any = None, **kwargs
+    ):
         """
         Initialize validation error.
 
@@ -146,7 +150,13 @@ class SynthaValidationError(SynthaError):
 class SynthaPermissionError(SynthaError):
     """Permission and authorization errors."""
 
-    def __init__(self, message: str, agent: Optional[str] = None, resource: Optional[str] = None, **kwargs):
+    def __init__(
+        self,
+        message: str,
+        agent: Optional[str] = None,
+        resource: Optional[str] = None,
+        **kwargs,
+    ):
         """
         Initialize permission error.
 
@@ -165,17 +175,25 @@ class SynthaPermissionError(SynthaError):
             self.context["agent"] = agent
         if resource:
             self.context["resource"] = resource
-            self.suggestions.extend([
-                f"Check permissions for agent: {agent}",
-                f"Verify access to resource: {resource}",
-                "Review security policies",
-            ])
+            self.suggestions.extend(
+                [
+                    f"Check permissions for agent: {agent}",
+                    f"Verify access to resource: {resource}",
+                    "Review security policies",
+                ]
+            )
 
 
 class SynthaContextError(SynthaError):
     """Context management errors."""
 
-    def __init__(self, message: str, key: Optional[str] = None, operation: Optional[str] = None, **kwargs):
+    def __init__(
+        self,
+        message: str,
+        key: Optional[str] = None,
+        operation: Optional[str] = None,
+        **kwargs,
+    ):
         """
         Initialize context error.
 
@@ -194,18 +212,24 @@ class SynthaContextError(SynthaError):
             self.context["key"] = key
         if operation:
             self.context["operation"] = operation
-            self.suggestions.extend([
-                f"Check context key: {key}",
-                f"Verify operation: {operation}",
-                "Review context state",
-            ])
+            self.suggestions.extend(
+                [
+                    f"Check context key: {key}",
+                    f"Verify operation: {operation}",
+                    "Review context state",
+                ]
+            )
 
 
 class SynthaPersistenceError(SynthaError):
     """Persistence and storage errors."""
 
     def __init__(
-        self, message: str, backend: Optional[str] = None, operation: Optional[str] = None, **kwargs
+        self,
+        message: str,
+        backend: Optional[str] = None,
+        operation: Optional[str] = None,
+        **kwargs,
     ):
         """
         Initialize persistence error.
@@ -225,18 +249,26 @@ class SynthaPersistenceError(SynthaError):
             self.context["backend"] = backend
         if operation:
             self.context["operation"] = operation
-            self.suggestions.extend([
-                f"Check {backend} backend availability",
-                f"Verify operation: {operation}",
-                "Check storage permissions",
-                "Review database connection",
-            ])
+            self.suggestions.extend(
+                [
+                    f"Check {backend} backend availability",
+                    f"Verify operation: {operation}",
+                    "Check storage permissions",
+                    "Review database connection",
+                ]
+            )
 
 
 class SynthaToolError(SynthaError):
     """Tool execution and management errors."""
 
-    def __init__(self, message: str, tool: Optional[str] = None, agent: Optional[str] = None, **kwargs):
+    def __init__(
+        self,
+        message: str,
+        tool: Optional[str] = None,
+        agent: Optional[str] = None,
+        **kwargs,
+    ):
         """
         Initialize tool error.
 
@@ -255,11 +287,13 @@ class SynthaToolError(SynthaError):
             self.context["tool"] = tool
         if agent:
             self.context["agent"] = agent
-            self.suggestions.extend([
-                f"Check tool availability: {tool}",
-                f"Verify agent permissions: {agent}",
-                "Review tool configuration",
-            ])
+            self.suggestions.extend(
+                [
+                    f"Check tool availability: {tool}",
+                    f"Verify agent permissions: {agent}",
+                    "Review tool configuration",
+                ]
+            )
 
 
 class SynthaSecurityError(SynthaError):
@@ -280,19 +314,25 @@ class SynthaSecurityError(SynthaError):
         # Add security-specific context
         if security_event:
             self.context["security_event"] = security_event
-            self.suggestions.extend([
-                "Review security policies",
-                "Check authentication status",
-                "Verify authorization levels",
-                f"Investigate security event: {security_event}",
-            ])
+            self.suggestions.extend(
+                [
+                    "Review security policies",
+                    "Check authentication status",
+                    "Verify authorization levels",
+                    f"Investigate security event: {security_event}",
+                ]
+            )
 
 
 class SynthaPerformanceError(SynthaError):
     """Performance and resource errors."""
 
     def __init__(
-        self, message: str, operation: Optional[str] = None, duration: Optional[float] = None, **kwargs
+        self,
+        message: str,
+        operation: Optional[str] = None,
+        duration: Optional[float] = None,
+        **kwargs,
     ):
         """
         Initialize performance error.
@@ -312,19 +352,25 @@ class SynthaPerformanceError(SynthaError):
             self.context["operation"] = operation
         if duration:
             self.context["duration"] = duration
-            self.suggestions.extend([
-                f"Optimize operation: {operation}",
-                f"Consider timeout adjustment (took {duration}s)",
-                "Review resource allocation",
-                "Check system performance",
-            ])
+            self.suggestions.extend(
+                [
+                    f"Optimize operation: {operation}",
+                    f"Consider timeout adjustment (took {duration}s)",
+                    "Review resource allocation",
+                    "Check system performance",
+                ]
+            )
 
 
 class SynthaTimeoutError(SynthaError):
     """Timeout-related errors."""
 
     def __init__(
-        self, message: str, timeout: Optional[float] = None, operation: Optional[str] = None, **kwargs
+        self,
+        message: str,
+        timeout: Optional[float] = None,
+        operation: Optional[str] = None,
+        **kwargs,
     ):
         """
         Initialize timeout error.
@@ -344,12 +390,14 @@ class SynthaTimeoutError(SynthaError):
             self.context["timeout"] = timeout
         if operation:
             self.context["operation"] = operation
-            self.suggestions.extend([
-                f"Increase timeout from {timeout}s",
-                f"Optimize operation: {operation}",
-                "Check network latency",
-                "Review system resources",
-            ])
+            self.suggestions.extend(
+                [
+                    f"Increase timeout from {timeout}s",
+                    f"Optimize operation: {operation}",
+                    "Check network latency",
+                    "Review system resources",
+                ]
+            )
 
 
 class ErrorHandler:
@@ -389,7 +437,7 @@ class ErrorHandler:
 
         # Map common exceptions to Syntha errors
         error_message = str(error)
-        
+
         if "connection" in error_message.lower():
             return SynthaConnectionError(
                 f"Connection failed: {error_message}",
@@ -432,6 +480,7 @@ class ErrorHandler:
         Returns:
             Wrapped function
         """
+
         def wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
@@ -452,6 +501,7 @@ def handle_syntha_error(func):
     Returns:
         Decorated function with error handling
     """
+
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)

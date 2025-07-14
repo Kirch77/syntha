@@ -75,7 +75,9 @@ class SynthaFormatter(logging.Formatter):
         # Add exception information
         if record.exc_info:
             log_data["exception"] = {
-                "type": record.exc_info[0].__name__ if record.exc_info[0] else "Unknown",
+                "type": (
+                    record.exc_info[0].__name__ if record.exc_info[0] else "Unknown"
+                ),
                 "message": str(record.exc_info[1]) if record.exc_info[1] else "Unknown",
                 "traceback": self.formatException(record.exc_info),
             }
@@ -287,7 +289,10 @@ class PerformanceLogger:
         self.timers[timer_id] = time.perf_counter()
         self.logger.info(
             f"Started operation: {operation}",
-            extra={"metrics": {"operation": operation, "timer_id": timer_id}, "context": context},
+            extra={
+                "metrics": {"operation": operation, "timer_id": timer_id},
+                "context": context,
+            },
         )
         return timer_id
 
@@ -307,7 +312,9 @@ class PerformanceLogger:
             **additional_metrics,
         }
 
-        self.logger.info(f"Completed operation in {duration:.3f}s", extra={"metrics": metrics})
+        self.logger.info(
+            f"Completed operation in {duration:.3f}s", extra={"metrics": metrics}
+        )
 
     def log_metrics(self, operation: str, metrics: Dict[str, Any], **context):
         """Log custom metrics."""
@@ -358,7 +365,11 @@ class SecurityLogger:
         )
 
     def log_access_attempt(
-        self, agent_name: str, resource: str, success: bool, reason: Optional[str] = None
+        self,
+        agent_name: str,
+        resource: str,
+        success: bool,
+        reason: Optional[str] = None,
     ):
         """Log an access attempt."""
         event_type = "access_granted" if success else "access_denied"
@@ -369,10 +380,16 @@ class SecurityLogger:
         if reason:
             context["reason"] = reason
 
-        self.log_security_event(event_type, severity, description, agent_name, **context)
+        self.log_security_event(
+            event_type, severity, description, agent_name, **context
+        )
 
     def log_authentication_event(
-        self, agent_name: str, success: bool, method: Optional[str] = None, reason: Optional[str] = None
+        self,
+        agent_name: str,
+        success: bool,
+        method: Optional[str] = None,
+        reason: Optional[str] = None,
     ):
         """Log an authentication event."""
         event_type = "authentication_success" if success else "authentication_failure"
@@ -385,10 +402,13 @@ class SecurityLogger:
         if reason:
             context["reason"] = reason
 
-        self.log_security_event(event_type, severity, description, agent_name, **context)
+        self.log_security_event(
+            event_type, severity, description, agent_name, **context
+        )
 
 
 # Convenience functions
+
 
 def get_logger(name: str) -> logging.Logger:
     """Get a logger instance."""

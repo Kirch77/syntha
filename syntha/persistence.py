@@ -470,7 +470,7 @@ class SQLiteBackend(DatabaseBackend):
             # Connection is broken, reconnect
             self.close()
             self.connect()
-        
+
         # Assert for mypy that connection is not None after ensuring it
         assert self.connection is not None
 
