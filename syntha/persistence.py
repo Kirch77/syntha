@@ -574,7 +574,7 @@ class PostgreSQLBackend(DatabaseBackend):
                     ttl = EXCLUDED.ttl,
                     created_at = EXCLUDED.created_at
                 """,
-                (key, value, subscribers, ttl, created_at),
+                (key, json.dumps(value), json.dumps(subscribers), ttl, created_at),
             )
             self.connection.commit()  # type: ignore
 
@@ -658,7 +658,7 @@ class PostgreSQLBackend(DatabaseBackend):
                 VALUES (%s, %s)
                 ON CONFLICT (agent_name) DO UPDATE SET topics = EXCLUDED.topics
                 """,
-                (agent_name, topics),
+                (agent_name, json.dumps(topics)),
             )
             self.connection.commit()  # type: ignore
 
@@ -700,7 +700,7 @@ class PostgreSQLBackend(DatabaseBackend):
                 VALUES (%s, %s)
                 ON CONFLICT (agent_name) DO UPDATE SET allowed_topics = EXCLUDED.allowed_topics
                 """,
-                (agent_name, allowed_topics),
+                (agent_name, json.dumps(allowed_topics)),
             )
             self.connection.commit()  # type: ignore
 
