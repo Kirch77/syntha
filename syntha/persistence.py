@@ -157,15 +157,18 @@ class SQLiteBackend(DatabaseBackend):
 
         try:
             self.connection = sqlite3.connect(  # type: ignore
-                self.db_path, check_same_thread=False, timeout=10.0
+                self.db_path, check_same_thread=False, timeout=30.0  # Increased timeout
             )
             # Use DELETE mode instead of WAL to avoid Windows file locking issues
             self.connection.execute("PRAGMA journal_mode=DELETE")
             self.connection.execute("PRAGMA synchronous=NORMAL")  # Better performance
             self.connection.execute("PRAGMA foreign_keys=ON")  # Enable foreign keys
-            self.connection.execute("PRAGMA busy_timeout=5000")  # 5 second timeout
+            self.connection.execute("PRAGMA busy_timeout=30000")  # 30 second timeout
+            # Additional settings for better concurrency
+            self.connection.execute("PRAGMA cache_size=10000")  # Larger cache
+            self.connection.execute("PRAGMA temp_store=MEMORY")  # Use memory for temp storage
             self.initialize_schema()
-
+            
             # Set secure file permissions on POSIX systems
             if os.name == "posix" and os.path.exists(self.db_path):
                 # Set permissions to 0o600 (read/write for owner only)
@@ -207,14 +210,17 @@ class SQLiteBackend(DatabaseBackend):
                 # Try to create a new database
                 try:
                     self.connection = sqlite3.connect(  # type: ignore
-                        self.db_path, check_same_thread=False, timeout=10.0
+                        self.db_path, check_same_thread=False, timeout=30.0  # Increased timeout
                     )
                     self.connection.execute("PRAGMA journal_mode=DELETE")
                     self.connection.execute("PRAGMA synchronous=NORMAL")
                     self.connection.execute("PRAGMA foreign_keys=ON")
-                    self.connection.execute("PRAGMA busy_timeout=5000")
+                    self.connection.execute("PRAGMA busy_timeout=30000")  # 30 second timeout
+                    # Additional settings for better concurrency
+                    self.connection.execute("PRAGMA cache_size=10000")  # Larger cache
+                    self.connection.execute("PRAGMA temp_store=MEMORY")  # Use memory for temp storage
                     self.initialize_schema()
-
+                    
                     # Set secure file permissions on POSIX systems
                     if os.name == "posix" and os.path.exists(self.db_path):
                         # Set permissions to 0o600 (read/write for owner only)
@@ -303,40 +309,71 @@ class SQLiteBackend(DatabaseBackend):
         created_at: float,
     ) -> None:
         """Save a context item to SQLite."""
-        with self._lock:
-            self._ensure_connection()
-            cursor = self.connection.cursor()
-            cursor.execute(
-                """
-                INSERT OR REPLACE INTO context_items 
-                (key, value, subscribers, ttl, created_at) 
-                VALUES (?, ?, ?, ?, ?)
-            """,
-                (key, json.dumps(value), json.dumps(subscribers), ttl, created_at),
-            )
-            self.connection.commit()
+        import time
+        
+        max_retries = 3
+        retry_delay = 0.1
+        
+        for attempt in range(max_retries):
+            try:
+                with self._lock:
+                    self._ensure_connection()
+                    cursor = self.connection.cursor()
+                    cursor.execute(
+                        """
+                        INSERT OR REPLACE INTO context_items 
+                        (key, value, subscribers, ttl, created_at) 
+                        VALUES (?, ?, ?, ?, ?)
+                    """,
+                        (key, json.dumps(value), json.dumps(subscribers), ttl, created_at),
+                    )
+                    self.connection.commit()
+                    return  # Success
+            except sqlite3.OperationalError as e:
+                if "database is locked" in str(e).lower() and attempt < max_retries - 1:
+                    time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                    continue
+                else:
+                    raise
+            except Exception:
+                raise
 
     def get_context_item(
         self, key: str
     ) -> Optional[Tuple[Any, List[str], Optional[float], float]]:
         """Retrieve a context item from SQLite."""
-        with self._lock:
-            self._ensure_connection()
-            cursor = self.connection.cursor()
-            cursor.execute(
-                "SELECT value, subscribers, ttl, created_at FROM context_items WHERE key = ?",
-                (key,),
-            )
-            row = cursor.fetchone()
+        import time
+        
+        max_retries = 3
+        retry_delay = 0.1
+        
+        for attempt in range(max_retries):
+            try:
+                with self._lock:
+                    self._ensure_connection()
+                    cursor = self.connection.cursor()
+                    cursor.execute(
+                        "SELECT value, subscribers, ttl, created_at FROM context_items WHERE key = ?",
+                        (key,),
+                    )
+                    row = cursor.fetchone()
 
-            if row is None:
-                return None
+                    if row is None:
+                        return None
 
-            value_json, subscribers_json, ttl, created_at = row
-            value = json.loads(value_json)
-            subscribers = json.loads(subscribers_json)
+                    value_json, subscribers_json, ttl, created_at = row
+                    value = json.loads(value_json)
+                    subscribers = json.loads(subscribers_json)
 
-            return (value, subscribers, ttl, created_at)
+                    return (value, subscribers, ttl, created_at)
+            except sqlite3.OperationalError as e:
+                if "database is locked" in str(e).lower() and attempt < max_retries - 1:
+                    time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                    continue
+                else:
+                    raise
+            except Exception:
+                raise
 
     def delete_context_item(self, key: str) -> bool:
         """Delete a context item from SQLite."""
