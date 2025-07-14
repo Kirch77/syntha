@@ -166,9 +166,11 @@ class SQLiteBackend(DatabaseBackend):
             self.connection.execute("PRAGMA busy_timeout=30000")  # 30 second timeout
             # Additional settings for better concurrency
             self.connection.execute("PRAGMA cache_size=10000")  # Larger cache
-            self.connection.execute("PRAGMA temp_store=MEMORY")  # Use memory for temp storage
+            self.connection.execute(
+                "PRAGMA temp_store=MEMORY"
+            )  # Use memory for temp storage
             self.initialize_schema()
-            
+
             # Set secure file permissions on POSIX systems
             if os.name == "posix" and os.path.exists(self.db_path):
                 # Set permissions to 0o600 (read/write for owner only)
@@ -210,17 +212,23 @@ class SQLiteBackend(DatabaseBackend):
                 # Try to create a new database
                 try:
                     self.connection = sqlite3.connect(  # type: ignore
-                        self.db_path, check_same_thread=False, timeout=30.0  # Increased timeout
+                        self.db_path,
+                        check_same_thread=False,
+                        timeout=30.0,  # Increased timeout
                     )
                     self.connection.execute("PRAGMA journal_mode=DELETE")
                     self.connection.execute("PRAGMA synchronous=NORMAL")
                     self.connection.execute("PRAGMA foreign_keys=ON")
-                    self.connection.execute("PRAGMA busy_timeout=30000")  # 30 second timeout
+                    self.connection.execute(
+                        "PRAGMA busy_timeout=30000"
+                    )  # 30 second timeout
                     # Additional settings for better concurrency
                     self.connection.execute("PRAGMA cache_size=10000")  # Larger cache
-                    self.connection.execute("PRAGMA temp_store=MEMORY")  # Use memory for temp storage
+                    self.connection.execute(
+                        "PRAGMA temp_store=MEMORY"
+                    )  # Use memory for temp storage
                     self.initialize_schema()
-                    
+
                     # Set secure file permissions on POSIX systems
                     if os.name == "posix" and os.path.exists(self.db_path):
                         # Set permissions to 0o600 (read/write for owner only)
@@ -310,10 +318,10 @@ class SQLiteBackend(DatabaseBackend):
     ) -> None:
         """Save a context item to SQLite."""
         import time
-        
+
         max_retries = 3
         retry_delay = 0.1
-        
+
         for attempt in range(max_retries):
             try:
                 with self._lock:
@@ -325,13 +333,19 @@ class SQLiteBackend(DatabaseBackend):
                         (key, value, subscribers, ttl, created_at) 
                         VALUES (?, ?, ?, ?, ?)
                     """,
-                        (key, json.dumps(value), json.dumps(subscribers), ttl, created_at),
+                        (
+                            key,
+                            json.dumps(value),
+                            json.dumps(subscribers),
+                            ttl,
+                            created_at,
+                        ),
                     )
                     self.connection.commit()
                     return  # Success
             except sqlite3.OperationalError as e:
                 if "database is locked" in str(e).lower() and attempt < max_retries - 1:
-                    time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                    time.sleep(retry_delay * (2**attempt))  # Exponential backoff
                     continue
                 else:
                     raise
@@ -343,10 +357,10 @@ class SQLiteBackend(DatabaseBackend):
     ) -> Optional[Tuple[Any, List[str], Optional[float], float]]:
         """Retrieve a context item from SQLite."""
         import time
-        
+
         max_retries = 3
         retry_delay = 0.1
-        
+
         for attempt in range(max_retries):
             try:
                 with self._lock:
@@ -368,7 +382,7 @@ class SQLiteBackend(DatabaseBackend):
                     return (value, subscribers, ttl, created_at)
             except sqlite3.OperationalError as e:
                 if "database is locked" in str(e).lower() and attempt < max_retries - 1:
-                    time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                    time.sleep(retry_delay * (2**attempt))  # Exponential backoff
                     continue
                 else:
                     raise

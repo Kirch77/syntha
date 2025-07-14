@@ -148,9 +148,9 @@ class TestDatabaseIntegration:
         import sys
         import threading
         import time
-        
+
         db_path = str(tmp_path / "concurrent.db")
-        
+
         # Adjust test parameters for Python 3.10 on Windows
         if sys.version_info < (3, 11) and sys.platform == "win32":
             # More conservative settings for Python 3.10 on Windows
@@ -192,15 +192,19 @@ class TestDatabaseIntegration:
                     try:
                         value = mesh.get(f"worker_{worker_id}_item_{i}")
                         if value is None:
-                            results[worker_id]["errors"].append(f"Failed to read item {i}")
+                            results[worker_id]["errors"].append(
+                                f"Failed to read item {i}"
+                            )
                         elif value.get("worker_id") != worker_id:
-                            results[worker_id]["errors"].append(f"Incorrect worker_id for item {i}")
+                            results[worker_id]["errors"].append(
+                                f"Incorrect worker_id for item {i}"
+                            )
                     except Exception as e:
                         results[worker_id]["errors"].append(f"Get error: {e}")
 
                 mesh.close()
                 results[worker_id]["success"] = True
-                
+
             except Exception as e:
                 results[worker_id]["errors"].append(f"Worker {worker_id} failed: {e}")
                 results[worker_id]["success"] = False
@@ -231,8 +235,10 @@ class TestDatabaseIntegration:
             # On Python 3.10 + Windows, be more lenient
             if sys.version_info < (3, 11) and sys.platform == "win32":
                 if len(failed_workers) <= 1:  # Allow 1 worker to fail
-                    pytest.skip(f"Concurrent test partially failed on Python 3.10/Windows: {failed_workers}")
-            
+                    pytest.skip(
+                        f"Concurrent test partially failed on Python 3.10/Windows: {failed_workers}"
+                    )
+
             pytest.fail(f"Concurrent workers failed: {failed_workers}")
 
         # Verify final state
@@ -243,12 +249,14 @@ class TestDatabaseIntegration:
 
             expected_items = num_workers * items_per_worker
             actual_size = final_mesh.size()
-            
+
             # Allow for some data loss in concurrent scenarios
             min_expected = int(expected_items * 0.8)  # 80% minimum
-            
+
             if actual_size < min_expected:
-                pytest.fail(f"Expected at least {min_expected} items, got {actual_size}")
+                pytest.fail(
+                    f"Expected at least {min_expected} items, got {actual_size}"
+                )
 
             # Verify data integrity for available items
             errors = []
@@ -258,17 +266,23 @@ class TestDatabaseIntegration:
                         value = final_mesh.get(f"worker_{worker_id}_item_{i}")
                         if value is not None:
                             if value.get("worker_id") != worker_id:
-                                errors.append(f"Worker {worker_id} item {i} has wrong worker_id")
+                                errors.append(
+                                    f"Worker {worker_id} item {i} has wrong worker_id"
+                                )
                             if value.get("item_id") != i:
-                                errors.append(f"Worker {worker_id} item {i} has wrong item_id")
+                                errors.append(
+                                    f"Worker {worker_id} item {i} has wrong item_id"
+                                )
                     except Exception as e:
-                        errors.append(f"Error checking worker {worker_id} item {i}: {e}")
+                        errors.append(
+                            f"Error checking worker {worker_id} item {i}: {e}"
+                        )
 
             if errors:
                 pytest.fail(f"Data integrity errors: {errors}")
 
             final_mesh.close()
-            
+
         except Exception as e:
             pytest.fail(f"Final verification failed: {e}")
 
