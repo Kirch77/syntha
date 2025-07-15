@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1752548970278,
+  "lastUpdate": 1752549168540,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -1598,6 +1598,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000013345735566604097",
             "extra": "mean: 829.5940177079779 usec\nrounds: 1186"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "367ff2372921cdf96fab3567a0538f082114accc",
+          "message": "ci(deps): bump codecov/codecov-action from 3 to 5 (#2)\n\nBumps [codecov/codecov-action](https://github.com/codecov/codecov-action) from 3 to 5.\n- [Release notes](https://github.com/codecov/codecov-action/releases)\n- [Changelog](https://github.com/codecov/codecov-action/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/codecov/codecov-action/compare/v3...v5)\n\n---\nupdated-dependencies:\n- dependency-name: codecov/codecov-action\n  dependency-version: '5'\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-07-15T03:12:18Z",
+          "tree_id": "8254d3cc844b22a57545fdd0eb54b8cdd4716aa0",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/367ff2372921cdf96fab3567a0538f082114accc"
+        },
+        "date": 1752549167649,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 310203.4808115824,
+            "unit": "iter/sec",
+            "range": "stddev: 6.90987654727374e-7",
+            "extra": "mean: 3.2236904543550238 usec\nrounds: 28348"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 483579.0369865292,
+            "unit": "iter/sec",
+            "range": "stddev: 6.267029661082989e-7",
+            "extra": "mean: 2.0679142880791512 usec\nrounds: 120555"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2246.5475169003066,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001570114126325286",
+            "extra": "mean: 445.1274644659013 usec\nrounds: 2181"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4910.71190458097,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000015293665375965406",
+            "extra": "mean: 203.63646237669684 usec\nrounds: 3854"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 710.7712396773511,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00010835057769033673",
+            "extra": "mean: 1.4069224304207102 msec\nrounds: 618"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1831.100992138645,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000017466330910498837",
+            "extra": "mean: 546.1195227861485 usec\nrounds: 2699"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 538045.3033350586,
+            "unit": "iter/sec",
+            "range": "stddev: 7.876825331281771e-7",
+            "extra": "mean: 1.8585795541779255 usec\nrounds: 1301"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 21.4655686044812,
+            "unit": "iter/sec",
+            "range": "stddev: 0.003268213955693174",
+            "extra": "mean: 46.586233909090936 msec\nrounds: 22"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 102688.89532481451,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000001889913854238932",
+            "extra": "mean: 9.738151304840773 usec\nrounds: 17435"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1175.491756776436,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00003348044224024633",
+            "extra": "mean: 850.7077946189186 usec\nrounds: 1115"
           }
         ]
       }
