@@ -76,14 +76,11 @@ pip install -r requirements-test.txt
 
 ### Database Setup (for testing)
 
-For integration tests, you may need PostgreSQL and Redis:
+For integration tests, you may need PostgreSQL:
 
 ```bash
 # PostgreSQL (using Docker)
 docker run --name syntha-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=syntha_test -p 5432:5432 -d postgres:13
-
-# Redis (using Docker)
-docker run --name syntha-redis -p 6379:6379 -d redis:alpine
 ```
 
 ## Making Changes
@@ -463,4 +460,4 @@ Contributors will be recognized in:
 - **Release notes** for significant contributions
 - **GitHub contributors** page
 
-Thank you for contributing to Syntha! 🎉
+Thank you for contributing to Syntha!
