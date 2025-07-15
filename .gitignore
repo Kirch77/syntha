@@ -256,3 +256,40 @@ docs/build/
 # Generated HTML docs (keep markdown, ignore generated HTML)
 *.html
 !docs/**/*.html
+
+# Syntha-specific files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.corrupted.*
+syntha_context.db*
+
+# Performance and profiling files
+*.prof
+*.cprof
+.benchmarks/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Test artifacts
+.tox/
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+test-results/
+test-reports/
+
+# Local configuration files
+local_config.py
+local_settings.py
+.env.local
+
+# Runtime files
+*.pid
+*.sock
+*.lock

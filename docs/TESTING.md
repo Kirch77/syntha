@@ -1,12 +1,12 @@
 # Contributor Testing Guide
 
-## 🧪 Understanding Test Failures
+## Understanding Test Failures
 
 When contributing to Syntha SDK, you'll encounter comprehensive tests designed to help you understand exactly what went wrong and how to fix it. This guide explains how to interpret test failures and use our debugging tools.
 
-## 🚨 Types of Error Messages
+## Types of Error Messages
 
-### Standard pytest Errors (Basic)
+### Standard pytest Errors
 
 ```
 AssertionError: assert 3 == 2
@@ -16,272 +16,353 @@ AssertionError: assert 3 == 2
 ### Enhanced Contributor-Friendly Errors
 
 ```
-❌ IMMUTABILITY VIOLATION DETECTED!
-📍 Issue: ContextItem.subscribers is not properly isolated from external modifications
-🔍 Expected: subscribers length should remain 2 after external list modification
-💥 Actual: subscribers length is 3 (was modified externally!)
-📋 Current subscribers: ['agent1', 'agent2', 'agent3']
-📋 Modified original: ['agent1', 'agent2', 'agent3']
+IMMUTABILITY VIOLATION DETECTED!
+Issue: ContextItem.subscribers is not properly isolated from external modifications
+Expected: subscribers length should remain 2 after external list modification
+Actual: subscribers length is 3 (was modified externally!)
+Current subscribers: ['agent1', 'agent2', 'agent3']
+Modified original: ['agent1', 'agent2', 'agent3']
 
-🔧 HOW TO FIX:
+HOW TO FIX:
    In ContextItem.__init__, ensure you create a copy of mutable parameters:
-   ✅ self.subscribers = list(subscribers) if subscribers else []
-   ❌ self.subscribers = subscribers  # This creates a reference, not a copy!
+   ✓ self.subscribers = list(subscribers) if subscribers else []
+   ✗ self.subscribers = subscribers  # This creates a reference, not a copy!
 
-💡 WHY THIS MATTERS:
-   If ContextItem doesn't copy mutable inputs, external code can accidentally
-   modify the context data, leading to hard-to-debug issues in production.
-   This is a critical data integrity requirement for the Syntha SDK.
+   Pro tip: Python references are like sharing a Netflix password - 
+   everyone gets affected when someone changes it.
 ```
 
-## 🛠️ Debugging Workflow
+## Debugging Workflow
 
 ### 1. Read the Error Message Carefully
 
 Our enhanced error messages include:
 
-- **📍 Issue**: What went wrong
-- **🔍 Expected vs 💥 Actual**: What should happen vs what did happen
-- **🔧 HOW TO FIX**: Specific steps to resolve the issue
-- **💡 WHY THIS MATTERS**: Context about why this requirement exists
+- **Issue**: What went wrong
+- **Expected vs Actual**: What should happen vs what did happen
+- **HOW TO FIX**: Specific steps to resolve the issue
+- **WHY THIS MATTERS**: Context about why this requirement exists
 
 ### 2. Run the Specific Test with Verbose Output
 
 ```bash
-# Run a specific failing test with detailed output
-python -m pytest tests/unit/test_context.py::TestContextItem::test_immutability -v -s
+# Run a specific test with detailed output
+pytest tests/unit/test_context.py::TestContextItem::test_subscribers_immutability -v -s
 
-# Run with extra debugging information
-python -m pytest tests/unit/test_context.py::TestContextItem::test_immutability -v -s --tb=long
+# Run all tests in a specific category
+pytest tests/unit/ -v --tb=short
+
+# Run with even more detail
+pytest tests/unit/test_context.py::TestContextItem::test_subscribers_immutability -v -s --tb=long
 ```
 
-### 3. Use Our Debugging Utilities
-
-#### Debug Context Mesh State
-
-```python
-from tests.test_helpers import debug_context_mesh_state
-
-def test_my_feature():
-    mesh = ContextMesh()
-    mesh.put("key", "value", subscribers=["agent1"])
-
-    # Debug the current state
-    debug_context_mesh_state(mesh, "After adding data")
-
-    # Your test logic here...
-```
-
-#### Use Test Scenario Reporter
-
-```python
-from tests.test_helpers import TestExecutionReporter
-
-def test_with_clear_reporting():
-    reporter = TestExecutionReporter()
-
-    with reporter.test_scenario(
-        scenario_name="My Feature Test",
-        description="Testing that my feature works correctly",
-        expected_behavior="Feature should return expected results",
-        setup_notes="Create test data and configure system"
-    ):
-        reporter.log_step("Setting up test data")
-        # your setup code
-
-        reporter.log_data("Input data", my_input)
-        # your test logic
-
-        reporter.log_step("Verifying results")
-        # your assertions
-```
-
-## 🎯 Common Test Categories & What They Check
-
-### Unit Tests (`@pytest.mark.unit`)
-
-- **What**: Individual function/class behavior
-- **When they fail**: Your code logic has bugs
-- **How to fix**: Check the specific function implementation
-
-### Integration Tests (`@pytest.mark.integration`)
-
-- **What**: Multiple components working together
-- **When they fail**: Components don't interact correctly
-- **How to fix**: Check interfaces between components
-
-### Security Tests (`@pytest.mark.security`)
-
-- **What**: Protection against common vulnerabilities
-- **When they fail**: Security holes exist in your code
-- **How to fix**: Validate inputs, escape outputs, check permissions
-
-### Performance Tests (`@pytest.mark.performance`)
-
-- **What**: Operations complete within time limits
-- **When they fail**: Code is too slow
-- **How to fix**: Profile code, optimize algorithms, check for bottlenecks
-
-### Edge Case Tests (`@pytest.mark.edge_case`)
-
-- **What**: Unusual inputs and boundary conditions
-- **When they fail**: Code doesn't handle edge cases
-- **How to fix**: Add validation, handle special cases
-
-## 🔧 Common Issues & Solutions
-
-### 1. Immutability Violations
-
-**Problem**: Modifying mutable inputs affects internal state
-
-```python
-# ❌ Wrong - creates reference
-def __init__(self, subscribers):
-    self.subscribers = subscribers
-
-# ✅ Correct - creates copy
-def __init__(self, subscribers):
-    self.subscribers = list(subscribers) if subscribers else []
-```
-
-### 2. Access Control Issues
-
-**Problem**: Agents can access data they shouldn't
-
-```python
-# Check subscription logic
-def get(self, key, agent):
-    if not self._is_agent_subscribed(key, agent):
-        return None  # Access denied
-    return self._contexts.get(key)
-```
-
-### 3. Data Integrity Problems
-
-**Problem**: Data changes during storage/retrieval
-
-```python
-# Ensure deep copies for complex data
-import copy
-
-def put(self, key, value, **kwargs):
-    safe_value = copy.deepcopy(value)
-    self._contexts[key] = ContextItem(safe_value, **kwargs)
-```
-
-### 4. Performance Regressions
-
-**Problem**: Operations take too long
-
-```python
-# Profile your code
-import cProfile
-cProfile.run('your_slow_function()')
-
-# Check time complexity
-# O(n) is usually acceptable
-# O(n²) might be too slow for large datasets
-```
-
-### 5. Thread Safety Issues
-
-**Problem**: Race conditions in concurrent code
-
-```python
-import threading
-
-class ThreadSafeContextMesh:
-    def __init__(self):
-        self._lock = threading.RLock()
-        self._contexts = {}
-
-    def put(self, key, value, **kwargs):
-        with self._lock:
-            # Safe concurrent access
-            self._contexts[key] = ContextItem(value, **kwargs)
-```
-
-## 📊 Running Different Test Categories
+### 3. Use Debug Mode
 
 ```bash
-# Run all tests
-python -m pytest
+# Drop into debugger on failure
+pytest tests/unit/test_context.py::TestContextItem::test_subscribers_immutability --pdb
 
-# Run only unit tests
-python -m pytest -m unit
-
-# Run only failing tests
-python -m pytest --lf
-
-# Run with coverage report
-python -m pytest --cov=syntha --cov-report=html
-
-# Run specific test file
-python -m pytest tests/unit/test_context.py
-
-# Run specific test function
-python -m pytest tests/unit/test_context.py::test_context_item_creation
+# Run with debug output
+pytest tests/unit/test_context.py::TestContextItem::test_subscribers_immutability -v -s --capture=no
 ```
 
-## 🆘 Getting Help
+### 4. Check Related Tests
 
-1. **Read the error message** - Our enhanced errors include fix instructions
-2. **Check existing tests** - Look for similar test patterns
-3. **Use debug utilities** - Add debugging output to understand what's happening
-4. **Run tests incrementally** - Test small changes frequently
-5. **Ask for help** - Create an issue with:
-   - The failing test output
-   - What you're trying to implement
-   - What you've already tried
+```bash
+# Run all tests for a specific class
+pytest tests/unit/test_context.py::TestContextItem -v
 
-## ✅ Test Quality Checklist
+# Run tests that might be related
+pytest tests/unit/test_context.py -k "immutability" -v
+```
 
-When writing new tests:
+## Common Test Failure Patterns
 
-- [ ] Test has clear, descriptive name
-- [ ] Test includes docstring explaining what it checks
-- [ ] Test uses appropriate pytest markers
-- [ ] Error messages are helpful for debugging
-- [ ] Test covers both success and failure cases
-- [ ] Test is isolated and doesn't depend on other tests
-- [ ] Test data is realistic but simple
-- [ ] Performance-sensitive tests include timing assertions
+### 1. Data Immutability Issues
 
-## 🎓 Example: Writing a Good Test
+**Problem**: External code can modify internal data structures
+
+**Common Error**:
+```
+IMMUTABILITY VIOLATION: Expected data to remain unchanged
+```
+
+**Fix**: Always create copies of mutable inputs:
+```python
+# Wrong
+self.subscribers = subscribers
+
+# Right
+self.subscribers = list(subscribers) if subscribers else []
+```
+
+### 2. Thread Safety Issues
+
+**Problem**: Race conditions in concurrent operations
+
+**Common Error**:
+```
+THREAD SAFETY VIOLATION: Concurrent access detected
+```
+
+**Fix**: Use proper locking mechanisms:
+```python
+# Wrong
+self.data[key] = value
+
+# Right
+with self._lock:
+    self.data[key] = value
+```
+
+### 3. Memory Leaks
+
+**Problem**: Resources not properly cleaned up
+
+**Common Error**:
+```
+MEMORY LEAK DETECTED: Resources not cleaned up
+```
+
+**Fix**: Always clean up resources:
+```python
+# Wrong
+def process_data(self):
+    connection = create_connection()
+    # ... use connection
+
+# Right
+def process_data(self):
+    connection = create_connection()
+    try:
+        # ... use connection
+    finally:
+        connection.close()
+```
+
+### 4. Database Connection Issues
+
+**Problem**: Database connections not properly managed
+
+**Common Error**:
+```
+DATABASE CONNECTION ERROR: Connection pool exhausted
+```
+
+**Fix**: Use connection managers:
+```python
+# Wrong
+conn = get_connection()
+conn.execute(query)
+
+# Right
+with get_connection() as conn:
+    conn.execute(query)
+```
+
+## Test Categories and Their Focus
+
+### Unit Tests (`tests/unit/`)
+
+**Focus**: Individual component behavior
+**Speed**: Fast (<1s per test)
+**Isolation**: No external dependencies
+
+**Common Failures**:
+- Logic errors in individual functions
+- Incorrect return values
+- Missing error handling
+
+### Integration Tests (`tests/integration/`)
+
+**Focus**: Component interactions
+**Speed**: Medium (1-10s per test)
+**Dependencies**: May use real databases
+
+**Common Failures**:
+- Database connection issues
+- Cross-component communication problems
+- Configuration mismatches
+
+### Performance Tests (`tests/performance/`)
+
+**Focus**: Speed and resource usage
+**Speed**: Slow (10s+ per test)
+**Dependencies**: May require specific hardware
+
+**Common Failures**:
+- Slow operations
+- Memory usage spikes
+- Resource leaks
+
+### Security Tests (`tests/security/`)
+
+**Focus**: Security vulnerabilities
+**Speed**: Variable
+**Dependencies**: May simulate attack scenarios
+
+**Common Failures**:
+- SQL injection vulnerabilities
+- Access control bypasses
+- Data exposure issues
+
+## Advanced Debugging Techniques
+
+### Using pytest fixtures for debugging
 
 ```python
-@pytest.mark.unit
-def test_context_item_ttl_expiration_with_clear_errors(self):
-    """
-    Test that ContextItem correctly expires after TTL period.
-
-    This test verifies the time-to-live functionality works correctly
-    and that expired items are properly identified.
-    """
-    reporter = TestExecutionReporter()
-
-    with reporter.test_scenario(
-        scenario_name="TTL Expiration",
-        description="Verify ContextItem expires after specified TTL",
-        expected_behavior="Item should be expired after TTL seconds pass",
-        setup_notes="Create item with 0.1 second TTL, wait, then check"
-    ):
-        # Setup
-        reporter.log_step("Creating ContextItem with short TTL")
-        item = ContextItem("test_value", ttl=0.1)
-        reporter.log_data("TTL", 0.1)
-
-        # Verify not expired initially
-        reporter.log_step("Checking item is not expired initially")
-        assert not item.is_expired(), "Item should not be expired immediately"
-
-        # Wait for expiration
-        reporter.log_step("Waiting for TTL to pass")
-        time.sleep(0.15)
-
-        # Verify expired
-        reporter.log_step("Checking item is expired after TTL")
-        assert item.is_expired(), "Item should be expired after TTL period"
+@pytest.fixture
+def debug_context():
+    """Fixture that provides debug information."""
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    yield
+    logging.basicConfig(level=logging.WARNING)
 ```
 
-This approach ensures that when your test fails, contributors get clear guidance on what went wrong and how to fix it!
+### Custom assertion messages
+
+```python
+def test_custom_assertion():
+    result = complex_operation()
+    assert result is not None, f"Expected result, got None. Debug info: {debug_info()}"
+```
+
+### Using pytest markers
+
+```bash
+# Run only tests marked as 'slow'
+pytest -m slow
+
+# Skip slow tests
+pytest -m "not slow"
+
+# Run tests with custom markers
+pytest -m "integration and not slow"
+```
+
+## Test Environment Setup
+
+### Local Development
+
+```bash
+# Set up test environment
+export SYNTHA_TEST_MODE=true
+export SYNTHA_LOG_LEVEL=DEBUG
+
+# Run tests with environment
+pytest tests/
+```
+
+### Docker Testing
+
+```bash
+# Run tests in Docker container
+docker run -v $(pwd):/app -w /app python:3.9 pytest tests/
+
+# Run specific test suite
+docker run -v $(pwd):/app -w /app python:3.9 pytest tests/integration/
+```
+
+## Contributing Test Improvements
+
+### Writing Better Test Messages
+
+```python
+# Poor error message
+assert len(result) == 2
+
+# Good error message
+assert len(result) == 2, f"Expected 2 items, got {len(result)}: {result}"
+
+# Excellent error message with context
+assert len(result) == 2, (
+    f"Expected 2 items after filtering, got {len(result)}: {result}\n"
+    f"Filter criteria: {filter_criteria}\n"
+    f"Original data: {original_data}"
+)
+```
+
+### Adding Debug Helpers
+
+```python
+def debug_context_state(mesh):
+    """Helper to print context mesh state for debugging."""
+    print(f"Context items: {len(mesh._context)}")
+    print(f"Subscribers: {mesh._subscribers}")
+    print(f"Agent topics: {mesh._agent_topics}")
+```
+
+### Test Documentation
+
+```python
+def test_complex_scenario():
+    """
+    Test complex multi-agent scenario.
+    
+    This test verifies that:
+    1. Agents can subscribe to multiple topics
+    2. Context is properly filtered by topic
+    3. Data persists across agent restarts
+    4. Performance remains within acceptable limits
+    
+    Common failure points:
+    - Topic filtering logic in ContextMesh.push()
+    - Database connection handling in persistence layer
+    - Memory cleanup in agent lifecycle
+    """
+    # Test implementation
+```
+
+## Getting Help
+
+If you're stuck on a test failure:
+
+1. **Read the error message carefully** - our enhanced messages provide specific guidance
+2. **Check the test documentation** - look for comments explaining the test purpose
+3. **Run related tests** - see if the issue is isolated or widespread
+4. **Use debug mode** - step through the code with a debugger
+5. **Ask for help** - create a GitHub issue with the full error message and context
+
+## Performance Testing Guidelines
+
+### Benchmarking
+
+```python
+import time
+
+def test_performance_baseline():
+    """Test that operations meet performance requirements."""
+    mesh = ContextMesh()
+    
+    # Measure operation time
+    start = time.time()
+    for i in range(1000):
+        mesh.push(f"key_{i}", {"data": i})
+    duration = time.time() - start
+    
+    # Assert performance requirement
+    assert duration < 1.0, f"1000 operations took {duration:.2f}s, expected <1.0s"
+```
+
+### Memory Testing
+
+```python
+import tracemalloc
+
+def test_memory_usage():
+    """Test that memory usage stays within limits."""
+    tracemalloc.start()
+    
+    mesh = ContextMesh()
+    for i in range(10000):
+        mesh.push(f"key_{i}", {"data": i})
+    
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    
+    # Assert memory limit (in MB)
+    assert peak < 100 * 1024 * 1024, f"Peak memory usage: {peak / 1024 / 1024:.2f}MB"
+```
+
+This testing guide helps ensure that contributors can effectively diagnose and fix issues while maintaining the high quality standards of the Syntha SDK.

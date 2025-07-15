@@ -72,9 +72,9 @@ decisions when appropriate.
 
 If you experience or witness unacceptable behavior, please report it by:
 
-1. **Email**: Send a detailed report to `conduct@syntha.dev`
-2. **GitHub**: Use the "Report content" feature on GitHub
-3. **Direct message**: Contact a project maintainer directly (if comfortable)
+1. **GitHub Issues**: Create a private issue in the repository
+2. **GitHub Report**: Use the "Report content" feature on GitHub
+3. **Direct contact**: Contact a project maintainer directly through GitHub
 
 ### What to Include
 
@@ -98,9 +98,9 @@ All reports will be handled with discretion. We will:
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-`conduct@syntha.dev`. All complaints will be reviewed and investigated
-promptly and fairly.
+reported to the community leaders responsible for enforcement through GitHub
+Issues or direct contact with project maintainers. All complaints will be
+reviewed and investigated promptly and fairly.
 
 ### Investigation Process
 
@@ -161,7 +161,7 @@ community.
 If you believe you have been falsely or unfairly accused of violating this Code
 of Conduct, you may appeal by:
 
-1. **Email**: Send an appeal to `conduct-appeals@syntha.dev`
+1. **GitHub Issues**: Create a private issue explaining your appeal
 2. **Include**: Your reasons for appealing and any relevant evidence
 3. **Timeline**: Appeals will be reviewed within 7 days
 
@@ -205,9 +205,9 @@ We believe in recognizing positive contributions to our community:
 ### Getting Help
 
 * **Documentation**: Check our comprehensive documentation first
-* **Community forum**: Ask questions and get help from other users
-* **GitHub Issues**: Report bugs and request features
-* **Email support**: Contact us directly for complex issues
+* **GitHub Issues**: Ask questions and get help from other users
+* **GitHub Discussions**: Community Q&A and general discussion
+* **Examples**: Explore our extensive example collection
 
 ### Learning Resources
 
@@ -218,10 +218,11 @@ We believe in recognizing positive contributions to our community:
 
 ## Contact
 
-* **Code of Conduct questions**: `conduct@syntha.dev`
-* **General questions**: `community@syntha.dev`
-* **Security issues**: `security@syntha.dev`
-* **Project maintainers**: See [MAINTAINERS.md](MAINTAINERS.md)
+For questions about this Code of Conduct, please:
+
+* **Create a GitHub Issue**: For general questions about the Code of Conduct
+* **Contact maintainers**: Through GitHub for specific concerns
+* **Use GitHub Discussions**: For community questions and discussions
 
 ## Attribution
 

@@ -4,10 +4,10 @@
 
 We provide security updates for the following versions of Syntha SDK:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.x.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| Version | Supported |
+| ------- | --------- |
+| 1.x.x   | Yes       |
+| < 1.0   | No        |
 
 ## Reporting a Vulnerability
 
@@ -19,7 +19,7 @@ Please do not report security vulnerabilities through public GitHub issues, disc
 
 ### 2. Contact Us Privately
 
-Instead, please send an email to **security@syntha.dev** with the following information:
+Instead, please use GitHub's private vulnerability reporting feature or create a private issue in the repository with the following information:
 
 - **Description**: A clear description of the vulnerability
 - **Impact**: What could an attacker accomplish by exploiting this vulnerability?
@@ -66,7 +66,7 @@ Any other relevant information
 
 ## Response Timeline
 
-We will acknowledge your email within **48 hours** and provide a more detailed response within **7 days** indicating the next steps in handling your report.
+We will acknowledge your report within **48 hours** and provide a more detailed response within **7 days** indicating the next steps in handling your report.
 
 Our typical process:
 
@@ -206,8 +206,8 @@ Currently, we do not offer a formal bug bounty program. However, we deeply appre
 
 ## Contact Information
 
-- **Security Email**: security@syntha.dev
-- **General Contact**: For non-security issues, please use GitHub issues
+- **Security Reports**: Use GitHub's private vulnerability reporting feature
+- **General Issues**: For non-security issues, please use GitHub issues
 - **Maintainers**: Listed in README.md
 
-Thank you for helping keep Syntha SDK secure! 🔒
+Thank you for helping keep Syntha SDK secure!

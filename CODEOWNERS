@@ -1,0 +1,39 @@
+# CODEOWNERS file for Syntha SDK
+# This file defines who should review changes to different parts of the codebase
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners (fallback for any files not covered by specific rules)
+* @OWNER_PLACEHOLDER
+
+# Core SDK modules
+/syntha/ @OWNER_PLACEHOLDER
+
+# Core context management
+/syntha/context.py @OWNER_PLACEHOLDER
+/syntha/persistence.py @OWNER_PLACEHOLDER
+
+# Security-related files
+/syntha/exceptions.py @OWNER_PLACEHOLDER
+/SECURITY.md @OWNER_PLACEHOLDER
+
+# Tests
+/tests/ @OWNER_PLACEHOLDER
+
+# Documentation
+/docs/ @OWNER_PLACEHOLDER
+/README.md @OWNER_PLACEHOLDER
+/CONTRIBUTING.md @OWNER_PLACEHOLDER
+/CHANGELOG.md @OWNER_PLACEHOLDER
+
+# Configuration and CI/CD
+/.github/ @OWNER_PLACEHOLDER
+/setup.py @OWNER_PLACEHOLDER
+/pyproject.toml @OWNER_PLACEHOLDER
+/requirements*.txt @OWNER_PLACEHOLDER
+
+# Examples
+/examples/ @OWNER_PLACEHOLDER
+
+# Community and governance files
+/CODE_OF_CONDUCT.md @OWNER_PLACEHOLDER
+/CODEOWNERS @OWNER_PLACEHOLDER 
