@@ -1,275 +1,411 @@
-# PostgreSQL Testing Guide for Syntha SDK
+# PostgreSQL Testing Guide
 
 ## Overview
 
-The Syntha SDK includes comprehensive PostgreSQL testing to ensure the persistence layer works correctly with PostgreSQL databases. This guide covers how to set up and run PostgreSQL tests.
+Testing with PostgreSQL provides advanced features and production-like conditions that SQLite cannot replicate. This guide covers setup, configuration, and best practices for PostgreSQL testing.
 
-## Available PostgreSQL Tests
+## Why PostgreSQL Testing Matters
 
-The test suite includes **5 PostgreSQL-specific tests**:
+SQLite is excellent for development, but PostgreSQL testing is essential for:
 
-### 1. Integration Tests (1 test)
-- **`test_full_persistence_cycle[postgresql]`** - Tests complete persistence lifecycle with PostgreSQL
+- **JSONB Support**: Advanced JSON operations and indexing
+- **Advanced Features**: CTEs, window functions, and sophisticated queries
+- **Concurrency**: Multiple connections without blocking
+- **Production Parity**: Testing against your production database type
 
-### 2. Backend Tests (2 tests)
-- **`test_postgresql_backend_creation`** - Tests creating PostgreSQL backend
-- **`test_postgresql_basic_operations`** - Tests basic PostgreSQL CRUD operations
+## PostgreSQL Installation
 
-### 3. Factory Tests (1 test)
-- **`test_create_postgresql_backend`** - Tests creating PostgreSQL backend via factory
+### Local Development Setup
 
-### 4. Error Handling Tests (1 test)
-- **`test_postgresql_connection_failure`** - Tests PostgreSQL connection failure scenarios
-
-## Prerequisites
-
-1. **Python Package**: `psycopg2-binary` (already installed ✅)
-2. **PostgreSQL Database**: Running PostgreSQL instance
-3. **Environment Variable**: `POSTGRES_URL` set to connection string
-
-## Setup Options
-
-### Option A: Docker (Recommended)
-
-#### 1. Start Docker Desktop
-- Search for "Docker Desktop" in Windows Start menu
-- Start Docker Desktop
-- Wait for Docker whale icon to appear in system tray
-
-#### 2. Run Setup Script
-```powershell
-python setup_postgres_tests.py
+#### Option 1: Docker (Recommended)
+```bash
+# Start PostgreSQL in Docker
+docker run --name syntha-postgres-test \
+  -e POSTGRES_PASSWORD=test123 \
+  -e POSTGRES_DB=syntha_test \
+  -p 5432:5432 \
+  -d postgres:13
 ```
 
-#### 3. Manual Docker Setup (Alternative)
-```powershell
-# Create and start PostgreSQL container
-docker run -d --name syntha-postgres `
-  -e POSTGRES_PASSWORD=postgres `
-  -e POSTGRES_DB=syntha_test `
-  -p 5432:5432 `
-  postgres:13
+#### Option 2: Local Installation
 
-# Wait for PostgreSQL to start
-Start-Sleep -Seconds 5
+**Ubuntu/Debian**:
+```bash
+sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib
+sudo service postgresql start
 
-# Set environment variable
-$env:POSTGRES_URL = "postgresql://postgres:postgres@localhost:5432/syntha_test"
-
-# Run tests
-python -m pytest tests/ -k "postgresql" -v
+# Create test database
+sudo -u postgres createdb syntha_test
+sudo -u postgres psql -c "CREATE USER test WITH PASSWORD 'test123';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE syntha_test TO test;"
 ```
 
-### Option B: Local PostgreSQL Installation
+**macOS**:
+```bash
+brew install postgresql
+brew services start postgresql
 
-#### 1. Install PostgreSQL
-- Download from: https://www.postgresql.org/download/windows/
-- Use these settings during installation:
-  - Username: `postgres`
-  - Password: `postgres`
-  - Port: `5432`
-  - Database: `postgres`
-
-#### 2. Create Test Database
-```sql
--- Connect to PostgreSQL as postgres user
-CREATE DATABASE syntha_test;
+# Create test database
+createdb syntha_test
+psql -d syntha_test -c "CREATE USER test WITH PASSWORD 'test123';"
+psql -d syntha_test -c "GRANT ALL PRIVILEGES ON DATABASE syntha_test TO test;"
 ```
 
-#### 3. Set Environment Variable
-```powershell
-$env:POSTGRES_URL = "postgresql://postgres:postgres@localhost:5432/syntha_test"
+**Windows**:
+```bash
+# Download PostgreSQL installer from postgresql.org
+# Follow the installation wizard
+# Create test database using pgAdmin or psql
 ```
 
-#### 4. Run Tests
-```powershell
-python -m pytest tests/ -k "postgresql" -v
+### Verification
+
+```bash
+# Test your connection
+psql -h localhost -U test -d syntha_test -c "SELECT version();"
 ```
 
-## Running Tests
+## Test Configuration
 
-### Run All PostgreSQL Tests
-```powershell
-$env:POSTGRES_URL = "postgresql://postgres:postgres@localhost:5432/syntha_test"
-python -m pytest tests/ -k "postgresql" -v
+### Environment Variables
+
+```bash
+# Create .env.test file
+SYNTHA_TEST_DB_TYPE=postgresql
+SYNTHA_TEST_POSTGRES_URL=postgresql://test:test123@localhost:5432/syntha_test
+SYNTHA_TEST_POSTGRES_HOST=localhost
+SYNTHA_TEST_POSTGRES_PORT=5432
+SYNTHA_TEST_POSTGRES_USER=test
+SYNTHA_TEST_POSTGRES_PASSWORD=test123
+SYNTHA_TEST_POSTGRES_DB=syntha_test
 ```
 
-### Run Specific Test Categories
-```powershell
-# Integration tests only
-python -m pytest tests/integration/ -k "postgresql" -v
+### pytest Configuration
 
-# Unit tests only
-python -m pytest tests/unit/ -k "postgresql" -v
+```python
+# tests/conftest.py
+import pytest
+import os
+from syntha.persistence import create_database_backend
 
-# Backend tests only
-python -m pytest tests/unit/test_persistence.py::TestPostgreSQLBackend -v
+@pytest.fixture(scope="session")
+def postgres_backend():
+    """Create PostgreSQL backend for testing."""
+    if not os.getenv("SYNTHA_TEST_POSTGRES_URL"):
+        pytest.skip("PostgreSQL URL not configured")
+    
+    backend = create_database_backend(
+        "postgresql",
+        connection_string=os.getenv("SYNTHA_TEST_POSTGRES_URL")
+    )
+    
+    backend.connect()
+    backend.clear_all()
+    
+    yield backend
+    
+    backend.clear_all()
+    backend.close()
+
+@pytest.fixture
+def clean_postgres_backend(postgres_backend):
+    """Clean PostgreSQL backend for each test."""
+    postgres_backend.clear_all()
+    yield postgres_backend
+    postgres_backend.clear_all()
 ```
 
-### Run Single Test
-```powershell
-python -m pytest tests/unit/test_persistence.py::TestPostgreSQLBackend::test_postgresql_basic_operations -v
+## Running PostgreSQL Tests
+
+### Basic Test Execution
+
+```bash
+# Run all tests with PostgreSQL
+pytest tests/ -v --postgres
+
+# Run specific test categories
+pytest tests/integration/ -v --postgres
+pytest tests/performance/ -v --postgres
+
+# Run with coverage
+pytest tests/ -v --postgres --cov=syntha --cov-report=html
 ```
 
-## Test Coverage
+### Test Markers
 
-The PostgreSQL tests cover:
+```python
+# Mark tests for PostgreSQL
+@pytest.mark.postgres
+def test_postgresql_specific_feature():
+    """Test PostgreSQL-specific functionality."""
+    pass
 
-### ✅ Core Functionality
-- Database connection and disconnection
-- Schema initialization (tables, indexes)
-- CRUD operations (Create, Read, Update, Delete)
-- Agent topic subscriptions
-- Agent permissions management
-
-### ✅ Advanced Features
-- TTL (Time To Live) cleanup
-- Concurrent access handling
-- JSONB data type usage
-- Transaction management
-
-### ✅ Error Handling
-- Connection failures
-- Invalid connection strings
-- Database unavailability
-- Data corruption scenarios
-
-### ✅ Performance
-- Bulk operations
-- Index usage
-- Query optimization
-
-## Expected Test Results
-
-When PostgreSQL is properly configured, you should see:
-
+@pytest.mark.skipif(
+    not os.getenv("SYNTHA_TEST_POSTGRES_URL"),
+    reason="PostgreSQL not configured"
+)
+def test_requires_postgres():
+    """Test that requires PostgreSQL."""
+    pass
 ```
-tests/integration/test_integration.py::TestDatabaseIntegration::test_full_persistence_cycle[postgresql] PASSED
-tests/unit/test_persistence.py::TestPostgreSQLBackend::test_postgresql_backend_creation PASSED
-tests/unit/test_persistence.py::TestPostgreSQLBackend::test_postgresql_basic_operations PASSED
-tests/unit/test_persistence.py::TestDatabaseBackendFactory::test_create_postgresql_backend PASSED
-tests/unit/test_persistence.py::TestDatabaseErrorHandling::test_postgresql_connection_failure PASSED
 
-=================== 5 passed in X.XXs ===================
+## PostgreSQL-Specific Tests
+
+### JSONB Testing
+
+```python
+def test_jsonb_storage(postgres_backend):
+    """Test JSONB storage capabilities."""
+    complex_data = {
+        "user": {
+            "id": 12345,
+            "profile": {
+                "name": "Test User",
+                "settings": {
+                    "theme": "dark",
+                    "notifications": True,
+                    "features": ["ai", "chat", "analytics"]
+                }
+            }
+        }
+    }
+    
+    postgres_backend.save_context_item(
+        "user:12345",
+        complex_data,
+        ["agent1", "agent2"],
+        None,
+        time.time()
+    )
+    
+    result = postgres_backend.get_context_item("user:12345")
+    assert result is not None
+    assert result[0] == complex_data
 ```
+
+### Concurrency Testing
+
+```python
+import threading
+import time
+
+def test_concurrent_access(postgres_backend):
+    """Test concurrent database access."""
+    errors = []
+    
+    def worker(worker_id):
+        try:
+            for i in range(100):
+                key = f"worker_{worker_id}_item_{i}"
+                postgres_backend.save_context_item(
+                    key,
+                    {"worker": worker_id, "item": i},
+                    [],
+                    None,
+                    time.time()
+                )
+        except Exception as e:
+            errors.append(e)
+    
+    threads = []
+    for i in range(10):
+        t = threading.Thread(target=worker, args=(i,))
+        threads.append(t)
+        t.start()
+    
+    for t in threads:
+        t.join()
+    
+    assert len(errors) == 0, f"Concurrent access errors: {errors}"
+    
+    all_items = postgres_backend.get_all_context_items()
+    assert len(all_items) == 1000
+```
+
+### Performance Testing
+
+```python
+def test_large_dataset_performance(postgres_backend):
+    """Test performance with large datasets."""
+    large_data = {
+        "records": [
+            {"id": i, "data": f"record_{i}" * 100}
+            for i in range(1000)
+        ]
+    }
+    
+    start_time = time.time()
+    postgres_backend.save_context_item(
+        "large_dataset",
+        large_data,
+        [],
+        None,
+        time.time()
+    )
+    save_time = time.time() - start_time
+    
+    start_time = time.time()
+    result = postgres_backend.get_context_item("large_dataset")
+    retrieve_time = time.time() - start_time
+    
+    assert save_time < 1.0, f"Save took too long: {save_time}s"
+    assert retrieve_time < 0.1, f"Retrieval took too long: {retrieve_time}s"
+    assert result is not None
+    assert len(result[0]["records"]) == 1000
+```
+
+## Common Issues
+
+### Connection Problems
+
+**Error**: `psycopg2.OperationalError: could not connect to server`
+
+**Solutions**:
+1. Check if PostgreSQL is running: `sudo service postgresql status`
+2. Verify connection string format
+3. Check firewall settings
+4. Ensure database exists: `createdb syntha_test`
+
+### Authentication Issues
+
+**Error**: `psycopg2.OperationalError: FATAL: password authentication failed`
+
+**Solutions**:
+1. Create test user: `createuser -s test`
+2. Set password: `psql -c "ALTER USER test PASSWORD 'test123';"`
+3. Check pg_hba.conf settings
+
+### Database Permissions
+
+**Error**: `psycopg2.ProgrammingError: permission denied for table`
+
+**Solutions**:
+1. Grant permissions: `GRANT ALL PRIVILEGES ON DATABASE syntha_test TO test;`
+2. Make user superuser: `ALTER USER test WITH SUPERUSER;`
+3. Check object ownership and permissions
+
+### Missing Dependencies
+
+**Error**: `ImportError: No module named 'psycopg2'`
+
+**Solutions**:
+1. Install psycopg2: `pip install psycopg2-binary`
+2. For development: `pip install psycopg2`
+3. Check virtual environment is activated
+
+## Best Practices
+
+### Test Database Management
+
+```python
+# Clean database state for each test
+@pytest.fixture(autouse=True)
+def cleanup_database(postgres_backend):
+    """Ensure clean database state for each test."""
+    postgres_backend.clear_all()
+    yield
+    postgres_backend.clear_all()
+
+# Use transactions for test isolation
+@pytest.fixture
+def transactional_test(postgres_backend):
+    """Run test in transaction that gets rolled back."""
+    with postgres_backend.connection.cursor() as cursor:
+        cursor.execute("BEGIN")
+        yield postgres_backend
+        cursor.execute("ROLLBACK")
+```
+
+### Connection Management
+
+```python
+# Use connection pooling
+from psycopg2 import pool
+
+connection_pool = psycopg2.pool.ThreadedConnectionPool(
+    minconn=1,
+    maxconn=20,
+    dsn=connection_string
+)
+
+# Always close connections
+def test_with_proper_cleanup(postgres_backend):
+    try:
+        # Test logic here
+        pass
+    finally:
+        postgres_backend.close()
+```
+
+### Performance Considerations
+
+- Use indexes for frequently queried columns
+- Batch operations when possible
+- Monitor connection counts
+- Use prepared statements for security and performance
 
 ## Troubleshooting
 
-### Common Issues
+### Debug Mode
 
-#### 1. "PostgreSQL not available" Error
-```
-pytest.skip("PostgreSQL not available")
-```
-**Solution**: Set the `POSTGRES_URL` environment variable:
-```powershell
-$env:POSTGRES_URL = "postgresql://postgres:postgres@localhost:5432/syntha_test"
-```
+```python
+# Enable PostgreSQL query logging
+import logging
+logging.getLogger("psycopg2").setLevel(logging.DEBUG)
 
-#### 2. Connection Refused
-```
-psycopg2.OperationalError: connection to server at "localhost" (127.0.0.1), port 5432 failed
-```
-**Solution**: Ensure PostgreSQL is running on port 5432
-
-#### 3. Database Does Not Exist
-```
-psycopg2.OperationalError: database "syntha_test" does not exist
-```
-**Solution**: Create the test database:
-```sql
-CREATE DATABASE syntha_test;
+# Run tests with verbose output
+pytest tests/ -v -s --postgres --log-cli-level=DEBUG
 ```
 
-#### 4. Authentication Failed
+### Manual Testing
+
+```python
+# Test PostgreSQL connection manually
+import psycopg2
+
+try:
+    conn = psycopg2.connect(
+        host="localhost",
+        database="syntha_test",
+        user="test",
+        password="test123"
+    )
+    print("Connection successful!")
+    conn.close()
+except Exception as e:
+    print(f"Connection failed: {e}")
 ```
-psycopg2.OperationalError: FATAL: password authentication failed for user "postgres"
-```
-**Solution**: Check username/password in connection string
 
-### Connection String Format
+### Common Fixes
 
-The connection string format is:
-```
-postgresql://username:password@host:port/database
-```
+1. Restart PostgreSQL: `sudo service postgresql restart`
+2. Check logs: `sudo tail -f /var/log/postgresql/postgresql-*.log`
+3. Reset test database: `dropdb syntha_test && createdb syntha_test`
+4. Update dependencies: `pip install --upgrade psycopg2-binary`
 
-Examples:
-- Local: `postgresql://postgres:postgres@localhost:5432/syntha_test`
-- Remote: `postgresql://user:pass@db.example.com:5432/syntha_test`
-- With SSL: `postgresql://user:pass@host:5432/db?sslmode=require`
+## CI/CD Integration
 
-## Integration with CI/CD
-
-For continuous integration, add these steps to your pipeline:
+### GitHub Actions
 
 ```yaml
-# GitHub Actions example
-- name: Start PostgreSQL
-  run: |
-    docker run -d --name postgres \
-      -e POSTGRES_PASSWORD=postgres \
-      -e POSTGRES_DB=syntha_test \
-      -p 5432:5432 \
-      postgres:13
+services:
+  postgres:
+    image: postgres:13
+    env:
+      POSTGRES_PASSWORD: test123
+      POSTGRES_DB: syntha_test
+    options: >-
+      --health-cmd pg_isready
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
 
-- name: Wait for PostgreSQL
-  run: sleep 10
-
-- name: Run PostgreSQL Tests
-  env:
-    POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/syntha_test
-  run: python -m pytest tests/ -k "postgresql" -v
+steps:
+  - name: Run PostgreSQL tests
+    run: pytest tests/ -v --postgres
+    env:
+      SYNTHA_TEST_POSTGRES_URL: postgresql://postgres:test123@localhost:5432/syntha_test
 ```
 
-## Performance Considerations
-
-PostgreSQL tests include performance verification:
-
-- **Connection pooling**: Tests verify efficient connection management
-- **Query optimization**: Tests ensure proper index usage
-- **Bulk operations**: Tests verify batch insert/update performance
-- **Concurrent access**: Tests verify thread-safe operations
-
-## Database Schema
-
-The tests create these PostgreSQL tables:
-
-```sql
--- Context storage
-CREATE TABLE context_items (
-    key TEXT PRIMARY KEY,
-    value JSONB NOT NULL,
-    subscribers JSONB NOT NULL,
-    ttl REAL,
-    created_at REAL NOT NULL
-);
-
--- Agent topic subscriptions
-CREATE TABLE agent_topics (
-    agent_name TEXT PRIMARY KEY,
-    topics JSONB NOT NULL
-);
-
--- Agent permissions
-CREATE TABLE agent_permissions (
-    agent_name TEXT PRIMARY KEY,
-    allowed_topics JSONB NOT NULL
-);
-
--- Indexes for performance
-CREATE INDEX idx_context_created_at ON context_items(created_at);
-CREATE INDEX idx_context_ttl ON context_items(ttl);
-```
-
-## Next Steps
-
-1. **Set up PostgreSQL** using one of the methods above
-2. **Run the tests** to verify everything works
-3. **Integrate into CI/CD** for automated testing
-4. **Monitor performance** in production environments
-
-For questions or issues, check the troubleshooting section or review the test implementation in:
-- `tests/unit/test_persistence.py`
-- `tests/integration/test_integration.py`
-- `syntha/persistence.py` 
+PostgreSQL testing ensures your application works correctly in production-like conditions and takes advantage of advanced database features not available in SQLite. 
