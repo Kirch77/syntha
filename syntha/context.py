@@ -68,6 +68,8 @@ class ContextMesh:
 
     Manages shared knowledge space where agents can push and retrieve context
     with subscriber-based access control, optional TTL, and persistent storage.
+    
+    Supports user isolation to ensure complete separation between different users.
     """
 
     def __init__(
@@ -76,10 +78,14 @@ class ContextMesh:
         auto_cleanup: bool = True,
         enable_persistence: bool = True,
         db_backend: str = "sqlite",
+        user_id: Optional[str] = None,
         **db_config,
     ):
         self._data: Dict[str, ContextItem] = {}
         self._lock = Lock()  # Thread safety for concurrent access
+
+        # User isolation support
+        self.user_id = user_id
 
         # Performance optimizations (controlled by simple flags)
         self.enable_indexing = enable_indexing
@@ -116,12 +122,16 @@ class ContextMesh:
             self._load_from_database()
 
     def _load_from_database(self) -> None:
-        """Load existing data from database on startup."""
+        """Load existing data from database on startup with user isolation."""
         if not self.db_backend:
             return
 
-        # Load context items
-        db_items = self.db_backend.get_all_context_items()
+        # Load context items (user-scoped if user_id is provided)
+        if hasattr(self.db_backend, 'get_all_context_items_for_user') and self.user_id:
+            db_items = self.db_backend.get_all_context_items_for_user(self.user_id)
+        else:
+            db_items = self.db_backend.get_all_context_items()
+            
         for key, (value, subscribers, ttl, created_at) in db_items.items():
             item = ContextItem(value, subscribers, ttl)
             item.created_at = created_at
@@ -132,8 +142,12 @@ class ContextMesh:
                 if self.enable_indexing:
                     self._add_to_index(key, subscribers)
 
-        # Load agent topics
-        agent_topics = self.db_backend.get_all_agent_topics()
+        # Load agent topics (user-scoped if user_id is provided)
+        if hasattr(self.db_backend, 'get_all_agent_topics_for_user') and self.user_id:
+            agent_topics = self.db_backend.get_all_agent_topics_for_user(self.user_id)
+        else:
+            agent_topics = self.db_backend.get_all_agent_topics()
+            
         for agent_name, topics in agent_topics.items():
             self._agent_topics[agent_name] = topics
             # Rebuild topic subscribers mapping
@@ -143,8 +157,12 @@ class ContextMesh:
                 if agent_name not in self._topic_subscribers[topic]:
                     self._topic_subscribers[topic].append(agent_name)
 
-        # Load agent permissions
-        agent_permissions = self.db_backend.get_all_agent_permissions()
+        # Load agent permissions (user-scoped if user_id is provided)
+        if hasattr(self.db_backend, 'get_all_agent_permissions_for_user') and self.user_id:
+            agent_permissions = self.db_backend.get_all_agent_permissions_for_user(self.user_id)
+        else:
+            agent_permissions = self.db_backend.get_all_agent_permissions()
+            
         self._agent_post_permissions.update(agent_permissions)
 
     def close(self) -> None:
@@ -238,11 +256,16 @@ class ContextMesh:
         item = ContextItem(value, subscribers, ttl)
         self._data[key] = item
 
-        # Persist to database if enabled
+        # Persist to database if enabled (with user isolation)
         if self.db_backend:
-            self.db_backend.save_context_item(
-                key, value, subscribers or [], ttl, item.created_at
-            )
+            if hasattr(self.db_backend, 'save_context_item_for_user') and self.user_id:
+                self.db_backend.save_context_item_for_user(
+                    self.user_id, key, value, subscribers or [], ttl, item.created_at
+                )
+            else:
+                self.db_backend.save_context_item(
+                    key, value, subscribers or [], ttl, item.created_at
+                )
 
         # Update indexes if enabled
         if self.enable_indexing:
@@ -414,8 +437,11 @@ class ContextMesh:
             if item is None:
                 return False
 
-            # Remove from database if enabled
-            if self.db_backend:
+                    # Remove from database if enabled (with user isolation)
+        if self.db_backend:
+            if hasattr(self.db_backend, 'delete_context_item_for_user') and self.user_id:
+                self.db_backend.delete_context_item_for_user(self.user_id, key)
+            else:
                 self.db_backend.delete_context_item(key)
 
             # Remove from indexes
@@ -471,8 +497,11 @@ class ContextMesh:
             self._key_topics.clear()
             self._agent_post_permissions.clear()
 
-            # Clear database if enabled
-            if self.db_backend:
+                    # Clear database if enabled (with user isolation)
+        if self.db_backend:
+            if hasattr(self.db_backend, 'clear_all_for_user') and self.user_id:
+                self.db_backend.clear_all_for_user(self.user_id)
+            else:
                 self.db_backend.clear_all()
 
     def size(self) -> int:
@@ -518,8 +547,11 @@ class ContextMesh:
         with self._lock:
             self._agent_topics[agent_name] = topics.copy()
 
-            # Persist to database if enabled
-            if self.db_backend:
+                    # Persist to database if enabled (with user isolation)
+        if self.db_backend:
+            if hasattr(self.db_backend, 'save_agent_topics_for_user') and self.user_id:
+                self.db_backend.save_agent_topics_for_user(self.user_id, agent_name, topics)
+            else:
                 self.db_backend.save_agent_topics(agent_name, topics)
 
             # Update reverse mapping
@@ -543,6 +575,140 @@ class ContextMesh:
         """Get all available topics."""
         with self._lock:
             return list(self._topic_subscribers.keys())
+
+    def unsubscribe_from_topics(self, agent_name: str, topics: List[str]) -> None:
+        """
+        Unsubscribe an agent from specific topics.
+
+        Args:
+            agent_name: Name of the agent to unsubscribe
+            topics: List of topics to unsubscribe from
+        """
+        with self._lock:
+            # Get current topics for the agent
+            current_topics = self._agent_topics.get(agent_name, [])
+            
+            # Remove specified topics from agent's subscriptions
+            updated_topics = [t for t in current_topics if t not in topics]
+            
+            # Update agent topics
+            if updated_topics:
+                self._agent_topics[agent_name] = updated_topics
+            else:
+                # If no topics left, remove agent entirely
+                self._agent_topics.pop(agent_name, None)
+            
+            # Update reverse mapping (topic -> agents)
+            for topic in topics:
+                if topic in self._topic_subscribers:
+                    if agent_name in self._topic_subscribers[topic]:
+                        self._topic_subscribers[topic].remove(agent_name)
+                    # If no agents left subscribed to this topic, remove it
+                    if not self._topic_subscribers[topic]:
+                        del self._topic_subscribers[topic]
+            
+            # Persist changes to database if enabled (with user isolation)
+            if self.db_backend:
+                if updated_topics:
+                    if hasattr(self.db_backend, 'save_agent_topics_for_user') and self.user_id:
+                        self.db_backend.save_agent_topics_for_user(self.user_id, agent_name, updated_topics)
+                    else:
+                        self.db_backend.save_agent_topics(agent_name, updated_topics)
+                else:
+                    # Remove agent from database if no topics left
+                    if hasattr(self.db_backend, 'remove_agent_topics_for_user') and self.user_id:
+                        self.db_backend.remove_agent_topics_for_user(self.user_id, agent_name)
+                    else:
+                        self.db_backend.remove_agent_topics(agent_name)
+
+    def delete_topic(self, topic: str) -> int:
+        """
+        Delete a topic and all associated context.
+
+        This will:
+        1. Remove the topic from all agent subscriptions
+        2. Delete all context items that were pushed to this topic
+        3. Clean up database records
+
+        Args:
+            topic: Name of the topic to delete
+
+        Returns:
+            Number of context items deleted
+        """
+        with self._lock:
+            context_items_deleted = 0
+            
+            # Find all context items pushed to this topic
+            keys_to_delete = []
+            for key, key_topics in self._key_topics.items():
+                if topic in key_topics:
+                    # If this context was only pushed to this topic, delete it entirely
+                    if len(key_topics) == 1:
+                        keys_to_delete.append(key)
+                    else:
+                        # Otherwise, just remove this topic from the key's topics
+                        key_topics.remove(topic)
+            
+            # Delete context items that were only for this topic
+            for key in keys_to_delete:
+                if key in self._data:
+                    item = self._data.pop(key)
+                    if self.enable_indexing:
+                        self._remove_from_index(key, item)
+                    context_items_deleted += 1
+                
+                # Remove from key_topics mapping
+                self._key_topics.pop(key, None)
+            
+            # Remove topic from all agent subscriptions
+            agents_to_update = []
+            agents_to_remove = []
+            for agent_name, agent_topics in self._agent_topics.items():
+                if topic in agent_topics:
+                    agent_topics.remove(topic)
+                    agents_to_update.append(agent_name)
+                    # If agent has no topics left, mark for removal
+                    if not agent_topics:
+                        agents_to_remove.append(agent_name)
+            
+            # Remove agents that have no topics left
+            for agent_name in agents_to_remove:
+                self._agent_topics.pop(agent_name, None)
+            
+            # Remove topic from topic_subscribers mapping
+            self._topic_subscribers.pop(topic, None)
+            
+            # Persist changes to database if enabled (with user isolation)
+            if self.db_backend:
+                # Delete context items from database
+                for key in keys_to_delete:
+                    if hasattr(self.db_backend, 'delete_context_item_for_user') and self.user_id:
+                        self.db_backend.delete_context_item_for_user(self.user_id, key)
+                    else:
+                        self.db_backend.delete_context_item(key)
+                
+                # Update agent topics in database
+                for agent_name in agents_to_update:
+                    if agent_name in self._agent_topics:
+                        if hasattr(self.db_backend, 'save_agent_topics_for_user') and self.user_id:
+                            self.db_backend.save_agent_topics_for_user(self.user_id, agent_name, self._agent_topics[agent_name])
+                        else:
+                            self.db_backend.save_agent_topics(agent_name, self._agent_topics[agent_name])
+                    else:
+                        # Agent has no topics left, remove from database
+                        if hasattr(self.db_backend, 'remove_agent_topics_for_user') and self.user_id:
+                            self.db_backend.remove_agent_topics_for_user(self.user_id, agent_name)
+                        else:
+                            self.db_backend.remove_agent_topics(agent_name)
+                
+                # Clean up topic-specific data if backend supports it
+                if hasattr(self.db_backend, 'delete_topic_data_for_user') and self.user_id:
+                    self.db_backend.delete_topic_data_for_user(self.user_id, topic)
+                elif hasattr(self.db_backend, 'delete_topic_data'):
+                    self.db_backend.delete_topic_data(topic)
+            
+            return context_items_deleted
 
     def get_available_keys_by_topic(self, agent_name: str) -> Dict[str, List[str]]:
         """
@@ -640,9 +806,12 @@ class ContextMesh:
             if self.enable_indexing:
                 self._remove_from_index(key, item)
 
-        # Clean up database if enabled
+        # Clean up database if enabled (with user isolation)
         if self.db_backend:
-            self.db_backend.cleanup_expired(current_time)
+            if hasattr(self.db_backend, 'cleanup_expired_for_user') and self.user_id:
+                self.db_backend.cleanup_expired_for_user(self.user_id, current_time)
+            else:
+                self.db_backend.cleanup_expired(current_time)
 
         self._last_cleanup = current_time
 
@@ -659,9 +828,12 @@ class ContextMesh:
         with self._lock:
             self._agent_post_permissions[agent_name] = list(allowed_topics)
 
-            # Persist to database if enabled
+            # Persist to database if enabled (with user isolation)
             if self.db_backend:
-                self.db_backend.save_agent_permissions(agent_name, allowed_topics)
+                if hasattr(self.db_backend, 'save_agent_permissions_for_user') and self.user_id:
+                    self.db_backend.save_agent_permissions_for_user(self.user_id, agent_name, allowed_topics)
+                else:
+                    self.db_backend.save_agent_permissions(agent_name, allowed_topics)
 
     def get_agent_post_permissions(self, agent_name: str) -> List[str]:
         """
