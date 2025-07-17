@@ -242,6 +242,34 @@ class TestSQLiteBackend:
 
         backend.close()
 
+    def test_sqlite_remove_agent_topics(self, tmp_path):
+        """Test removing agent topic subscriptions."""
+        db_path = str(tmp_path / "test.db")
+        backend = SQLiteBackend(db_path=db_path)
+        backend.connect()
+
+        # Save agent topics
+        backend.save_agent_topics("agent1", ["sales", "marketing"])
+        backend.save_agent_topics("agent2", ["sales", "support"])
+
+        # Verify topics are saved
+        assert backend.get_agent_topics("agent1") == ["sales", "marketing"]
+        assert backend.get_agent_topics("agent2") == ["sales", "support"]
+
+        # Remove agent1's topics
+        backend.remove_agent_topics("agent1")
+
+        # Verify agent1's topics are removed
+        assert backend.get_agent_topics("agent1") == []
+
+        # Verify agent2's topics are still there
+        assert backend.get_agent_topics("agent2") == ["sales", "support"]
+
+        # Try to remove non-existent agent (should not error)
+        backend.remove_agent_topics("nonexistent")
+
+        backend.close()
+
 
 class TestPostgreSQLBackend:
     """Test PostgreSQL database backend."""
@@ -281,6 +309,41 @@ class TestPostgreSQLBackend:
 
             # Clean up
             backend.delete_context_item("pg_test_key")
+
+        finally:
+            backend.close()
+
+    @pytest.mark.database
+    def test_postgresql_remove_agent_topics(self):
+        """Test removing agent topic subscriptions from PostgreSQL."""
+        connection_string = os.getenv("POSTGRES_URL")
+        if not connection_string:
+            pytest.skip("PostgreSQL not available")
+
+        backend = PostgreSQLBackend(connection_string=connection_string)
+
+        try:
+            backend.connect()
+
+            # Save agent topics
+            backend.save_agent_topics("agent1", ["sales", "marketing"])
+            backend.save_agent_topics("agent2", ["sales", "support"])
+
+            # Verify topics are saved
+            assert backend.get_agent_topics("agent1") == ["sales", "marketing"]
+            assert backend.get_agent_topics("agent2") == ["sales", "support"]
+
+            # Remove agent1's topics
+            backend.remove_agent_topics("agent1")
+
+            # Verify agent1's topics are removed
+            assert backend.get_agent_topics("agent1") == []
+
+            # Verify agent2's topics are still there
+            assert backend.get_agent_topics("agent2") == ["sales", "support"]
+
+            # Try to remove non-existent agent (should not error)
+            backend.remove_agent_topics("nonexistent")
 
         finally:
             backend.close()

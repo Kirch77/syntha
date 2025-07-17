@@ -423,6 +423,182 @@ def handle_discover_topics_call(
         return {"success": False, "error": str(e), "topics": {}, "total_topics": 0}
 
 
+def get_unsubscribe_from_topics_tool_schema() -> Dict[str, Any]:
+    """
+    Get the function schema for unsubscribing from topics.
+
+    This allows agents to unsubscribe from specific topics they no longer want to receive context for.
+
+    Returns:
+        Function schema dictionary for topic unsubscription
+    """
+    return {
+        "name": "unsubscribe_from_topics",
+        "description": """Unsubscribe from specific topics to stop receiving context from them.
+        
+        This will remove you from the specified topics while keeping your other topic subscriptions intact.
+        
+        You don't need to specify your agent name - the system knows who you are.""",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "topics": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Topics you want to unsubscribe from (e.g., ['sales', 'old_projects'])",
+                }
+            },
+            "required": ["topics"],
+        },
+    }
+
+
+def handle_unsubscribe_from_topics_call(
+    context_mesh: ContextMesh, topics: List[str], agent_name: str
+) -> Dict[str, Any]:
+    """
+    Handle an unsubscribe_from_topics function call from an agent.
+
+    Args:
+        context_mesh: The ContextMesh instance to update
+        topics: List of topics the agent wants to unsubscribe from
+        agent_name: Agent name (auto-injected by ToolHandler)
+
+    Returns:
+        Dictionary with unsubscription result
+    """
+    try:
+        # Get current subscriptions
+        current_topics = context_mesh.get_topics_for_agent(agent_name)
+        
+        # Filter out topics that the agent wasn't subscribed to
+        topics_to_unsubscribe = [t for t in topics if t in current_topics]
+        topics_not_subscribed = [t for t in topics if t not in current_topics]
+        
+        if not topics_to_unsubscribe:
+            return {
+                "success": True,
+                "agent": agent_name,
+                "topics_unsubscribed": [],
+                "topics_not_subscribed": topics_not_subscribed,
+                "remaining_topics": current_topics,
+                "message": f"You weren't subscribed to any of these topics: {', '.join(topics)}",
+            }
+        
+        # Unsubscribe from topics
+        context_mesh.unsubscribe_from_topics(agent_name, topics_to_unsubscribe)
+        
+        # Get remaining topics
+        remaining_topics = context_mesh.get_topics_for_agent(agent_name)
+        
+        return {
+            "success": True,
+            "agent": agent_name,
+            "topics_unsubscribed": topics_to_unsubscribe,
+            "topics_not_subscribed": topics_not_subscribed,
+            "remaining_topics": remaining_topics,
+            "message": f"Successfully unsubscribed from: {', '.join(topics_to_unsubscribe)}. Remaining subscriptions: {', '.join(remaining_topics) if remaining_topics else 'none'}",
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "agent": agent_name,
+            "topics": topics,
+        }
+
+
+def get_delete_topic_tool_schema() -> Dict[str, Any]:
+    """
+    Get the function schema for deleting topics.
+
+    This allows agents to delete entire topics and all associated context.
+    This is a destructive operation that should be used carefully.
+
+    Returns:
+        Function schema dictionary for topic deletion
+    """
+    return {
+        "name": "delete_topic",
+        "description": """Delete an entire topic and all its associated context.
+        
+        ⚠️ WARNING: This is a destructive operation that will:
+        - Remove the topic from all agent subscriptions
+        - Delete all context items that were only pushed to this topic
+        - Cannot be undone
+        
+        Use with caution! Consider checking topic subscribers first with discover_topics.""",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "topic": {
+                    "type": "string",
+                    "description": "Name of the topic to delete",
+                },
+                "confirm": {
+                    "type": "boolean",
+                    "description": "Confirmation that you want to delete this topic (must be true)",
+                },
+            },
+            "required": ["topic", "confirm"],
+        },
+    }
+
+
+def handle_delete_topic_call(
+    context_mesh: ContextMesh, topic: str, confirm: bool = False
+) -> Dict[str, Any]:
+    """
+    Handle a delete_topic function call from an agent.
+
+    Args:
+        context_mesh: The ContextMesh instance to update
+        topic: Name of the topic to delete
+        confirm: Confirmation flag (must be True)
+
+    Returns:
+        Dictionary with deletion result
+    """
+    try:
+        if not confirm:
+            return {
+                "success": False,
+                "error": "Deletion not confirmed. Set confirm=true to proceed.",
+                "topic": topic,
+                "message": "Topic deletion requires explicit confirmation.",
+            }
+        
+        # Check if topic exists
+        if topic not in context_mesh.get_all_topics():
+            return {
+                "success": False,
+                "error": f"Topic '{topic}' does not exist",
+                "topic": topic,
+                "available_topics": context_mesh.get_all_topics(),
+                "message": f"Cannot delete non-existent topic '{topic}'",
+            }
+        
+        # Get subscribers before deletion for reporting
+        subscribers = context_mesh.get_subscribers_for_topic(topic)
+        
+        # Delete the topic
+        context_items_deleted = context_mesh.delete_topic(topic)
+        
+        return {
+            "success": True,
+            "topic": topic,
+            "subscribers_affected": subscribers,
+            "context_items_deleted": context_items_deleted,
+            "message": f"Successfully deleted topic '{topic}'. Removed {len(subscribers)} subscribers and {context_items_deleted} context items.",
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "topic": topic,
+        }
+
+
 def get_all_tool_schemas() -> List[Dict[str, Any]]:
     """
     Get all essential tool schemas for Syntha context operations.
@@ -436,6 +612,8 @@ def get_all_tool_schemas() -> List[Dict[str, Any]]:
         get_list_context_tool_schema(),
         get_subscribe_to_topics_tool_schema(),
         get_discover_topics_tool_schema(),
+        get_unsubscribe_from_topics_tool_schema(),
+        get_delete_topic_tool_schema(),
     ]
 
 
@@ -463,6 +641,8 @@ class ToolHandler:
             "list_context": self.handle_list_context,
             "subscribe_to_topics": self.handle_subscribe_to_topics,
             "discover_topics": self.handle_discover_topics,
+            "unsubscribe_from_topics": self.handle_unsubscribe_from_topics,
+            "delete_topic": self.handle_delete_topic,
         }
 
     def set_agent_name(self, agent_name: str):
@@ -513,6 +693,19 @@ class ToolHandler:
         if error:
             return error
         return handle_discover_topics_call(self.context_mesh, **kwargs)
+
+    def handle_unsubscribe_from_topics(self, **kwargs) -> Dict[str, Any]:
+        """Handle unsubscribe_from_topics tool call."""
+        error = self._check_agent_name()
+        if error:
+            return error
+        kwargs["agent_name"] = self.agent_name
+        return handle_unsubscribe_from_topics_call(self.context_mesh, **kwargs)
+
+    def handle_delete_topic(self, **kwargs) -> Dict[str, Any]:
+        """Handle delete_topic tool call."""
+        # Note: delete_topic doesn't require agent_name, it's an administrative operation
+        return handle_delete_topic_call(self.context_mesh, **kwargs)
 
     def handle_tool_call(self, tool_name: str, **kwargs) -> Dict[str, Any]:
         """

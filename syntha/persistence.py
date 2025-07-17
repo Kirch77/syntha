@@ -118,6 +118,11 @@ class DatabaseBackend(ABC):
         pass
 
     @abstractmethod
+    def remove_agent_topics(self, agent_name: str) -> None:
+        """Remove agent topic subscriptions."""
+        pass
+
+    @abstractmethod
     def save_agent_permissions(
         self, agent_name: str, allowed_topics: List[str]
     ) -> None:
@@ -132,6 +137,97 @@ class DatabaseBackend(ABC):
     @abstractmethod
     def get_all_agent_permissions(self) -> Dict[str, List[str]]:
         """Get all agent permission mappings."""
+        pass
+
+    # User isolation methods (optional - backward compatibility)
+    def save_context_item_for_user(
+        self,
+        user_id: str,
+        key: str,
+        value: Any,
+        subscribers: List[str],
+        ttl: Optional[float],
+        created_at: float,
+    ) -> None:
+        """Save a context item for a specific user."""
+        # Default implementation for backward compatibility
+        self.save_context_item(key, value, subscribers, ttl, created_at)
+
+    def get_context_item_for_user(
+        self, user_id: str, key: str
+    ) -> Optional[Tuple[Any, List[str], Optional[float], float]]:
+        """Get a context item for a specific user."""
+        # Default implementation for backward compatibility
+        return self.get_context_item(key)
+
+    def get_all_context_items_for_user(
+        self, user_id: str
+    ) -> Dict[str, Tuple[Any, List[str], Optional[float], float]]:
+        """Get all context items for a specific user."""
+        # Default implementation for backward compatibility
+        return self.get_all_context_items()
+
+    def delete_context_item_for_user(self, user_id: str, key: str) -> bool:
+        """Delete a context item for a specific user."""
+        # Default implementation for backward compatibility
+        return self.delete_context_item(key)
+
+    def save_agent_topics_for_user(
+        self, user_id: str, agent_name: str, topics: List[str]
+    ) -> None:
+        """Save agent topics for a specific user."""
+        # Default implementation for backward compatibility
+        self.save_agent_topics(agent_name, topics)
+
+    def get_agent_topics_for_user(self, user_id: str, agent_name: str) -> List[str]:
+        """Get agent topics for a specific user."""
+        # Default implementation for backward compatibility
+        return self.get_agent_topics(agent_name)
+
+    def get_all_agent_topics_for_user(self, user_id: str) -> Dict[str, List[str]]:
+        """Get all agent topics for a specific user."""
+        # Default implementation for backward compatibility
+        return self.get_all_agent_topics()
+
+    def remove_agent_topics_for_user(self, user_id: str, agent_name: str) -> None:
+        """Remove agent topics for a specific user."""
+        # Default implementation for backward compatibility
+        self.remove_agent_topics(agent_name)
+
+    def save_agent_permissions_for_user(
+        self, user_id: str, agent_name: str, allowed_topics: List[str]
+    ) -> None:
+        """Save agent permissions for a specific user."""
+        # Default implementation for backward compatibility
+        self.save_agent_permissions(agent_name, allowed_topics)
+
+    def get_agent_permissions_for_user(
+        self, user_id: str, agent_name: str
+    ) -> List[str]:
+        """Get agent permissions for a specific user."""
+        # Default implementation for backward compatibility
+        return self.get_agent_permissions(agent_name)
+
+    def get_all_agent_permissions_for_user(
+        self, user_id: str
+    ) -> Dict[str, List[str]]:
+        """Get all agent permissions for a specific user."""
+        # Default implementation for backward compatibility
+        return self.get_all_agent_permissions()
+
+    def cleanup_expired_for_user(self, user_id: str, current_time: float) -> int:
+        """Clean up expired items for a specific user."""
+        # Default implementation for backward compatibility
+        return self.cleanup_expired(current_time)
+
+    def clear_all_for_user(self, user_id: str) -> None:
+        """Clear all data for a specific user."""
+        # Default implementation for backward compatibility
+        self.clear_all()
+
+    def delete_topic_data_for_user(self, user_id: str, topic: str) -> None:
+        """Delete topic-specific data for a specific user."""
+        # Default implementation - no-op since base class doesn't have this method
         pass
 
 
@@ -265,38 +361,63 @@ class SQLiteBackend(DatabaseBackend):
 
             cursor = self.connection.cursor()
 
-            # Context items table
+            # Context items table (with user isolation)
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS context_items (
-                    key TEXT PRIMARY KEY,
+                    key TEXT NOT NULL,
+                    user_id TEXT,
                     value TEXT NOT NULL,
                     subscribers TEXT NOT NULL,
                     ttl REAL,
-                    created_at REAL NOT NULL
+                    created_at REAL NOT NULL,
+                    PRIMARY KEY (key, user_id)
                 )
             """
             )
 
-            # Agent topics table
+            # Agent topics table (with user isolation)
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS agent_topics (
-                    agent_name TEXT PRIMARY KEY,
-                    topics TEXT NOT NULL
+                    agent_name TEXT NOT NULL,
+                    user_id TEXT,
+                    topics TEXT NOT NULL,
+                    PRIMARY KEY (agent_name, user_id)
                 )
             """
             )
 
-            # Agent permissions table
+            # Agent permissions table (with user isolation)
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS agent_permissions (
-                    agent_name TEXT PRIMARY KEY,
-                    allowed_topics TEXT NOT NULL
+                    agent_name TEXT NOT NULL,
+                    user_id TEXT,
+                    allowed_topics TEXT NOT NULL,
+                    PRIMARY KEY (agent_name, user_id)
                 )
             """
             )
+
+            # Add migration for existing data (set user_id to NULL for legacy data)
+            try:
+                cursor.execute("ALTER TABLE context_items ADD COLUMN user_id TEXT")
+            except sqlite3.OperationalError:
+                # Column already exists
+                pass
+            
+            try:
+                cursor.execute("ALTER TABLE agent_topics ADD COLUMN user_id TEXT")
+            except sqlite3.OperationalError:
+                # Column already exists
+                pass
+            
+            try:
+                cursor.execute("ALTER TABLE agent_permissions ADD COLUMN user_id TEXT")
+            except sqlite3.OperationalError:
+                # Column already exists
+                pass
 
             # Create indexes for better performance
             cursor.execute(
@@ -481,6 +602,13 @@ class SQLiteBackend(DatabaseBackend):
 
             return result
 
+    def remove_agent_topics(self, agent_name: str) -> None:
+        """Remove agent topic subscriptions from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute("DELETE FROM agent_topics WHERE agent_name = ?", (agent_name,))
+            self.connection.commit()
+
     def save_agent_permissions(
         self, agent_name: str, allowed_topics: List[str]
     ) -> None:
@@ -540,6 +668,215 @@ class SQLiteBackend(DatabaseBackend):
             self.connect()
             if self.connection is None:
                 raise RuntimeError("Failed to re-establish database connection")
+
+    # User isolation implementations for SQLite
+    def save_context_item_for_user(
+        self,
+        user_id: str,
+        key: str,
+        value: Any,
+        subscribers: List[str],
+        ttl: Optional[float],
+        created_at: float,
+    ) -> None:
+        """Save a context item for a specific user in SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO context_items 
+                (key, user_id, value, subscribers, ttl, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    key,
+                    user_id,
+                    json.dumps(value),
+                    json.dumps(subscribers),
+                    ttl,
+                    created_at,
+                ),
+            )
+            self.connection.commit()
+
+    def get_context_item_for_user(
+        self, user_id: str, key: str
+    ) -> Optional[Tuple[Any, List[str], Optional[float], float]]:
+        """Get a context item for a specific user from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "SELECT value, subscribers, ttl, created_at FROM context_items WHERE key = ? AND user_id = ?",
+                (key, user_id),
+            )
+            row = cursor.fetchone()
+
+            if row is None:
+                return None
+
+            value_json, subscribers_json, ttl, created_at = row
+            value = json.loads(value_json)
+            subscribers = json.loads(subscribers_json)
+
+            return (value, subscribers, ttl, created_at)
+
+    def get_all_context_items_for_user(
+        self, user_id: str
+    ) -> Dict[str, Tuple[Any, List[str], Optional[float], float]]:
+        """Get all context items for a specific user from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "SELECT key, value, subscribers, ttl, created_at FROM context_items WHERE user_id = ?",
+                (user_id,),
+            )
+
+            result = {}
+            for row in cursor.fetchall():
+                key, value_json, subscribers_json, ttl, created_at = row
+                value = json.loads(value_json)
+                subscribers = json.loads(subscribers_json)
+                result[key] = (value, subscribers, ttl, created_at)
+
+            return result
+
+    def delete_context_item_for_user(self, user_id: str, key: str) -> bool:
+        """Delete a context item for a specific user from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "DELETE FROM context_items WHERE key = ? AND user_id = ?", (key, user_id)
+            )
+            self.connection.commit()
+            return cursor.rowcount > 0
+
+    def save_agent_topics_for_user(
+        self, user_id: str, agent_name: str, topics: List[str]
+    ) -> None:
+        """Save agent topics for a specific user in SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO agent_topics (agent_name, user_id, topics) 
+                VALUES (?, ?, ?)
+                """,
+                (agent_name, user_id, json.dumps(topics)),
+            )
+            self.connection.commit()
+
+    def get_agent_topics_for_user(self, user_id: str, agent_name: str) -> List[str]:
+        """Get agent topics for a specific user from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "SELECT topics FROM agent_topics WHERE agent_name = ? AND user_id = ?",
+                (agent_name, user_id),
+            )
+            row = cursor.fetchone()
+
+            if row is None:
+                return []
+
+            return json.loads(row[0])
+
+    def get_all_agent_topics_for_user(self, user_id: str) -> Dict[str, List[str]]:
+        """Get all agent topics for a specific user from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "SELECT agent_name, topics FROM agent_topics WHERE user_id = ?",
+                (user_id,),
+            )
+
+            result = {}
+            for agent_name, topics_json in cursor.fetchall():
+                result[agent_name] = json.loads(topics_json)
+
+            return result
+
+    def remove_agent_topics_for_user(self, user_id: str, agent_name: str) -> None:
+        """Remove agent topics for a specific user from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "DELETE FROM agent_topics WHERE agent_name = ? AND user_id = ?",
+                (agent_name, user_id),
+            )
+            self.connection.commit()
+
+    def save_agent_permissions_for_user(
+        self, user_id: str, agent_name: str, allowed_topics: List[str]
+    ) -> None:
+        """Save agent permissions for a specific user in SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO agent_permissions (agent_name, user_id, allowed_topics) 
+                VALUES (?, ?, ?)
+                """,
+                (agent_name, user_id, json.dumps(allowed_topics)),
+            )
+            self.connection.commit()
+
+    def get_agent_permissions_for_user(
+        self, user_id: str, agent_name: str
+    ) -> List[str]:
+        """Get agent permissions for a specific user from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "SELECT allowed_topics FROM agent_permissions WHERE agent_name = ? AND user_id = ?",
+                (agent_name, user_id),
+            )
+            row = cursor.fetchone()
+
+            if row is None:
+                return []
+
+            return json.loads(row[0])
+
+    def get_all_agent_permissions_for_user(
+        self, user_id: str
+    ) -> Dict[str, List[str]]:
+        """Get all agent permissions for a specific user from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "SELECT agent_name, allowed_topics FROM agent_permissions WHERE user_id = ?",
+                (user_id,),
+            )
+
+            result = {}
+            for agent_name, allowed_topics_json in cursor.fetchall():
+                result[agent_name] = json.loads(allowed_topics_json)
+
+            return result
+
+    def cleanup_expired_for_user(self, user_id: str, current_time: float) -> int:
+        """Clean up expired items for a specific user from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                """
+                DELETE FROM context_items 
+                WHERE user_id = ? AND ttl IS NOT NULL AND (created_at + ttl) < ?
+                """,
+                (user_id, current_time),
+            )
+            deleted = cursor.rowcount
+            self.connection.commit()
+            return deleted
+
+    def clear_all_for_user(self, user_id: str) -> None:
+        """Clear all data for a specific user from SQLite."""
+        with self._lock:
+            cursor = self.connection.cursor()
+            cursor.execute("DELETE FROM context_items WHERE user_id = ?", (user_id,))
+            cursor.execute("DELETE FROM agent_topics WHERE user_id = ?", (user_id,))
+            cursor.execute("DELETE FROM agent_permissions WHERE user_id = ?", (user_id,))
+            self.connection.commit()
 
 
 class PostgreSQLBackend(DatabaseBackend):
@@ -751,6 +1088,13 @@ class PostgreSQLBackend(DatabaseBackend):
                 result[agent_name] = topics if topics is not None else []
 
             return result
+
+    def remove_agent_topics(self, agent_name: str) -> None:
+        """Remove agent topic subscriptions from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute("DELETE FROM agent_topics WHERE agent_name = %s", (agent_name,))
+            self.connection.commit()  # type: ignore
 
     def save_agent_permissions(
         self, agent_name: str, allowed_topics: List[str]
