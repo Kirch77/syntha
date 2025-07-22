@@ -437,7 +437,7 @@ class ContextMesh:
             if item is None:
                 return False
 
-                    # Remove from database if enabled (with user isolation)
+        # Remove from database if enabled (with user isolation)
         if self.db_backend:
             if hasattr(self.db_backend, 'delete_context_item_for_user') and self.user_id:
                 self.db_backend.delete_context_item_for_user(self.user_id, key)
@@ -448,6 +448,11 @@ class ContextMesh:
             if self.enable_indexing:
                 self._remove_from_index(key, item)
 
+            return True
+        else:
+            # Remove from indexes if indexing is enabled
+            if self.enable_indexing:
+                self._remove_from_index(key, item)
             return True
 
     def cleanup_expired(self) -> int:
