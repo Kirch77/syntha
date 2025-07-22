@@ -6,9 +6,10 @@ and that the user isolation feature works correctly.
 """
 
 import json
+import os
 import tempfile
 import time
-import os
+
 import pytest
 
 from syntha.context import ContextMesh
