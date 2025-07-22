@@ -361,135 +361,120 @@ class TestNewToolHandlers:
         """Test unsubscribe_from_topics tool handler."""
         mesh = ContextMesh(enable_persistence=False)
         handler = ToolHandler(context_mesh=mesh, agent_name="test_agent")
-        
+
         # Subscribe to topics first
         result = handler.handle_tool_call(
-            "subscribe_to_topics",
-            topics=["sales", "marketing", "support"]
+            "subscribe_to_topics", topics=["sales", "marketing", "support"]
         )
         assert result["success"] is True
-        
+
         # Unsubscribe from some topics
         result = handler.handle_tool_call(
-            "unsubscribe_from_topics",
-            topics=["sales", "marketing"]
+            "unsubscribe_from_topics", topics=["sales", "marketing"]
         )
         assert result["success"] is True
         assert "support" in result["remaining_topics"]
         assert "sales" not in result["remaining_topics"]
         assert "marketing" not in result["remaining_topics"]
         assert result["topics_unsubscribed"] == ["sales", "marketing"]
-        
+
         mesh.close()
 
     def test_unsubscribe_from_topics_not_subscribed(self):
         """Test unsubscribing from topics not subscribed to."""
         mesh = ContextMesh(enable_persistence=False)
         handler = ToolHandler(context_mesh=mesh, agent_name="test_agent")
-        
+
         # Subscribe to limited topics
-        result = handler.handle_tool_call(
-            "subscribe_to_topics",
-            topics=["sales"]
-        )
+        result = handler.handle_tool_call("subscribe_to_topics", topics=["sales"])
         assert result["success"] is True
-        
+
         # Try to unsubscribe from topics not subscribed to
         result = handler.handle_tool_call(
-            "unsubscribe_from_topics",
-            topics=["marketing", "support"]
+            "unsubscribe_from_topics", topics=["marketing", "support"]
         )
         assert result["success"] is True
         assert result["topics_unsubscribed"] == []
         assert result["topics_not_subscribed"] == ["marketing", "support"]
         assert result["remaining_topics"] == ["sales"]
-        
+
         mesh.close()
 
     def test_unsubscribe_from_topics_no_agent_name(self):
         """Test unsubscribe_from_topics without agent name."""
         mesh = ContextMesh(enable_persistence=False)
         handler = ToolHandler(context_mesh=mesh)  # No agent name
-        
-        result = handler.handle_tool_call(
-            "unsubscribe_from_topics",
-            topics=["sales"]
-        )
+
+        result = handler.handle_tool_call("unsubscribe_from_topics", topics=["sales"])
         assert result["success"] is False
         assert "Agent name not set" in result["error"]
-        
+
         mesh.close()
 
     def test_delete_topic_handler(self):
         """Test delete_topic tool handler."""
         mesh = ContextMesh(enable_persistence=False)
         handler = ToolHandler(context_mesh=mesh, agent_name="test_agent")
-        
+
         # Set up some topics and context
         handler.handle_tool_call("subscribe_to_topics", topics=["sales", "marketing"])
-        handler.handle_tool_call("push_context", key="sales_data", value="test_data", topics=["sales"])
-        
-        # Delete topic with confirmation
-        result = handler.handle_tool_call(
-            "delete_topic",
-            topic="sales",
-            confirm=True
+        handler.handle_tool_call(
+            "push_context", key="sales_data", value="test_data", topics=["sales"]
         )
+
+        # Delete topic with confirmation
+        result = handler.handle_tool_call("delete_topic", topic="sales", confirm=True)
         assert result["success"] is True
         assert result["topic"] == "sales"
         assert result["context_items_deleted"] == 1
-        
+
         mesh.close()
 
     def test_delete_topic_without_confirmation(self):
         """Test delete_topic without confirmation."""
         mesh = ContextMesh(enable_persistence=False)
         handler = ToolHandler(context_mesh=mesh, agent_name="test_agent")
-        
+
         # Set up topic
         handler.handle_tool_call("subscribe_to_topics", topics=["sales"])
-        
+
         # Try to delete without confirmation
-        result = handler.handle_tool_call(
-            "delete_topic",
-            topic="sales",
-            confirm=False
-        )
+        result = handler.handle_tool_call("delete_topic", topic="sales", confirm=False)
         assert result["success"] is False
         assert "Deletion not confirmed" in result["error"]
-        
+
         mesh.close()
 
     def test_delete_nonexistent_topic(self):
         """Test deleting a topic that doesn't exist."""
         mesh = ContextMesh(enable_persistence=False)
         handler = ToolHandler(context_mesh=mesh, agent_name="test_agent")
-        
+
         result = handler.handle_tool_call(
-            "delete_topic",
-            topic="nonexistent",
-            confirm=True
+            "delete_topic", topic="nonexistent", confirm=True
         )
         assert result["success"] is False
         assert "does not exist" in result["error"]
-        
+
         mesh.close()
 
     def test_tool_schemas_include_new_tools(self):
         """Test that new tools are included in tool schemas."""
         from syntha.tools import get_all_tool_schemas
-        
+
         schemas = get_all_tool_schemas()
         schema_names = [schema["name"] for schema in schemas]
-        
+
         assert "unsubscribe_from_topics" in schema_names
         assert "delete_topic" in schema_names
-        
+
         # Check specific schema properties
-        unsubscribe_schema = next(s for s in schemas if s["name"] == "unsubscribe_from_topics")
+        unsubscribe_schema = next(
+            s for s in schemas if s["name"] == "unsubscribe_from_topics"
+        )
         assert "topics" in unsubscribe_schema["parameters"]["properties"]
         assert unsubscribe_schema["parameters"]["required"] == ["topics"]
-        
+
         delete_schema = next(s for s in schemas if s["name"] == "delete_topic")
         assert "topic" in delete_schema["parameters"]["properties"]
         assert "confirm" in delete_schema["parameters"]["properties"]

@@ -194,33 +194,37 @@ class TestContextMesh:
         # Subscribe agent to multiple topics
         self.mesh.register_agent_topics("agent1", ["sales", "marketing", "support"])
         self.mesh.register_agent_topics("agent2", ["sales", "marketing"])
-        
+
         # Verify initial subscriptions
-        assert self.mesh.get_topics_for_agent("agent1") == ["sales", "marketing", "support"]
+        assert self.mesh.get_topics_for_agent("agent1") == [
+            "sales",
+            "marketing",
+            "support",
+        ]
         assert self.mesh.get_subscribers_for_topic("sales") == ["agent1", "agent2"]
         assert self.mesh.get_subscribers_for_topic("marketing") == ["agent1", "agent2"]
         assert self.mesh.get_subscribers_for_topic("support") == ["agent1"]
-        
+
         # Unsubscribe agent1 from sales and marketing
         self.mesh.unsubscribe_from_topics("agent1", ["sales", "marketing"])
-        
+
         # Verify agent1 only has support left
         assert self.mesh.get_topics_for_agent("agent1") == ["support"]
-        
+
         # Verify topic subscribers are updated
         assert self.mesh.get_subscribers_for_topic("sales") == ["agent2"]
         assert self.mesh.get_subscribers_for_topic("marketing") == ["agent2"]
         assert self.mesh.get_subscribers_for_topic("support") == ["agent1"]
-        
+
         # Unsubscribe agent1 from all remaining topics
         self.mesh.unsubscribe_from_topics("agent1", ["support"])
-        
+
         # Verify agent1 has no topics left
         assert self.mesh.get_topics_for_agent("agent1") == []
-        
+
         # Verify support topic is removed (no subscribers left)
         assert "support" not in self.mesh.get_all_topics()
-        
+
         # Verify other topics still exist
         assert "sales" in self.mesh.get_all_topics()
         assert "marketing" in self.mesh.get_all_topics()
@@ -229,16 +233,16 @@ class TestContextMesh:
         """Test unsubscribing from topics that don't exist or agent isn't subscribed to."""
         # Subscribe agent to some topics
         self.mesh.register_agent_topics("agent1", ["sales", "marketing"])
-        
+
         # Try to unsubscribe from topics not subscribed to
         self.mesh.unsubscribe_from_topics("agent1", ["support", "analytics"])
-        
+
         # Should still have original topics
         assert self.mesh.get_topics_for_agent("agent1") == ["sales", "marketing"]
-        
+
         # Try to unsubscribe from mix of subscribed and non-subscribed topics
         self.mesh.unsubscribe_from_topics("agent1", ["sales", "support", "analytics"])
-        
+
         # Should only have marketing left
         assert self.mesh.get_topics_for_agent("agent1") == ["marketing"]
 
@@ -247,33 +251,37 @@ class TestContextMesh:
         # Set up agents and topics
         self.mesh.register_agent_topics("agent1", ["sales", "marketing"])
         self.mesh.register_agent_topics("agent2", ["sales", "support"])
-        
+
         # Push context to different topics
         self.mesh.push("sales_data", "quarterly_report", topics=["sales"])
         self.mesh.push("marketing_data", "campaign_results", topics=["marketing"])
         self.mesh.push("mixed_data", "customer_info", topics=["sales", "marketing"])
         self.mesh.push("support_data", "ticket_stats", topics=["support"])
-        
+
         # Verify context is accessible
         assert self.mesh.get("sales_data", "agent1") == "quarterly_report"
         assert self.mesh.get("marketing_data", "agent1") == "campaign_results"
         assert self.mesh.get("mixed_data", "agent1") == "customer_info"
         assert self.mesh.get("support_data", "agent2") == "ticket_stats"
-        
+
         # Delete the sales topic
         deleted_items = self.mesh.delete_topic("sales")
-        assert deleted_items == 1  # Only sales_data should be deleted (mixed_data still has marketing)
-        
+        assert (
+            deleted_items == 1
+        )  # Only sales_data should be deleted (mixed_data still has marketing)
+
         # Verify sales_data is gone but others remain
         assert self.mesh.get("sales_data", "agent1") is None
         assert self.mesh.get("marketing_data", "agent1") == "campaign_results"
-        assert self.mesh.get("mixed_data", "agent1") == "customer_info"  # Still has marketing topic
+        assert (
+            self.mesh.get("mixed_data", "agent1") == "customer_info"
+        )  # Still has marketing topic
         assert self.mesh.get("support_data", "agent2") == "ticket_stats"
-        
+
         # Verify topic is removed from agent subscriptions
         assert self.mesh.get_topics_for_agent("agent1") == ["marketing"]
         assert self.mesh.get_topics_for_agent("agent2") == ["support"]
-        
+
         # Verify topic is removed from all topics
         assert "sales" not in self.mesh.get_all_topics()
         assert "marketing" in self.mesh.get_all_topics()
@@ -283,34 +291,40 @@ class TestContextMesh:
         """Test deleting a topic when context is associated with multiple topics."""
         # Set up agents and topics
         self.mesh.register_agent_topics("agent1", ["sales", "marketing", "analytics"])
-        
+
         # Push context to multiple topics
-        self.mesh.push("multi_topic_data", "important_info", topics=["sales", "marketing", "analytics"])
-        
+        self.mesh.push(
+            "multi_topic_data",
+            "important_info",
+            topics=["sales", "marketing", "analytics"],
+        )
+
         # Verify context is accessible
         assert self.mesh.get("multi_topic_data", "agent1") == "important_info"
-        
+
         # Delete one topic
         deleted_items = self.mesh.delete_topic("sales")
-        assert deleted_items == 0  # No items should be deleted since context has other topics
-        
+        assert (
+            deleted_items == 0
+        )  # No items should be deleted since context has other topics
+
         # Verify context is still accessible (still has marketing and analytics)
         assert self.mesh.get("multi_topic_data", "agent1") == "important_info"
-        
+
         # Verify agent still has other topics
         assert self.mesh.get_topics_for_agent("agent1") == ["marketing", "analytics"]
-        
+
         # Delete another topic
         deleted_items = self.mesh.delete_topic("marketing")
         assert deleted_items == 0  # Still has analytics topic
-        
+
         # Delete the last topic
         deleted_items = self.mesh.delete_topic("analytics")
         assert deleted_items == 1  # Now the context should be deleted
-        
+
         # Verify context is gone
         assert self.mesh.get("multi_topic_data", "agent1") is None
-        
+
         # Verify agent has no topics left
         assert self.mesh.get_topics_for_agent("agent1") == []
 
@@ -319,15 +333,15 @@ class TestContextMesh:
         # Set up some existing data first
         self.mesh.register_agent_topics("agent1", ["existing"])
         self.mesh.push("test", "value", topics=["existing"])
-        
+
         # Try to delete a topic that doesn't exist
         deleted_items = self.mesh.delete_topic("nonexistent")
         assert deleted_items == 0
-        
+
         # Verify no changes to existing data
         assert self.mesh.get("test", "agent1") == "value"
         assert self.mesh.get_topics_for_agent("agent1") == ["existing"]
-        
+
         # Try again to make sure it's still safe
         deleted_items = self.mesh.delete_topic("nonexistent")
         assert deleted_items == 0
