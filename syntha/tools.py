@@ -470,11 +470,11 @@ def handle_unsubscribe_from_topics_call(
     try:
         # Get current subscriptions
         current_topics = context_mesh.get_topics_for_agent(agent_name)
-        
+
         # Filter out topics that the agent wasn't subscribed to
         topics_to_unsubscribe = [t for t in topics if t in current_topics]
         topics_not_subscribed = [t for t in topics if t not in current_topics]
-        
+
         if not topics_to_unsubscribe:
             return {
                 "success": True,
@@ -484,13 +484,13 @@ def handle_unsubscribe_from_topics_call(
                 "remaining_topics": current_topics,
                 "message": f"You weren't subscribed to any of these topics: {', '.join(topics)}",
             }
-        
+
         # Unsubscribe from topics
         context_mesh.unsubscribe_from_topics(agent_name, topics_to_unsubscribe)
-        
+
         # Get remaining topics
         remaining_topics = context_mesh.get_topics_for_agent(agent_name)
-        
+
         return {
             "success": True,
             "agent": agent_name,
@@ -567,7 +567,7 @@ def handle_delete_topic_call(
                 "topic": topic,
                 "message": "Topic deletion requires explicit confirmation.",
             }
-        
+
         # Check if topic exists
         if topic not in context_mesh.get_all_topics():
             return {
@@ -577,13 +577,13 @@ def handle_delete_topic_call(
                 "available_topics": context_mesh.get_all_topics(),
                 "message": f"Cannot delete non-existent topic '{topic}'",
             }
-        
+
         # Get subscribers before deletion for reporting
         subscribers = context_mesh.get_subscribers_for_topic(topic)
-        
+
         # Delete the topic
         context_items_deleted = context_mesh.delete_topic(topic)
-        
+
         return {
             "success": True,
             "topic": topic,

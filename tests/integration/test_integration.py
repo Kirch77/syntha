@@ -331,28 +331,38 @@ class TestToolIntegration:
         )
         assert result1["success"] is True
 
-        # 2. Retrieve user profile
+        # 2. Retrieve user profile using tools (not direct mesh access)
         result2 = tools.handle_get_context(keys=["user.user123"])
         assert result2["success"] is True
         assert result2["context"]["user.user123"]["name"] == "John Doe"
         assert result2["context"]["user.user123"]["email"] == "john@example.com"
 
-        # 3. Update stats multiple times
-        for action in ["login", "view_profile", "update_email"]:
-            existing_stats = mesh.get("stats.user123") or {}
-            mesh.push(
-                f"stats.user123",
-                {
-                    "user_id": "user123",
-                    "action": action,
-                    "actions": existing_stats.get("actions", 0) + 1,
-                    "last_action": action,
-                },
+        # 3. Update stats multiple times using tools consistently
+        for i, action in enumerate(["login", "view_profile", "update_email"]):
+            # Get existing stats using tools
+            existing_result = tools.handle_get_context(keys=["stats.user123"])
+            existing_stats = existing_result.get("context", {}).get("stats.user123", {})
+
+            # Push updated stats using tools
+            tools.handle_push_context(
+                key="stats.user123",
+                value=json.dumps(
+                    {
+                        "user_id": "user123",
+                        "action": action,
+                        "actions": existing_stats.get("actions", 0) + 1,
+                        "last_action": action,
+                    }
+                ),
+                topics=["users"],
             )
 
-        # 4. Verify final state
-        user_data = mesh.get("user.user123")
-        stats_data = mesh.get("stats.user123")
+        # 4. Verify final state using tools consistently
+        user_result = tools.handle_get_context(keys=["user.user123"])
+        stats_result = tools.handle_get_context(keys=["stats.user123"])
+
+        user_data = user_result["context"]["user.user123"]
+        stats_data = stats_result["context"]["stats.user123"]
 
         assert user_data["name"] == "John Doe"
         assert stats_data["actions"] == 3
@@ -390,7 +400,7 @@ class TestToolIntegration:
             assert result["success"] is True
             assert result["key"] == "last_processed"
 
-            # Verify context storage
+            # Verify context storage using tools consistently
             stored_result = tools.handle_get_context(keys=["last_processed"])
             assert stored_result["success"] is True
             stored_data = stored_result["context"]["last_processed"]
@@ -437,6 +447,9 @@ class TestMultiAgentIntegration:
 
         # 2. Data processor receives workflow and processes data
         workflow_data = mesh.get("workflow_start", "data_processor")
+        assert (
+            workflow_data is not None
+        ), "Workflow data should be accessible to data_processor"
         assert workflow_data["workflow_id"] == "wf_001"
 
         mesh.push(
@@ -452,6 +465,7 @@ class TestMultiAgentIntegration:
 
         # 3. Analyzer receives data and performs analysis
         raw_data = mesh.get("raw_data", "analyzer")
+        assert raw_data is not None, "Raw data should be accessible to analyzer"
         assert len(raw_data["data"]) == 5
 
         mesh.push(
@@ -468,6 +482,7 @@ class TestMultiAgentIntegration:
 
         # 4. Reporter generates report
         analysis = mesh.get("analysis_results", "reporter")
+        assert analysis is not None, "Analysis results should be accessible to reporter"
         assert analysis["total_sales"] == 1000
 
         mesh.push(
@@ -490,6 +505,9 @@ class TestMultiAgentIntegration:
 
         # Verify workflow completion
         completion = mesh.get("workflow_complete", "coordinator")
+        assert (
+            completion is not None
+        ), "Completion status should be accessible to coordinator"
         assert completion["status"] == "success"
 
         # Verify each agent can access relevant data

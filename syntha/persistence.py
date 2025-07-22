@@ -208,9 +208,7 @@ class DatabaseBackend(ABC):
         # Default implementation for backward compatibility
         return self.get_agent_permissions(agent_name)
 
-    def get_all_agent_permissions_for_user(
-        self, user_id: str
-    ) -> Dict[str, List[str]]:
+    def get_all_agent_permissions_for_user(self, user_id: str) -> Dict[str, List[str]]:
         """Get all agent permissions for a specific user."""
         # Default implementation for backward compatibility
         return self.get_all_agent_permissions()
@@ -406,13 +404,13 @@ class SQLiteBackend(DatabaseBackend):
             except sqlite3.OperationalError:
                 # Column already exists
                 pass
-            
+
             try:
                 cursor.execute("ALTER TABLE agent_topics ADD COLUMN user_id TEXT")
             except sqlite3.OperationalError:
                 # Column already exists
                 pass
-            
+
             try:
                 cursor.execute("ALTER TABLE agent_permissions ADD COLUMN user_id TEXT")
             except sqlite3.OperationalError:
@@ -606,7 +604,9 @@ class SQLiteBackend(DatabaseBackend):
         """Remove agent topic subscriptions from SQLite."""
         with self._lock:
             cursor = self.connection.cursor()
-            cursor.execute("DELETE FROM agent_topics WHERE agent_name = ?", (agent_name,))
+            cursor.execute(
+                "DELETE FROM agent_topics WHERE agent_name = ?", (agent_name,)
+            )
             self.connection.commit()
 
     def save_agent_permissions(
@@ -745,7 +745,8 @@ class SQLiteBackend(DatabaseBackend):
         with self._lock:
             cursor = self.connection.cursor()
             cursor.execute(
-                "DELETE FROM context_items WHERE key = ? AND user_id = ?", (key, user_id)
+                "DELETE FROM context_items WHERE key = ? AND user_id = ?",
+                (key, user_id),
             )
             self.connection.commit()
             return cursor.rowcount > 0
@@ -837,9 +838,7 @@ class SQLiteBackend(DatabaseBackend):
 
             return json.loads(row[0])
 
-    def get_all_agent_permissions_for_user(
-        self, user_id: str
-    ) -> Dict[str, List[str]]:
+    def get_all_agent_permissions_for_user(self, user_id: str) -> Dict[str, List[str]]:
         """Get all agent permissions for a specific user from SQLite."""
         with self._lock:
             cursor = self.connection.cursor()
@@ -875,7 +874,9 @@ class SQLiteBackend(DatabaseBackend):
             cursor = self.connection.cursor()
             cursor.execute("DELETE FROM context_items WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM agent_topics WHERE user_id = ?", (user_id,))
-            cursor.execute("DELETE FROM agent_permissions WHERE user_id = ?", (user_id,))
+            cursor.execute(
+                "DELETE FROM agent_permissions WHERE user_id = ?", (user_id,)
+            )
             self.connection.commit()
 
 
@@ -1093,7 +1094,9 @@ class PostgreSQLBackend(DatabaseBackend):
         """Remove agent topic subscriptions from PostgreSQL."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
-            cursor.execute("DELETE FROM agent_topics WHERE agent_name = %s", (agent_name,))
+            cursor.execute(
+                "DELETE FROM agent_topics WHERE agent_name = %s", (agent_name,)
+            )
             self.connection.commit()  # type: ignore
 
     def save_agent_permissions(
