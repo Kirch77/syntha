@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753203505385,
+  "lastUpdate": 1753204110418,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -2068,6 +2068,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000024442954639551126",
             "extra": "mean: 844.8145883839519 usec\nrounds: 1188"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "distinct": true,
+          "id": "c5d3e26d6aa780cb00eb7f6fbc63a880b6997213",
+          "message": "fix(ci): correct file parameter in Codecov action configuration\n\n- Changed the parameter from 'file' to 'files' in the Codecov action to align with the expected input format.\n- This adjustment ensures proper functionality of the coverage upload process.\n\nThese changes enhance the accuracy of the CI workflow for coverage reporting.",
+          "timestamp": "2025-07-22T13:07:19-04:00",
+          "tree_id": "17c46c7def10d9da43b53f776b8c6c3868a7b83a",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/c5d3e26d6aa780cb00eb7f6fbc63a880b6997213"
+        },
+        "date": 1753204110092,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 302747.64071336173,
+            "unit": "iter/sec",
+            "range": "stddev: 6.008851519743662e-7",
+            "extra": "mean: 3.303081066606195 usec\nrounds: 28014"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 461227.65763419296,
+            "unit": "iter/sec",
+            "range": "stddev: 5.36343028754652e-7",
+            "extra": "mean: 2.1681267015281986 usec\nrounds: 135981"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2207.8791446306077,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000014730040070372475",
+            "extra": "mean: 452.9233415841275 usec\nrounds: 2424"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4866.979314991484,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000008159850406449776",
+            "extra": "mean: 205.46625232611035 usec\nrounds: 4514"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 700.6189183309754,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00007140950439435309",
+            "extra": "mean: 1.4273094457429363 msec\nrounds: 599"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1795.4437475631094,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000028170903879455288",
+            "extra": "mean: 556.9653749148441 usec\nrounds: 1467"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 502604.17726162384,
+            "unit": "iter/sec",
+            "range": "stddev: 4.945758130809666e-7",
+            "extra": "mean: 1.9896372637576856 usec\nrounds: 1111"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 18.790680818056916,
+            "unit": "iter/sec",
+            "range": "stddev: 0.014561986878862124",
+            "extra": "mean: 53.21786952173917 msec\nrounds: 23"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 104143.43423433392,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000001513512736373531",
+            "extra": "mean: 9.602141578602954 usec\nrounds: 19777"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1204.933544910631,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000017224751434889176",
+            "extra": "mean: 829.9212883762558 usec\nrounds: 1127"
           }
         ]
       }
