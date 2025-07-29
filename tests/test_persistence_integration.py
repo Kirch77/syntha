@@ -102,7 +102,7 @@ class TestPersistenceIntegration:
 
             # Wait for expiration plus cleanup interval
             time.sleep(0.2)  # Wait longer than TTL + cleanup interval
-            
+
             # Trigger auto cleanup with another operation
             # This should trigger cleanup since enough time has passed
             self.mesh.push("trigger_cleanup", "new_data")
