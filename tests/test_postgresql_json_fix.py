@@ -7,7 +7,9 @@ without trying to double-parse JSON that's already been deserialized by psycopg2
 """
 
 import os
+
 import pytest
+
 from syntha import ContextMesh
 
 

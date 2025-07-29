@@ -921,10 +921,17 @@ class PostgreSQLBackend(DatabaseBackend):
                     value JSONB NOT NULL,
                     subscribers JSONB NOT NULL,
                     ttl REAL,
-                    created_at REAL NOT NULL,
-                    PRIMARY KEY (key, user_id)
+                    created_at REAL NOT NULL
                 )
             """
+            )
+
+            # Create unique constraint to handle NULL user_id properly
+            cursor.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_context_key_user 
+                ON context_items (key, COALESCE(user_id, ''))
+                """
             )
 
             # Agent topics table (with user isolation)
@@ -933,10 +940,17 @@ class PostgreSQLBackend(DatabaseBackend):
                 CREATE TABLE IF NOT EXISTS agent_topics (
                     agent_name TEXT NOT NULL,
                     user_id TEXT,
-                    topics JSONB NOT NULL,
-                    PRIMARY KEY (agent_name, user_id)
+                    topics JSONB NOT NULL
                 )
             """
+            )
+
+            # Create unique constraint to handle NULL user_id properly
+            cursor.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_topics_name_user 
+                ON agent_topics (agent_name, COALESCE(user_id, ''))
+                """
             )
 
             # Agent permissions table (with user isolation)
@@ -945,10 +959,17 @@ class PostgreSQLBackend(DatabaseBackend):
                 CREATE TABLE IF NOT EXISTS agent_permissions (
                     agent_name TEXT NOT NULL,
                     user_id TEXT,
-                    allowed_topics JSONB NOT NULL,
-                    PRIMARY KEY (agent_name, user_id)
+                    allowed_topics JSONB NOT NULL
                 )
             """
+            )
+
+            # Create unique constraint to handle NULL user_id properly
+            cursor.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_permissions_name_user 
+                ON agent_permissions (agent_name, COALESCE(user_id, ''))
+                """
             )
 
             # Create indexes
@@ -962,7 +983,7 @@ class PostgreSQLBackend(DatabaseBackend):
                 "CREATE INDEX IF NOT EXISTS idx_context_user_id ON context_items(user_id)"
             )
 
-            self.connection.commit()
+            self.connection.commit()  # type: ignore
 
     def save_context_item(
         self,
@@ -972,31 +993,38 @@ class PostgreSQLBackend(DatabaseBackend):
         ttl: Optional[float],
         created_at: float,
     ) -> None:
-        """Save a context item to PostgreSQL."""
+        """Save a context item to PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
+            # Use UPDATE first, then INSERT if no rows affected
             cursor.execute(
                 """
-                INSERT INTO context_items (key, value, subscribers, ttl, created_at)
-                VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (key) DO UPDATE SET
-                    value = EXCLUDED.value,
-                    subscribers = EXCLUDED.subscribers,
-                    ttl = EXCLUDED.ttl,
-                    created_at = EXCLUDED.created_at
+                UPDATE context_items 
+                SET value = %s, subscribers = %s, ttl = %s, created_at = %s
+                WHERE key = %s AND user_id IS NULL
                 """,
-                (key, json.dumps(value), json.dumps(subscribers), ttl, created_at),
+                (json.dumps(value), json.dumps(subscribers), ttl, created_at, key),
             )
+
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    """
+                    INSERT INTO context_items (key, user_id, value, subscribers, ttl, created_at)
+                    VALUES (%s, NULL, %s, %s, %s, %s)
+                    """,
+                    (key, json.dumps(value), json.dumps(subscribers), ttl, created_at),
+                )
+
             self.connection.commit()  # type: ignore
 
     def get_context_item(
         self, key: str
     ) -> Optional[Tuple[Any, List[str], Optional[float], float]]:
-        """Retrieve a context item from PostgreSQL."""
+        """Retrieve a context item from PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
-                "SELECT value, subscribers, ttl, created_at FROM context_items WHERE key = %s",
+                "SELECT value, subscribers, ttl, created_at FROM context_items WHERE key = %s AND user_id IS NULL",
                 (key,),
             )
             row = cursor.fetchone()
@@ -1012,10 +1040,12 @@ class PostgreSQLBackend(DatabaseBackend):
             return (value, subscribers, ttl, created_at)
 
     def delete_context_item(self, key: str) -> bool:
-        """Delete a context item from PostgreSQL."""
+        """Delete a context item from PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
-            cursor.execute("DELETE FROM context_items WHERE key = %s", (key,))
+            cursor.execute(
+                "DELETE FROM context_items WHERE key = %s AND user_id IS NULL", (key,)
+            )
             deleted = cursor.rowcount > 0
             self.connection.commit()  # type: ignore
             return deleted
@@ -1023,11 +1053,11 @@ class PostgreSQLBackend(DatabaseBackend):
     def get_all_context_items(
         self,
     ) -> Dict[str, Tuple[Any, List[str], Optional[float], float]]:
-        """Get all context items from PostgreSQL."""
+        """Get all context items from PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
-                "SELECT key, value, subscribers, ttl, created_at FROM context_items"
+                "SELECT key, value, subscribers, ttl, created_at FROM context_items WHERE user_id IS NULL"
             )
 
             result = {}
@@ -1041,11 +1071,11 @@ class PostgreSQLBackend(DatabaseBackend):
             return result
 
     def cleanup_expired(self, current_time: float) -> int:
-        """Remove expired context items from PostgreSQL."""
+        """Remove expired context items from PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
-                "DELETE FROM context_items WHERE ttl IS NOT NULL AND ttl < %s",
+                "DELETE FROM context_items WHERE user_id IS NULL AND ttl IS NOT NULL AND (created_at + ttl) < %s",
                 (current_time,),
             )
             deleted_count = cursor.rowcount
@@ -1053,32 +1083,46 @@ class PostgreSQLBackend(DatabaseBackend):
             return deleted_count
 
     def clear_all(self) -> None:
-        """Clear all context items from PostgreSQL."""
+        """Clear all context items from PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
-            cursor.execute("DELETE FROM context_items")
+            cursor.execute("DELETE FROM context_items WHERE user_id IS NULL")
+            cursor.execute("DELETE FROM agent_topics WHERE user_id IS NULL")
+            cursor.execute("DELETE FROM agent_permissions WHERE user_id IS NULL")
             self.connection.commit()  # type: ignore
 
     def save_agent_topics(self, agent_name: str, topics: List[str]) -> None:
-        """Save agent topics to PostgreSQL."""
+        """Save agent topics to PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
+            # Use UPDATE first, then INSERT if no rows affected
             cursor.execute(
                 """
-                INSERT INTO agent_topics (agent_name, topics)
-                VALUES (%s, %s)
-                ON CONFLICT (agent_name) DO UPDATE SET topics = EXCLUDED.topics
+                UPDATE agent_topics 
+                SET topics = %s
+                WHERE agent_name = %s AND user_id IS NULL
                 """,
-                (agent_name, json.dumps(topics)),
+                (json.dumps(topics), agent_name),
             )
+
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    """
+                    INSERT INTO agent_topics (agent_name, user_id, topics)
+                    VALUES (%s, NULL, %s)
+                    """,
+                    (agent_name, json.dumps(topics)),
+                )
+
             self.connection.commit()  # type: ignore
 
     def get_agent_topics(self, agent_name: str) -> List[str]:
-        """Get agent topics from PostgreSQL."""
+        """Get agent topics from PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
-                "SELECT topics FROM agent_topics WHERE agent_name = %s", (agent_name,)
+                "SELECT topics FROM agent_topics WHERE agent_name = %s AND user_id IS NULL",
+                (agent_name,),
             )
             row = cursor.fetchone()
 
@@ -1088,10 +1132,12 @@ class PostgreSQLBackend(DatabaseBackend):
             return row[0] if row[0] is not None else []
 
     def get_all_agent_topics(self) -> Dict[str, List[str]]:
-        """Get all agent topics from PostgreSQL."""
+        """Get all agent topics from PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
-            cursor.execute("SELECT agent_name, topics FROM agent_topics")
+            cursor.execute(
+                "SELECT agent_name, topics FROM agent_topics WHERE user_id IS NULL"
+            )
 
             result = {}
             for agent_name, topics in cursor.fetchall():
@@ -1100,36 +1146,48 @@ class PostgreSQLBackend(DatabaseBackend):
             return result
 
     def remove_agent_topics(self, agent_name: str) -> None:
-        """Remove agent topic subscriptions from PostgreSQL."""
+        """Remove agent topic subscriptions from PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
-                "DELETE FROM agent_topics WHERE agent_name = %s", (agent_name,)
+                "DELETE FROM agent_topics WHERE agent_name = %s AND user_id IS NULL",
+                (agent_name,),
             )
             self.connection.commit()  # type: ignore
 
     def save_agent_permissions(
         self, agent_name: str, allowed_topics: List[str]
     ) -> None:
-        """Save agent permissions to PostgreSQL."""
+        """Save agent permissions to PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
+            # Use UPDATE first, then INSERT if no rows affected
             cursor.execute(
                 """
-                INSERT INTO agent_permissions (agent_name, allowed_topics)
-                VALUES (%s, %s)
-                ON CONFLICT (agent_name) DO UPDATE SET allowed_topics = EXCLUDED.allowed_topics
+                UPDATE agent_permissions 
+                SET allowed_topics = %s
+                WHERE agent_name = %s AND user_id IS NULL
                 """,
-                (agent_name, json.dumps(allowed_topics)),
+                (json.dumps(allowed_topics), agent_name),
             )
+
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    """
+                    INSERT INTO agent_permissions (agent_name, user_id, allowed_topics)
+                    VALUES (%s, NULL, %s)
+                    """,
+                    (agent_name, json.dumps(allowed_topics)),
+                )
+
             self.connection.commit()  # type: ignore
 
     def get_agent_permissions(self, agent_name: str) -> List[str]:
-        """Get agent permissions from PostgreSQL."""
+        """Get agent permissions from PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
             cursor.execute(
-                "SELECT allowed_topics FROM agent_permissions WHERE agent_name = %s",
+                "SELECT allowed_topics FROM agent_permissions WHERE agent_name = %s AND user_id IS NULL",
                 (agent_name,),
             )
             row = cursor.fetchone()
@@ -1140,10 +1198,12 @@ class PostgreSQLBackend(DatabaseBackend):
             return row[0] if row[0] is not None else []
 
     def get_all_agent_permissions(self) -> Dict[str, List[str]]:
-        """Get all agent permissions from PostgreSQL."""
+        """Get all agent permissions from PostgreSQL (legacy mode - user_id = NULL)."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
-            cursor.execute("SELECT agent_name, allowed_topics FROM agent_permissions")
+            cursor.execute(
+                "SELECT agent_name, allowed_topics FROM agent_permissions WHERE user_id IS NULL"
+            )
 
             result = {}
             for agent_name, allowed_topics in cursor.fetchall():
@@ -1166,25 +1226,39 @@ class PostgreSQLBackend(DatabaseBackend):
         """Save a context item for a specific user to PostgreSQL."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
+            # Use UPDATE first, then INSERT if no rows affected
             cursor.execute(
                 """
-                INSERT INTO context_items (key, user_id, value, subscribers, ttl, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT (key, user_id) DO UPDATE SET
-                    value = EXCLUDED.value,
-                    subscribers = EXCLUDED.subscribers,
-                    ttl = EXCLUDED.ttl,
-                    created_at = EXCLUDED.created_at
+                UPDATE context_items 
+                SET value = %s, subscribers = %s, ttl = %s, created_at = %s
+                WHERE key = %s AND (user_id = %s OR (user_id IS NULL AND %s IS NULL))
                 """,
                 (
-                    key,
-                    user_id,
                     json.dumps(value),
                     json.dumps(subscribers),
                     ttl,
                     created_at,
+                    key,
+                    user_id,
+                    user_id,
                 ),
             )
+
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    """
+                    INSERT INTO context_items (key, user_id, value, subscribers, ttl, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        key,
+                        user_id,
+                        json.dumps(value),
+                        json.dumps(subscribers),
+                        ttl,
+                        created_at,
+                    ),
+                )
             self.connection.commit()  # type: ignore
 
     def get_context_item_for_user(
@@ -1243,15 +1317,24 @@ class PostgreSQLBackend(DatabaseBackend):
         """Save agent topics for a specific user to PostgreSQL."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
+            # Use UPDATE first, then INSERT if no rows affected
             cursor.execute(
                 """
-                INSERT INTO agent_topics (agent_name, user_id, topics)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (agent_name, user_id) DO UPDATE SET
-                    topics = EXCLUDED.topics
+                UPDATE agent_topics 
+                SET topics = %s
+                WHERE agent_name = %s AND (user_id = %s OR (user_id IS NULL AND %s IS NULL))
                 """,
-                (agent_name, user_id, json.dumps(topics)),
+                (json.dumps(topics), agent_name, user_id, user_id),
             )
+
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    """
+                    INSERT INTO agent_topics (agent_name, user_id, topics)
+                    VALUES (%s, %s, %s)
+                    """,
+                    (agent_name, user_id, json.dumps(topics)),
+                )
             self.connection.commit()  # type: ignore
 
     def get_agent_topics_for_user(self, user_id: str, agent_name: str) -> List[str]:
@@ -1300,15 +1383,24 @@ class PostgreSQLBackend(DatabaseBackend):
         """Save agent permissions for a specific user to PostgreSQL."""
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
+            # Use UPDATE first, then INSERT if no rows affected
             cursor.execute(
                 """
-                INSERT INTO agent_permissions (agent_name, user_id, allowed_topics)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (agent_name, user_id) DO UPDATE SET
-                    allowed_topics = EXCLUDED.allowed_topics
+                UPDATE agent_permissions 
+                SET allowed_topics = %s
+                WHERE agent_name = %s AND (user_id = %s OR (user_id IS NULL AND %s IS NULL))
                 """,
-                (agent_name, user_id, json.dumps(allowed_topics)),
+                (json.dumps(allowed_topics), agent_name, user_id, user_id),
             )
+
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    """
+                    INSERT INTO agent_permissions (agent_name, user_id, allowed_topics)
+                    VALUES (%s, %s, %s)
+                    """,
+                    (agent_name, user_id, json.dumps(allowed_topics)),
+                )
             self.connection.commit()  # type: ignore
 
     def get_agent_permissions_for_user(
