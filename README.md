@@ -1,317 +1,212 @@
-# Syntha SDK
+# Syntha SDK Documentation
 
-**Multi-Agent Context Framework with Production-Grade Persistence**
+This directory contains the complete documentation for the Syntha SDK, built with MkDocs and Material theme.
 
-Syntha is a framework-agnostic SDK that enables AI agents to share context and communicate through standardized tool calls. Build scalable multi-agent systems with robust database persistence and real-world deployment capabilities.
+## 🌐 Live Documentation
 
-## Why Syntha?
+The documentation is automatically deployed to GitHub Pages at:
+**https://[your-username].github.io/syntha-sdk**
 
-**The Problem**: Most multi-agent frameworks lock you into specific tools, use runtime hacks, or require complex setups. Data doesn't persist across restarts, and scaling to production is an afterthought.
+## Building the Documentation
 
-**The Solution**: Syntha works with **any** LLM framework through standard function calling. No vendor lock-in, production-ready persistence, and a complete path from first agent to enterprise deployment.
+### Prerequisites
 
-## Core Capabilities
+- Python 3.9+
+- pip
 
-### Framework Agnostic Design
+### Local Development
 
-Works with any LLM framework that supports function calling:
-- **OpenAI** (Function Calling API)
-- **Anthropic Claude** (Tools API) 
-- **LangGraph** (State + Tools)
-- **Local LLMs** (Ollama, LM Studio, etc.)
-- **Any LLM** with function calling support
+1. Install documentation dependencies:
+```bash
+# Option 1: Install specific packages
+pip install mkdocs mkdocs-material mkdocstrings[python]
 
-### Production-Grade Persistence
-
-Because "it works on my machine" isn't a deployment strategy:
-- **SQLite**: Zero-config for development
-- **PostgreSQL**: Production-grade with advanced features
-- **Migration Tools**: Seamless database transitions
-- **Performance Optimization**: Indexes, pooling, caching
-
-### Built-in Features
-
-- **Comprehensive Logging**: Structured logging with context tracking
-- **Error Handling**: Custom exception hierarchy with recovery suggestions
-- **Performance Monitoring**: Built-in timing and metrics collection
-- **Security Framework**: Input validation and access control
-- **Complete Testing**: 177+ comprehensive tests covering all scenarios
-
-### Essential Agent Tools
-
-- **discover_topics**: Find available topics and subscriber counts
-- **subscribe_to_topics**: Subscribe to topic-based context routing
-- **push_context**: Share context with topic subscribers
-- **list_context**: Discover available context keys by topic
-- **get_context**: Retrieve specific context data
-
-## Quick Start
-
-```python
-from syntha import ContextMesh, ToolHandler
-
-# 1. Initialize with persistence (SQLite by default)
-mesh = ContextMesh(enable_persistence=True)
-sales_agent = ToolHandler(mesh, agent_name="SalesBot")
-marketing_agent = ToolHandler(mesh, agent_name="MarketingBot")
-
-# 2. Agents subscribe to topics
-sales_agent.handle_tool_call("subscribe_to_topics",
-    topics=["sales", "pricing", "customer_data"])
-marketing_agent.handle_tool_call("subscribe_to_topics",
-    topics=["marketing", "campaigns", "customer_data"])
-
-# 3. Share context via topics
-sales_agent.handle_tool_call("push_context",
-    key="q4_pricing",
-    value="Enterprise: $99/month, Pro: $49/month",
-    topics=["sales", "pricing"])
-
-# 4. Marketing agent automatically receives pricing data
-pricing_context = marketing_agent.handle_tool_call("get_context",
-    keys=["q4_pricing"])
-
-print(pricing_context)
-# Output: {'q4_pricing': 'Enterprise: $99/month, Pro: $49/month'}
+# Option 2: Install from requirements file
+pip install -r requirements-docs.txt
 ```
 
-## Database Backends
-
-Choose the right persistence backend for your needs:
-
-```python
-# SQLite (default) - Perfect for development and small-medium deployments
-mesh = ContextMesh(enable_persistence=True, db_backend="sqlite", db_path="syntha.db")
-
-# PostgreSQL - For high-performance production environments
-mesh = ContextMesh(
-    enable_persistence=True,
-    db_backend="postgresql",
-    connection_string="postgresql://user:pass@localhost/syntha"
-)
-
-# In-memory only - For testing or temporary agents
-mesh = ContextMesh(enable_persistence=False)
+2. Serve the documentation locally:
+```bash
+mkdocs serve
 ```
 
-## Architecture Overview
+3. Open your browser to `http://localhost:8000`
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   SalesBot      │    │  MarketingBot   │    │  SupportBot     │
-│                 │    │                 │    │                 │
-│ • subscribe     │    │ • subscribe     │    │ • subscribe     │
-│ • push_context  │    │ • list_context  │    │ • get_context   │
-│ • discover      │    │ • get_context   │    │ • push_context  │
-└─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
-          │                      │                      │
-          └──────────────────────┼──────────────────────┘
-                                 │
-                   ┌─────────────▼─────────────┐
-                   │      Syntha ContextMesh   │
-                   │                           │
-                   │  Topic-Based Routing      │
-                   │  Database Persistence     │
-                   │  Smart Indexing           │
-                   │  Thread-Safe Operations   │
-                   │  TTL Management           │
-                   └─────────────┬─────────────┘
-                                 │
-                   ┌─────────────▼─────────────┐
-                   │     Database Layer        │
-                   │  SQLite / PostgreSQL      │
-                   │                           │
-                   │ • Context Storage         │
-                   │ • Topic Subscriptions     │
-                   │ • Agent Permissions       │
-                   └───────────────────────────┘
-```
-
-## Core Usage Patterns
-
-### 1. Context Management
-
-```python
-# Push context with access control
-mesh.push(key="data", value={"users": 1000}, subscribers=["AnalyticsBot"])
-mesh.push(key="global_config", value={"env": "prod"})  # Global access
-
-# Retrieve context
-value = mesh.get("data", agent_name="AnalyticsBot")
-all_context = mesh.get_all_for_agent("AnalyticsBot")
-```
-
-### 2. Agent Communication
-
-```python
-# Send targeted message
-handler.handle_tool_call("send_message_to_agent",
-    from_agent="Agent1", to_agent="Agent2",
-    message="Task completed successfully",
-    message_type="result", priority="high"
-)
-
-# Broadcast to multiple agents
-handler.handle_tool_call("broadcast_message_to_agents",
-    from_agent="Manager", to_agents=["Dev1", "Dev2", "QA"],
-    message="Deploy at 3 PM", create_thread=True
-)
-
-# Check messages with filtering
-messages = handler.handle_tool_call("get_messages_from_agents",
-    agent_name="Agent2", unread_only=True, priority="high"
-)
-```
-
-### 3. Performance & Advanced Features
-
-```python
-# Batch operations for efficiency
-handler.handle_tool_call("batch_context_operation",
-    agent_name="Agent1",
-    operations=[
-        {"type": "push", "key": "metric1", "value": 100},
-        {"type": "push", "key": "metric2", "value": 200},
-        {"type": "get", "key": "existing_data"}
-    ],
-    atomic=True  # All succeed or all fail
-)
-
-# Message threading and confirmations
-handler.handle_tool_call("send_message_to_agent",
-    from_agent="Manager", to_agent="Developer",
-    message="Critical bug detected",
-    requires_confirmation=True,  # Sends read receipt
-    thread_id="bug_thread",     # Groups related messages
-    ttl_hours=2                 # Expires in 2 hours
-)
-```
-
-## Tool Schemas
-
-Syntha provides 7 standardized tool schemas for LLM function calling:
-
-| Tool                          | Purpose                 | Key Parameters                              |
-| ----------------------------- | ----------------------- | ------------------------------------------- |
-| `get_context`                 | Retrieve shared context | `agent_name`, `keys`                        |
-| `push_context`                | Store shared context    | `agent_name`, `key`, `value`, `subscribers` |
-| `list_context_keys`           | List available keys     | `agent_name`                                |
-| `send_message_to_agent`       | Send targeted message   | `from_agent`, `to_agent`, `message`         |
-| `get_messages_from_agents`    | Retrieve messages       | `agent_name`, filters                       |
-| `broadcast_message_to_agents` | Send to multiple agents | `from_agent`, `to_agents`, `message`        |
-| `batch_context_operation`     | Bulk operations         | `agent_name`, `operations`                  |
-
-```python
-# Get all schemas for your LLM
-schemas = handler.get_schemas()
-
-# Handle function calls from LLM
-result = handler.handle_tool_call(tool_name, **parameters)
-```
-
-## Performance Controls
-
-Simple boolean flags control complex optimizations:
-
-```python
-# Initialize with optimizations
-mesh = ContextMesh(
-    enable_indexing=True,    # 10x faster agent lookups
-    auto_cleanup=True        # Automatic memory management
-)
-
-# Runtime performance toggles
-mesh.enable_indexing = False  # Disable if memory is constrained
-mesh.auto_cleanup = True      # Keep cleanup for memory efficiency
-```
-
-## LLM Integration Examples
-
-### OpenAI
-
-```python
-import openai
-from syntha import ContextMesh, ToolHandler, build_system_prompt
-
-mesh = ContextMesh()
-handler = ToolHandler(mesh)
-
-response = openai.chat.completions.create(
-    model="gpt-4",
-    messages=[
-        {"role": "system", "content": build_system_prompt("Agent1", mesh)},
-        {"role": "user", "content": "Analyze the project status"}
-    ],
-    tools=handler.get_schemas()
-)
-
-# Handle tool calls
-for tool_call in response.choices[0].message.tool_calls or []:
-    result = handler.handle_tool_call(
-        tool_call.function.name,
-        **json.loads(tool_call.function.arguments)
-    )
-```
-
-### Anthropic Claude
-
-```python
-import anthropic
-from syntha import ContextMesh, ToolHandler, build_system_prompt
-
-mesh = ContextMesh()
-handler = ToolHandler(mesh)
-
-response = anthropic.messages.create(
-    model="claude-3-5-sonnet-20241022",
-    system=build_system_prompt("Agent1", mesh),
-    messages=[{"role": "user", "content": "Check team messages"}],
-    tools=handler.get_schemas()
-)
-```
-
-## Project Structure
-
-```
-syntha/
-├── __init__.py          # Main exports
-├── context.py           # ContextMesh - shared knowledge space
-├── prompts.py           # Prompt injection utilities
-├── tools.py             # Tool schemas and handlers
-├── persistence.py       # Database backends
-└── reports.py           # Metrics and logging
-
-examples/
-├── basic_usage.py       # Core concepts
-├── openai_integration.py # OpenAI + Syntha
-└── complete_example.py  # Full multi-agent system
-
-tests/
-├── test_context.py      # ContextMesh tests
-├── test_prompts.py      # Prompt builder tests
-└── test_persistence.py  # Database tests
-```
-
-## Installation
+### Building for Production
 
 ```bash
-pip install syntha
+mkdocs build
 ```
 
-## Testing
+The built documentation will be in the `site/` directory.
 
+## 🚀 GitHub Pages Deployment
+
+### Automatic Deployment
+
+The documentation is automatically built and deployed to GitHub Pages when:
+- You push changes to the `main` or `master` branch
+- Changes are made to files in the `docs/` directory or `mkdocs.yml`
+- You can also trigger deployment manually from the Actions tab
+
+### Setup Instructions
+
+1. **Enable GitHub Pages** in your repository:
+   - Go to Settings → Pages
+   - Set Source to "GitHub Actions"
+   - The workflow will handle the rest
+
+2. **First-time setup**:
+   - Push this repository to GitHub
+   - The workflow will automatically run and deploy your docs
+   - Your documentation will be available at `https://[username].github.io/[repository-name]`
+
+3. **Custom domain** (optional):
+   - Add a `CNAME` file to the `docs/` directory with your domain
+   - Configure DNS settings with your domain provider
+
+### Workflow Features
+
+- ✅ **Automatic builds** on documentation changes
+- ✅ **Pull request previews** (builds but doesn't deploy)
+- ✅ **Manual triggering** via GitHub Actions UI
+- ✅ **Build verification** with strict mode
+- ✅ **Optimized caching** for faster builds
+
+## Documentation Structure
+
+- **Home**: Engaging introduction to the problem and solution
+- **Core Concepts**: Architecture and design principles
+- **Installation**: Getting started guide
+- **API Reference**: Complete API documentation
+  - ContextMesh API
+  - Tools API  
+  - Prompts API
+  - Persistence API
+  - Tool Schemas
+- **Guides**: Practical tutorials
+  - Overview
+  - Basics
+  - Context Management
+  - Tools & Permissions
+  - Final Remarks
+
+## Features
+
+- All code examples are tested and ready to copy/paste
+- Comprehensive API reference generated from actual code
+- Security best practices throughout
+- Production deployment guidance
+- Framework-agnostic examples
+
+## Contributing to Documentation
+
+### Making Changes
+
+1. Edit files in the `docs/` directory
+2. Test locally with `mkdocs serve`
+3. Commit and push your changes
+4. GitHub Actions will automatically build and deploy
+
+### Writing Guidelines
+
+When updating documentation:
+
+1. **Test all code examples** - Ensure they work as written
+2. **Follow the established tone** - Clear, practical, not overly technical
+3. **Include security warnings** where appropriate (use `!!! danger` blocks)
+4. **Verify the build** with `mkdocs build --strict` before committing
+
+### Code Example Standards
+
+All code examples should be:
+- **Copy-pasteable** and work immediately
+- **Based on actual SDK code** (no made-up APIs)
+- **Include imports** and setup code
+- **Show expected output** where helpful
+
+Example format:
+```python
+from syntha import ContextMesh
+
+# Create context with user isolation (always required in production!)
+context = ContextMesh(user_id="user123")
+
+# Your example code here
+context.push("example", "data")
+
+# Show what happens
+result = context.get("example", "agent")
+print(result)  # Output: data
+
+# Clean up
+context.close()
+```
+
+## Troubleshooting
+
+### Local Build Issues
+
+**MkDocs not found:**
 ```bash
-pytest tests/ -v
+pip install --upgrade pip
+pip install -r requirements-docs.txt
 ```
 
-## License
+**Build errors:**
+```bash
+# Check for syntax errors
+mkdocs build --strict
 
-Apache License 2.0 - see LICENSE file for details.
+# Clean build
+rm -rf site/
+mkdocs build
+```
 
-## Contributing
+### GitHub Pages Issues
 
-See CONTRIBUTING.md for development setup and contribution guidelines.
+**Workflow not running:**
+- Check that GitHub Pages is enabled in repository settings
+- Verify the workflow file is in `.github/workflows/docs.yml`
+- Ensure you're pushing to `main` or `master` branch
 
-## Security
+**Build failing:**
+- Check the Actions tab for error details
+- Common issues: missing dependencies, syntax errors in markdown
+- Test locally first with `mkdocs build --strict`
 
-For security issues, see SECURITY.md for our responsible disclosure policy.
+**Pages not updating:**
+- GitHub Pages can take a few minutes to update
+- Check the Actions tab to see if deployment completed
+- Clear browser cache if needed
+
+## Advanced Configuration
+
+### Adding Plugins
+
+To add MkDocs plugins:
+
+1. Add to `requirements-docs.txt`
+2. Update `mkdocs.yml` plugins section
+3. Test locally before pushing
+
+### Custom Themes
+
+The current setup uses Material theme with custom configuration in `mkdocs.yml`. To modify:
+
+1. Edit the `theme` section in `mkdocs.yml`
+2. Add custom CSS in `docs/stylesheets/` if needed
+3. Test thoroughly as theme changes can break layouts
+
+### Analytics and SEO
+
+Add Google Analytics or other tracking by updating the `mkdocs.yml` extra section:
+
+```yaml
+extra:
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+```
+
+The documentation emphasizes practical usage over exhaustive API coverage, with working examples that users can immediately run.

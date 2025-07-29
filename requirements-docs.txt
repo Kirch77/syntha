@@ -1,0 +1,9 @@
+# Documentation dependencies
+mkdocs>=1.5.0
+mkdocs-material>=9.4.0
+mkdocstrings[python]>=0.24.0
+
+# Optional: Additional plugins you might want to add later
+# mkdocs-git-revision-date-localized-plugin
+# mkdocs-git-committers-plugin-2
+# mkdocs-minify-plugin

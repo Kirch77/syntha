@@ -91,22 +91,29 @@ class TestPersistenceIntegration:
         self.mesh._cleanup_interval = 0.1
 
         try:
+            # Reset the last cleanup time to ensure cleanup will trigger
+            self.mesh._last_cleanup = 0
+
             # Push item with very short TTL
             self.mesh.push("auto_expire", "will_be_cleaned", ttl=0.05)
 
             # Verify it exists
             assert self.mesh.get("auto_expire") == "will_be_cleaned"
 
-            # Wait for expiration and trigger auto cleanup with another operation
-            time.sleep(0.2)
+            # Wait for expiration plus cleanup interval
+            time.sleep(0.2)  # Wait longer than TTL + cleanup interval
+
+            # Trigger auto cleanup with another operation
+            # This should trigger cleanup since enough time has passed
             self.mesh.push("trigger_cleanup", "new_data")
 
             # Expired item should be automatically cleaned up
-            assert self.mesh.get("auto_expire") is None
+            result = self.mesh.get("auto_expire")
+            assert result is None, f"Expected None but got {result}"
 
             # Verify removed from database too
             db_item = self.mesh.db_backend.get_context_item("auto_expire")
-            assert db_item is None
+            assert db_item is None, f"Expected None from database but got {db_item}"
 
             # New item should still exist
             assert self.mesh.get("trigger_cleanup") == "new_data"
