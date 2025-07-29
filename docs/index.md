@@ -5,6 +5,7 @@
 Building AI applications with multiple agents is like trying to coordinate a team where everyone speaks different languages and has no shared memory. Agents work in isolation, repeat work, and lack the context needed to make intelligent decisions together.
 
 Traditional approaches force you to:
+
 - Manually pass context between agents through complex message chains
 - Rebuild shared knowledge from scratch for each interaction
 - Handle agent coordination with brittle, hard-coded workflows
@@ -35,12 +36,12 @@ agent_handler = ToolHandler(context, "SalesAgent")
 
 ### Key Features
 
-- **🔄 Real-time Context Sharing**: Agents push and pull context as they work
-- **🎯 Smart Routing**: Topic-based and subscriber-based context distribution  
-- **🔒 User Isolation**: Complete separation between different users' contexts
-- **💾 Persistent Storage**: Context survives across sessions with SQLite/PostgreSQL
-- **🛠️ Framework Agnostic**: Works with OpenAI, Anthropic, or any LLM framework
-- **⚡ Production Ready**: 168+ tests, comprehensive logging, error handling
+- **Real-time Context Sharing**: Agents push and pull context as they work
+- **Smart Routing**: Topic-based and subscriber-based context distribution  
+- **User Isolation**: Complete separation between different users' contexts
+- **Persistent Storage**: Context survives across sessions with SQLite/PostgreSQL
+- **Framework Agnostic**: Works with OpenAI, Anthropic, or any LLM framework
+- **Production Ready**: 168+ tests, comprehensive logging, error handling
 
 ## Quick Navigation
 

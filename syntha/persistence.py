@@ -854,7 +854,7 @@ class SQLiteBackend(DatabaseBackend):
             return result
 
     def cleanup_expired_for_user(self, user_id: str, current_time: float) -> int:
-        """Clean up expired items for a specific user from SQLite."""
+        """Clean up expired items for a specific user."""
         with self._lock:
             cursor = self.connection.cursor()
             cursor.execute(
@@ -869,7 +869,7 @@ class SQLiteBackend(DatabaseBackend):
             return deleted
 
     def clear_all_for_user(self, user_id: str) -> None:
-        """Clear all data for a specific user from SQLite."""
+        """Clear all data for a specific user."""
         with self._lock:
             cursor = self.connection.cursor()
             cursor.execute("DELETE FROM context_items WHERE user_id = ?", (user_id,))
@@ -912,35 +912,41 @@ class PostgreSQLBackend(DatabaseBackend):
         with self._lock:
             cursor = self.connection.cursor()  # type: ignore
 
-            # Context items table
+            # Context items table (with user isolation)
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS context_items (
-                    key TEXT PRIMARY KEY,
+                    key TEXT NOT NULL,
+                    user_id TEXT,
                     value JSONB NOT NULL,
                     subscribers JSONB NOT NULL,
                     ttl REAL,
-                    created_at REAL NOT NULL
+                    created_at REAL NOT NULL,
+                    PRIMARY KEY (key, user_id)
                 )
             """
             )
 
-            # Agent topics table
+            # Agent topics table (with user isolation)
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS agent_topics (
-                    agent_name TEXT PRIMARY KEY,
-                    topics JSONB NOT NULL
+                    agent_name TEXT NOT NULL,
+                    user_id TEXT,
+                    topics JSONB NOT NULL,
+                    PRIMARY KEY (agent_name, user_id)
                 )
             """
             )
 
-            # Agent permissions table
+            # Agent permissions table (with user isolation)
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS agent_permissions (
-                    agent_name TEXT PRIMARY KEY,
-                    allowed_topics JSONB NOT NULL
+                    agent_name TEXT NOT NULL,
+                    user_id TEXT,
+                    allowed_topics JSONB NOT NULL,
+                    PRIMARY KEY (agent_name, user_id)
                 )
             """
             )
@@ -952,8 +958,11 @@ class PostgreSQLBackend(DatabaseBackend):
             cursor.execute(
                 "CREATE INDEX IF NOT EXISTS idx_context_ttl ON context_items(ttl)"
             )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_context_user_id ON context_items(user_id)"
+            )
 
-            self.connection.commit()  # type: ignore
+            self.connection.commit()
 
     def save_context_item(
         self,
@@ -1144,6 +1153,268 @@ class PostgreSQLBackend(DatabaseBackend):
 
             return result
 
+    # User isolation methods
+    def save_context_item_for_user(
+        self,
+        user_id: str,
+        key: str,
+        value: Any,
+        subscribers: List[str],
+        ttl: Optional[float],
+        created_at: float,
+    ) -> None:
+        """Save a context item for a specific user to PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                """
+                INSERT INTO context_items (key, user_id, value, subscribers, ttl, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (key, user_id) DO UPDATE SET
+                    value = EXCLUDED.value,
+                    subscribers = EXCLUDED.subscribers,
+                    ttl = EXCLUDED.ttl,
+                    created_at = EXCLUDED.created_at
+                """,
+                (
+                    key,
+                    user_id,
+                    json.dumps(value),
+                    json.dumps(subscribers),
+                    ttl,
+                    created_at,
+                ),
+            )
+            self.connection.commit()  # type: ignore
+
+    def get_context_item_for_user(
+        self, user_id: str, key: str
+    ) -> Optional[Tuple[Any, List[str], Optional[float], float]]:
+        """Get a context item for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                "SELECT value, subscribers, ttl, created_at FROM context_items WHERE key = %s AND user_id = %s",
+                (key, user_id),
+            )
+            row = cursor.fetchone()
+            if row:
+                value, subscribers, ttl, created_at = row
+                # psycopg2 automatically deserializes JSONB to Python objects
+                value = value if value is not None else None
+                subscribers = subscribers if subscribers is not None else []
+                return (value, subscribers, ttl, created_at)
+            return None
+
+    def get_all_context_items_for_user(
+        self, user_id: str
+    ) -> Dict[str, Tuple[Any, List[str], Optional[float], float]]:
+        """Get all context items for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                "SELECT key, value, subscribers, ttl, created_at FROM context_items WHERE user_id = %s",
+                (user_id,),
+            )
+            result = {}
+            for row in cursor.fetchall():
+                key, value, subscribers, ttl, created_at = row
+                # psycopg2 automatically deserializes JSONB to Python objects
+                value = value if value is not None else None
+                subscribers = subscribers if subscribers is not None else []
+                result[key] = (value, subscribers, ttl, created_at)
+            return result
+
+    def delete_context_item_for_user(self, user_id: str, key: str) -> bool:
+        """Delete a context item for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                "DELETE FROM context_items WHERE key = %s AND user_id = %s",
+                (key, user_id),
+            )
+            deleted = cursor.rowcount > 0
+            self.connection.commit()  # type: ignore
+            return deleted
+
+    def save_agent_topics_for_user(
+        self, user_id: str, agent_name: str, topics: List[str]
+    ) -> None:
+        """Save agent topics for a specific user to PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                """
+                INSERT INTO agent_topics (agent_name, user_id, topics)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (agent_name, user_id) DO UPDATE SET
+                    topics = EXCLUDED.topics
+                """,
+                (agent_name, user_id, json.dumps(topics)),
+            )
+            self.connection.commit()  # type: ignore
+
+    def get_agent_topics_for_user(self, user_id: str, agent_name: str) -> List[str]:
+        """Get agent topics for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                "SELECT topics FROM agent_topics WHERE agent_name = %s AND user_id = %s",
+                (agent_name, user_id),
+            )
+            row = cursor.fetchone()
+            if row:
+                topics = row[0]
+                # psycopg2 automatically deserializes JSONB to Python objects
+                return topics if topics is not None else []
+            return []
+
+    def get_all_agent_topics_for_user(self, user_id: str) -> Dict[str, List[str]]:
+        """Get all agent topics for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                "SELECT agent_name, topics FROM agent_topics WHERE user_id = %s",
+                (user_id,),
+            )
+            result = {}
+            for row in cursor.fetchall():
+                agent_name, topics = row
+                # psycopg2 automatically deserializes JSONB to Python objects
+                result[agent_name] = topics if topics is not None else []
+            return result
+
+    def remove_agent_topics_for_user(self, user_id: str, agent_name: str) -> None:
+        """Remove agent topics for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                "DELETE FROM agent_topics WHERE agent_name = %s AND user_id = %s",
+                (agent_name, user_id),
+            )
+            self.connection.commit()  # type: ignore
+
+    def save_agent_permissions_for_user(
+        self, user_id: str, agent_name: str, allowed_topics: List[str]
+    ) -> None:
+        """Save agent permissions for a specific user to PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                """
+                INSERT INTO agent_permissions (agent_name, user_id, allowed_topics)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (agent_name, user_id) DO UPDATE SET
+                    allowed_topics = EXCLUDED.allowed_topics
+                """,
+                (agent_name, user_id, json.dumps(allowed_topics)),
+            )
+            self.connection.commit()  # type: ignore
+
+    def get_agent_permissions_for_user(
+        self, user_id: str, agent_name: str
+    ) -> List[str]:
+        """Get agent permissions for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                "SELECT allowed_topics FROM agent_permissions WHERE agent_name = %s AND user_id = %s",
+                (agent_name, user_id),
+            )
+            row = cursor.fetchone()
+            if row:
+                allowed_topics = row[0]
+                # psycopg2 automatically deserializes JSONB to Python objects
+                return allowed_topics if allowed_topics is not None else []
+            return []
+
+    def get_all_agent_permissions_for_user(self, user_id: str) -> Dict[str, List[str]]:
+        """Get all agent permissions for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                "SELECT agent_name, allowed_topics FROM agent_permissions WHERE user_id = %s",
+                (user_id,),
+            )
+            result = {}
+            for row in cursor.fetchall():
+                agent_name, allowed_topics = row
+                # psycopg2 automatically deserializes JSONB to Python objects
+                result[agent_name] = (
+                    allowed_topics if allowed_topics is not None else []
+                )
+            return result
+
+    def cleanup_expired_for_user(self, user_id: str, current_time: float) -> int:
+        """Clean up expired items for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute(
+                """
+                DELETE FROM context_items
+                WHERE user_id = %s AND ttl IS NOT NULL AND (created_at + ttl) < %s
+                """,
+                (user_id, current_time),
+            )
+            removed_count = cursor.rowcount
+            self.connection.commit()  # type: ignore
+            return removed_count
+
+    def clear_all_for_user(self, user_id: str) -> None:
+        """Clear all data for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+            cursor.execute("DELETE FROM context_items WHERE user_id = %s", (user_id,))
+            cursor.execute("DELETE FROM agent_topics WHERE user_id = %s", (user_id,))
+            cursor.execute(
+                "DELETE FROM agent_permissions WHERE user_id = %s", (user_id,)
+            )
+            self.connection.commit()  # type: ignore
+
+    def delete_topic_data_for_user(self, user_id: str, topic: str) -> None:
+        """Delete all data related to a topic for a specific user from PostgreSQL."""
+        with self._lock:
+            cursor = self.connection.cursor()  # type: ignore
+
+            # Delete context items that have this topic (by checking subscribers)
+            cursor.execute(
+                """
+                DELETE FROM context_items 
+                WHERE user_id = %s AND subscribers::jsonb ? %s
+                """,
+                (user_id, topic),
+            )
+
+            # Remove topic from agent subscriptions
+            cursor.execute(
+                """
+                UPDATE agent_topics 
+                SET topics = (
+                    SELECT jsonb_agg(topic)
+                    FROM jsonb_array_elements_text(topics) AS topic
+                    WHERE topic != %s
+                )
+                WHERE user_id = %s AND topics::jsonb ? %s
+                """,
+                (topic, user_id, topic),
+            )
+
+            # Remove topic from agent permissions
+            cursor.execute(
+                """
+                UPDATE agent_permissions 
+                SET allowed_topics = (
+                    SELECT jsonb_agg(topic)
+                    FROM jsonb_array_elements_text(allowed_topics) AS topic
+                    WHERE topic != %s
+                )
+                WHERE user_id = %s AND allowed_topics::jsonb ? %s
+                """,
+                (topic, user_id, topic),
+            )
+
+            self.connection.commit()  # type: ignore
+
 
 def create_database_backend(backend_type: str = "sqlite", **kwargs) -> DatabaseBackend:
     """
@@ -1162,9 +1433,43 @@ def create_database_backend(backend_type: str = "sqlite", **kwargs) -> DatabaseB
 
     elif backend_type.lower() == "postgresql":
         connection_string = kwargs.get("connection_string")
-        if not connection_string:
-            raise ValueError("connection_string is required for PostgreSQL backend")
-        return PostgreSQLBackend(connection_string)
+
+        # If connection_string is provided, use it directly
+        if connection_string:
+            return PostgreSQLBackend(connection_string)
+
+        # Otherwise, build connection string from individual parameters
+        host = kwargs.get("host", "localhost")
+        port = kwargs.get("port", 5432)
+        database = kwargs.get("database") or kwargs.get("db_name")
+        user = kwargs.get("user") or kwargs.get("username")
+        password = kwargs.get("password")
+
+        # Validate required parameters
+        if not database:
+            raise ValueError(
+                "Either 'connection_string' or 'database'/'db_name' is required for PostgreSQL backend"
+            )
+        if not user:
+            raise ValueError(
+                "Either 'connection_string' or 'user'/'username' is required for PostgreSQL backend"
+            )
+        if not password:
+            raise ValueError(
+                "Either 'connection_string' or 'password' is required for PostgreSQL backend"
+            )
+
+        # Build connection string from individual parameters
+        built_connection_string = (
+            f"postgresql://{user}:{password}@{host}:{port}/{database}"
+        )
+
+        # Add SSL mode if specified
+        sslmode = kwargs.get("sslmode")
+        if sslmode:
+            built_connection_string += f"?sslmode={sslmode}"
+
+        return PostgreSQLBackend(built_connection_string)
 
     # Add more backends as needed
     # elif backend_type.lower() == "mysql":

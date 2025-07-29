@@ -103,12 +103,21 @@ Context automatically persists to a database backend:
 # SQLite (default)
 context = ContextMesh(enable_persistence=True)
 
-# PostgreSQL
+# PostgreSQL - Connection String
+context = ContextMesh(
+    enable_persistence=True,
+    db_backend="postgresql",
+    connection_string="postgresql://username:password@localhost:5432/syntha_db"
+)
+
+# PostgreSQL - Individual Parameters  
 context = ContextMesh(
     enable_persistence=True,
     db_backend="postgresql",
     host="localhost",
-    database="syntha_db"
+    database="syntha_db", 
+    user="username",
+    password="password"
 )
 ```
 

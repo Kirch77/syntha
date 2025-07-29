@@ -66,22 +66,60 @@ For production environments, install `psycopg2`:
 
 ```bash
 pip install psycopg2
-Then configure Syntha:
+```
+
+Then configure Syntha using **either** approach:
+
+#### Option 1: Connection String (Recommended)
 
 ```python
 from syntha import ContextMesh
 
+# Using a PostgreSQL connection string
 context = ContextMesh(
     user_id="your_user_id", 
     enable_persistence=True,
     db_backend="postgresql",
-    host="localhost",
-    port=5432,
-    database="syntha_db",
-    user="syntha_user",
-    password="your_password"
+    connection_string="postgresql://syntha_user:your_password@localhost:5432/syntha_db"
 )
 ```
+
+#### Option 2: Individual Parameters
+
+```python
+from syntha import ContextMesh
+
+# Using individual database parameters
+context = ContextMesh(
+    user_id="your_user_id",
+    enable_persistence=True,
+    db_backend="postgresql",
+    host="localhost",          # Default: "localhost"
+    port=5432,                 # Default: 5432
+    database="syntha_db",      # Required (or use db_name)
+    user="syntha_user",        # Required (or use username)
+    password="your_password",  # Required
+    sslmode="prefer"          # Optional: SSL mode
+)
+```
+
+!!! tip "Connection String Format"
+    The PostgreSQL connection string follows the standard format:
+    ```
+    postgresql://username:password@host:port/database_name
+    ```
+    
+    **Examples:**
+    - Local development: `postgresql://user:pass@localhost:5432/syntha`
+    - With SSL: `postgresql://user:pass@host:5432/db?sslmode=require`
+    - Cloud database: `postgresql://user:pass@your-cloud-host.com:5432/production_db`
+
+!!! note "Parameter Flexibility"
+    When using individual parameters, you can use either:
+    - `database` or `db_name` for the database name
+    - `user` or `username` for the username
+    - `host` defaults to `"localhost"` if not specified
+    - `port` defaults to `5432` if not specified
 
 !!! note "Database Creation"
     Syntha will automatically create the necessary tables when it first connects to your database.

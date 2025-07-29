@@ -30,21 +30,27 @@ You learned about two main approaches and when to use each:
 
 ```python
 from syntha import ContextMesh, ToolHandler
+import os
 
 # ✅ ALWAYS: Use user isolation in production
 def create_user_context(user_id: str) -> ContextMesh:
     if not user_id:
         raise ValueError("user_id is required for security")
     
+    # Build connection string from environment variables
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "syntha_db")
+    db_user = os.getenv("DB_USER")
+    db_password = os.getenv("DB_PASSWORD")
+    
+    connection_string = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    
     return ContextMesh(
         user_id=user_id,  # Critical for security
         enable_persistence=True,
         db_backend="postgresql",  # Production database
-        # Database connection details from environment
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD")
+        connection_string=connection_string
     )
 
 # ✅ ALWAYS: Apply principle of least privilege

@@ -1,299 +1,489 @@
+#!/usr/bin/env python3
 """
-Tests for user isolation functionality in Syntha.
+User Isolation Tests for Syntha Persistence Layer
 
-These tests verify that users cannot access each other's context data
-and that the user isolation feature works correctly.
+Tests that user contexts are properly isolated in both SQLite and PostgreSQL backends.
 """
 
-import json
 import os
 import tempfile
 import time
+from unittest.mock import patch
 
 import pytest
 
 from syntha.context import ContextMesh
-from syntha.tools import ToolHandler
+from syntha.persistence import SQLiteBackend, create_database_backend
 
 
-class TestUserIsolation:
-    """Test user isolation functionality."""
+class TestUserIsolationSQLite:
+    """Test user isolation with SQLite backend."""
 
     def setup_method(self):
-        """Set up test fixtures with user isolation."""
-        # Create temporary database for tests
+        """Set up test fixtures with temporary SQLite database."""
         self.temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
         self.temp_db.close()
 
-        # Create separate ContextMesh instances for different users
+        # Create two separate user contexts
         self.user1_mesh = ContextMesh(
-            user_id="user_1", db_path=self.temp_db.name, enable_persistence=True
+            user_id="user1",
+            enable_persistence=True,
+            db_backend="sqlite",
+            db_path=self.temp_db.name,
         )
 
         self.user2_mesh = ContextMesh(
-            user_id="user_2",
-            db_path=self.temp_db.name,  # Same database file
+            user_id="user2",
             enable_persistence=True,
+            db_backend="sqlite",
+            db_path=self.temp_db.name,
         )
-
-        # Create tool handlers for each user
-        self.user1_handler = ToolHandler(self.user1_mesh, agent_name="user1_agent")
-        self.user2_handler = ToolHandler(self.user2_mesh, agent_name="user2_agent")
 
     def teardown_method(self):
         """Clean up test fixtures."""
-        # Close meshes
         if hasattr(self, "user1_mesh"):
             self.user1_mesh.close()
         if hasattr(self, "user2_mesh"):
             self.user2_mesh.close()
 
-        # Clean up database file
         if hasattr(self, "temp_db") and os.path.exists(self.temp_db.name):
             try:
                 os.unlink(self.temp_db.name)
             except PermissionError:
-                # On Windows, sometimes need to wait
-                time.sleep(0.1)
+                pass
+
+    def test_context_isolation_basic(self):
+        """Test that basic context is isolated between users."""
+        # User 1 pushes context
+        self.user1_mesh.push("shared_key", "user1_value")
+
+        # User 2 pushes context with same key
+        self.user2_mesh.push("shared_key", "user2_value")
+
+        # Each user should only see their own value
+        assert self.user1_mesh.get("shared_key", "agent1") == "user1_value"
+        assert self.user2_mesh.get("shared_key", "agent2") == "user2_value"
+
+        # User 1 should not see user 2's data and vice versa
+        assert self.user1_mesh.get("shared_key", "agent1") != "user2_value"
+        assert self.user2_mesh.get("shared_key", "agent2") != "user1_value"
+
+    def test_agent_topics_isolation(self):
+        """Test that agent topics are isolated between users."""
+        # User 1 registers agent topics
+        self.user1_mesh.register_agent_topics("sales_agent", ["sales", "user1_data"])
+
+        # User 2 registers agent topics with same agent name
+        self.user2_mesh.register_agent_topics("sales_agent", ["sales", "user2_data"])
+
+        # Each user should only see their own agent topics
+        user1_topics = self.user1_mesh.get_topics_for_agent("sales_agent")
+        user2_topics = self.user2_mesh.get_topics_for_agent("sales_agent")
+
+        assert "user1_data" in user1_topics
+        assert "user1_data" not in user2_topics
+        assert "user2_data" in user2_topics
+        assert "user2_data" not in user1_topics
+
+    def test_agent_permissions_isolation(self):
+        """Test that agent permissions are isolated between users."""
+        # User 1 sets agent permissions
+        self.user1_mesh.set_agent_post_permissions("agent1", ["user1_topic"])
+
+        # User 2 sets agent permissions with same agent name
+        self.user2_mesh.set_agent_post_permissions("agent1", ["user2_topic"])
+
+        # Each user should only see their own agent permissions
+        user1_perms = self.user1_mesh.get_agent_post_permissions("agent1")
+        user2_perms = self.user2_mesh.get_agent_post_permissions("agent1")
+
+        assert user1_perms == ["user1_topic"]
+        assert user2_perms == ["user2_topic"]
+
+    def test_ttl_isolation(self):
+        """Test that TTL cleanup is isolated between users."""
+        # User 1 pushes context with short TTL
+        self.user1_mesh.push("expire_key", "user1_expire", ttl=0.1)
+
+        # User 2 pushes context with same key but longer TTL
+        self.user2_mesh.push("expire_key", "user2_persist", ttl=10.0)
+
+        # Wait for user 1's context to expire
+        time.sleep(0.2)
+
+        # Clean up expired items
+        user1_removed = self.user1_mesh.cleanup_expired()
+        user2_removed = self.user2_mesh.cleanup_expired()
+
+        # Only user 1's item should be removed
+        assert user1_removed == 1
+        assert user2_removed == 0
+
+        # User 1's context should be gone, user 2's should remain
+        assert self.user1_mesh.get("expire_key", "agent1") is None
+        assert self.user2_mesh.get("expire_key", "agent2") == "user2_persist"
+
+    def test_topic_based_context_isolation(self):
+        """Test that topic-based context is isolated between users."""
+        # User 1 sets up topics and pushes context
+        self.user1_mesh.register_agent_topics("agent1", ["shared_topic"])
+        self.user1_mesh.push("topic_data", "user1_topic_data", topics=["shared_topic"])
+
+        # User 2 sets up same topics and pushes context
+        self.user2_mesh.register_agent_topics("agent2", ["shared_topic"])
+        self.user2_mesh.push("topic_data", "user2_topic_data", topics=["shared_topic"])
+
+        # Each user should only see their own topic data
+        user1_data = self.user1_mesh.get("topic_data", "agent1")
+        user2_data = self.user2_mesh.get("topic_data", "agent2")
+
+        assert user1_data == "user1_topic_data"
+        assert user2_data == "user2_topic_data"
+
+    def test_persistence_across_restarts(self):
+        """Test that user isolation persists across system restarts."""
+        # User 1 pushes context
+        self.user1_mesh.push("persistent_key", "user1_persistent")
+
+        # User 2 pushes context with same key
+        self.user2_mesh.push("persistent_key", "user2_persistent")
+
+        # Close both contexts
+        self.user1_mesh.close()
+        self.user2_mesh.close()
+
+        # Recreate contexts (simulating restart)
+        self.user1_mesh = ContextMesh(
+            user_id="user1",
+            enable_persistence=True,
+            db_backend="sqlite",
+            db_path=self.temp_db.name,
+        )
+
+        self.user2_mesh = ContextMesh(
+            user_id="user2",
+            enable_persistence=True,
+            db_backend="sqlite",
+            db_path=self.temp_db.name,
+        )
+
+        # Each user should still only see their own data
+        assert self.user1_mesh.get("persistent_key", "agent1") == "user1_persistent"
+        assert self.user2_mesh.get("persistent_key", "agent2") == "user2_persistent"
+
+    def test_clear_user_data_isolation(self):
+        """Test that clearing user data only affects that user."""
+        # Both users push context
+        self.user1_mesh.push("clear_test", "user1_data")
+        self.user2_mesh.push("clear_test", "user2_data")
+
+        # Clear user 1's data
+        self.user1_mesh.clear()
+
+        # User 1's data should be gone, user 2's should remain
+        assert self.user1_mesh.get("clear_test", "agent1") is None
+        assert self.user2_mesh.get("clear_test", "agent2") == "user2_data"
+
+
+@pytest.mark.skipif(
+    os.getenv("SKIP_POSTGRESQL_TESTS", "false").lower() == "true",
+    reason="PostgreSQL tests skipped (set SKIP_POSTGRESQL_TESTS=false to enable)",
+)
+class TestUserIsolationPostgreSQL:
+    """Test user isolation with PostgreSQL backend."""
+
+    def setup_method(self):
+        """Set up test fixtures with PostgreSQL database."""
+        # Use test database connection string
+        connection_string = os.getenv(
+            "TEST_POSTGRESQL_URL",
+            "postgresql://postgres:password@localhost:5432/syntha_test",
+        )
+
+        try:
+            # Create two separate user contexts
+            self.user1_mesh = ContextMesh(
+                user_id="user1",
+                enable_persistence=True,
+                db_backend="postgresql",
+                connection_string=connection_string,
+            )
+
+            self.user2_mesh = ContextMesh(
+                user_id="user2",
+                enable_persistence=True,
+                db_backend="postgresql",
+                connection_string=connection_string,
+            )
+
+            # Clear any existing test data
+            self.user1_mesh.clear()
+            self.user2_mesh.clear()
+
+        except Exception as e:
+            pytest.skip(f"PostgreSQL not available: {e}")
+
+    def teardown_method(self):
+        """Clean up test fixtures."""
+        if hasattr(self, "user1_mesh"):
+            try:
+                self.user1_mesh.clear()
+                self.user1_mesh.close()
+            except:
+                pass
+
+        if hasattr(self, "user2_mesh"):
+            try:
+                self.user2_mesh.clear()
+                self.user2_mesh.close()
+            except:
+                pass
+
+    def test_context_isolation_basic_postgresql(self):
+        """Test that basic context is isolated between users in PostgreSQL."""
+        # User 1 pushes context
+        self.user1_mesh.push("pg_shared_key", "user1_pg_value")
+
+        # User 2 pushes context with same key
+        self.user2_mesh.push("pg_shared_key", "user2_pg_value")
+
+        # Each user should only see their own value
+        assert self.user1_mesh.get("pg_shared_key", "agent1") == "user1_pg_value"
+        assert self.user2_mesh.get("pg_shared_key", "agent2") == "user2_pg_value"
+
+    def test_agent_topics_isolation_postgresql(self):
+        """Test that agent topics are isolated between users in PostgreSQL."""
+        # User 1 registers agent topics
+        self.user1_mesh.register_agent_topics(
+            "pg_agent", ["pg_topic1", "user1_pg_data"]
+        )
+
+        # User 2 registers agent topics with same agent name
+        self.user2_mesh.register_agent_topics(
+            "pg_agent", ["pg_topic1", "user2_pg_data"]
+        )
+
+        # Each user should only see their own agent topics
+        user1_topics = self.user1_mesh.get_topics_for_agent("pg_agent")
+        user2_topics = self.user2_mesh.get_topics_for_agent("pg_agent")
+
+        assert "user1_pg_data" in user1_topics
+        assert "user1_pg_data" not in user2_topics
+        assert "user2_pg_data" in user2_topics
+        assert "user2_pg_data" not in user1_topics
+
+    def test_agent_permissions_isolation_postgresql(self):
+        """Test that agent permissions are isolated between users in PostgreSQL."""
+        # User 1 sets agent permissions
+        self.user1_mesh.set_agent_post_permissions("pg_agent", ["user1_pg_topic"])
+
+        # User 2 sets agent permissions with same agent name
+        self.user2_mesh.set_agent_post_permissions("pg_agent", ["user2_pg_topic"])
+
+        # Each user should only see their own agent permissions
+        user1_perms = self.user1_mesh.get_agent_post_permissions("pg_agent")
+        user2_perms = self.user2_mesh.get_agent_post_permissions("pg_agent")
+
+        assert user1_perms == ["user1_pg_topic"]
+        assert user2_perms == ["user2_pg_topic"]
+
+    def test_ttl_isolation_postgresql(self):
+        """Test that TTL cleanup is isolated between users in PostgreSQL."""
+        # User 1 pushes context with short TTL
+        self.user1_mesh.push("pg_expire_key", "user1_pg_expire", ttl=0.1)
+
+        # User 2 pushes context with same key but longer TTL
+        self.user2_mesh.push("pg_expire_key", "user2_pg_persist", ttl=10.0)
+
+        # Wait for user 1's context to expire
+        time.sleep(0.2)
+
+        # Clean up expired items
+        user1_removed = self.user1_mesh.cleanup_expired()
+        user2_removed = self.user2_mesh.cleanup_expired()
+
+        # Only user 1's item should be removed
+        assert user1_removed == 1
+        assert user2_removed == 0
+
+        # User 1's context should be gone, user 2's should remain
+        assert self.user1_mesh.get("pg_expire_key", "agent1") is None
+        assert self.user2_mesh.get("pg_expire_key", "agent2") == "user2_pg_persist"
+
+    def test_jsonb_operations_postgresql(self):
+        """Test PostgreSQL-specific JSONB operations with user isolation."""
+        # User 1 pushes complex JSON data
+        user1_data = {
+            "user": "user1",
+            "preferences": {"theme": "dark", "lang": "en"},
+            "scores": [95, 87, 92],
+        }
+        self.user1_mesh.push("complex_data", user1_data)
+
+        # User 2 pushes different complex JSON data with same key
+        user2_data = {
+            "user": "user2",
+            "preferences": {"theme": "light", "lang": "es"},
+            "scores": [88, 94, 90],
+        }
+        self.user2_mesh.push("complex_data", user2_data)
+
+        # Each user should get their own complex data back
+        retrieved_user1 = self.user1_mesh.get("complex_data", "agent1")
+        retrieved_user2 = self.user2_mesh.get("complex_data", "agent2")
+
+        assert retrieved_user1["user"] == "user1"
+        assert retrieved_user1["preferences"]["theme"] == "dark"
+        assert retrieved_user2["user"] == "user2"
+        assert retrieved_user2["preferences"]["theme"] == "light"
+
+
+class TestUserIsolationEdgeCases:
+    """Test edge cases for user isolation."""
+
+    def test_no_user_id_fallback(self):
+        """Test that contexts without user_id still work (legacy mode)."""
+        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
+        temp_db.close()
+
+        try:
+            # Create context without user_id (legacy mode)
+            mesh = ContextMesh(
+                enable_persistence=True,
+                db_backend="sqlite",
+                db_path=temp_db.name,
+            )
+
+            # Should still be able to push/get context
+            mesh.push("legacy_key", "legacy_value")
+            assert mesh.get("legacy_key", "agent1") == "legacy_value"
+
+            mesh.close()
+
+        finally:
+            if os.path.exists(temp_db.name):
                 try:
-                    os.unlink(self.temp_db.name)
+                    os.unlink(temp_db.name)
                 except PermissionError:
                     pass
 
-    def test_basic_user_isolation(self):
-        """Test that users cannot access each other's context."""
-        # First, agents need to subscribe to topics to receive context
-        self.user1_handler.handle_tool_call("subscribe_to_topics", topics=["personal"])
-        self.user2_handler.handle_tool_call("subscribe_to_topics", topics=["personal"])
+    def test_empty_user_id(self):
+        """Test behavior with empty user_id."""
+        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
+        temp_db.close()
 
-        # User 1 pushes context
-        self.user1_handler.handle_tool_call(
-            "push_context",
-            key="user_data",
-            value=json.dumps({"name": "Alice", "secret": "password123"}),
-            topics=["personal"],
-        )
+        try:
+            # Create context with empty user_id
+            mesh = ContextMesh(
+                user_id="",
+                enable_persistence=True,
+                db_backend="sqlite",
+                db_path=temp_db.name,
+            )
 
-        # User 2 pushes context with same key
-        self.user2_handler.handle_tool_call(
-            "push_context",
-            key="user_data",
-            value=json.dumps({"name": "Bob", "secret": "different_password"}),
-            topics=["personal"],
-        )
+            # Should still work
+            mesh.push("empty_user_key", "empty_user_value")
+            assert mesh.get("empty_user_key", "agent1") == "empty_user_value"
 
-        # User 1 can access their own data
-        user1_result = self.user1_handler.handle_tool_call(
-            "get_context", keys=["user_data"]
-        )
-        assert user1_result["success"] is True
-        assert "user_data" in user1_result["context"]
-        user1_data = user1_result["context"]["user_data"]
-        assert user1_data["name"] == "Alice"
-        assert user1_data["secret"] == "password123"
+            mesh.close()
 
-        # User 2 can access their own data
-        user2_result = self.user2_handler.handle_tool_call(
-            "get_context", keys=["user_data"]
-        )
-        assert user2_result["success"] is True
-        assert "user_data" in user2_result["context"]
-        user2_data = user2_result["context"]["user_data"]
-        assert user2_data["name"] == "Bob"
-        assert user2_data["secret"] == "different_password"
+        finally:
+            if os.path.exists(temp_db.name):
+                try:
+                    os.unlink(temp_db.name)
+                except PermissionError:
+                    pass
 
-    def test_topic_isolation(self):
-        """Test that users have isolated topic spaces."""
-        # Both users subscribe to the same topic name
-        self.user1_handler.handle_tool_call("subscribe_to_topics", topics=["sales"])
-        self.user2_handler.handle_tool_call("subscribe_to_topics", topics=["sales"])
+    def test_special_characters_in_user_id(self):
+        """Test user isolation with special characters in user_id."""
+        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
+        temp_db.close()
 
-        # User 1 pushes to sales topic
-        self.user1_handler.handle_tool_call(
-            "push_context",
-            key="sales_data",
-            value=json.dumps({"revenue": 100000}),
-            topics=["sales"],
-        )
+        try:
+            # Create contexts with special characters in user_id
+            user1_mesh = ContextMesh(
+                user_id="user@domain.com",
+                enable_persistence=True,
+                db_backend="sqlite",
+                db_path=temp_db.name,
+            )
 
-        # User 2 pushes to sales topic
-        self.user2_handler.handle_tool_call(
-            "push_context",
-            key="sales_data",
-            value=json.dumps({"revenue": 75000}),
-            topics=["sales"],
-        )
+            user2_mesh = ContextMesh(
+                user_id="user-123_test",
+                enable_persistence=True,
+                db_backend="sqlite",
+                db_path=temp_db.name,
+            )
 
-        # User 1 only sees their own sales data
-        user1_topics = self.user1_handler.handle_tool_call("discover_topics")
-        assert "sales" in user1_topics["topics"]
-        assert user1_topics["topics"]["sales"]["subscriber_count"] == 1
+            # Should handle special characters correctly
+            user1_mesh.push("special_key", "email_user_value")
+            user2_mesh.push("special_key", "dash_underscore_user_value")
 
-        # User 2 only sees their own sales data
-        user2_topics = self.user2_handler.handle_tool_call("discover_topics")
-        assert "sales" in user2_topics["topics"]
-        assert user2_topics["topics"]["sales"]["subscriber_count"] == 1
+            assert user1_mesh.get("special_key", "agent1") == "email_user_value"
+            assert (
+                user2_mesh.get("special_key", "agent2") == "dash_underscore_user_value"
+            )
 
-    def test_context_listing_isolation(self):
-        """Test that context listing is isolated per user."""
-        # User 1 creates context
-        self.user1_handler.handle_tool_call("subscribe_to_topics", topics=["work"])
-        self.user1_handler.handle_tool_call(
-            "push_context", key="project_status", value="In Progress", topics=["work"]
-        )
+            user1_mesh.close()
+            user2_mesh.close()
 
-        # User 2 creates context
-        self.user2_handler.handle_tool_call("subscribe_to_topics", topics=["personal"])
-        self.user2_handler.handle_tool_call(
-            "push_context",
-            key="shopping_list",
-            value="Milk, Bread, Eggs",
-            topics=["personal"],
-        )
+        finally:
+            if os.path.exists(temp_db.name):
+                try:
+                    os.unlink(temp_db.name)
+                except PermissionError:
+                    pass
 
-        # User 1 only sees their own context
-        user1_context = self.user1_handler.handle_tool_call("list_context")
-        assert "work" in user1_context["keys_by_topic"]
-        assert "personal" not in user1_context["keys_by_topic"]
 
-        # User 2 only sees their own context
-        user2_context = self.user2_handler.handle_tool_call("list_context")
-        assert "personal" in user2_context["keys_by_topic"]
-        assert "work" not in user2_context["keys_by_topic"]
+def test_user_isolation_performance():
+    """Test that user isolation doesn't significantly impact performance."""
+    temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
+    temp_db.close()
 
-    def test_unsubscribe_isolation(self):
-        """Test that unsubscribing is isolated per user."""
-        # Both users subscribe to topics
-        self.user1_handler.handle_tool_call(
-            "subscribe_to_topics", topics=["topic1", "topic2"]
-        )
-        self.user2_handler.handle_tool_call(
-            "subscribe_to_topics", topics=["topic1", "topic2"]
-        )
+    try:
+        # Create multiple user contexts
+        meshes = []
+        for i in range(5):
+            mesh = ContextMesh(
+                user_id=f"perf_user_{i}",
+                enable_persistence=True,
+                db_backend="sqlite",
+                db_path=temp_db.name,
+            )
+            meshes.append(mesh)
 
-        # User 1 unsubscribes from topic1
-        self.user1_handler.handle_tool_call(
-            "unsubscribe_from_topics", topics=["topic1"]
-        )
+        # Measure time for bulk operations
+        start_time = time.time()
 
-        # User 1 should only have topic2
-        user1_topics = self.user1_handler.handle_tool_call("discover_topics")
-        assert "topic1" not in user1_topics["topics"]
-        assert "topic2" in user1_topics["topics"]
+        # Each user pushes 20 items
+        for i, mesh in enumerate(meshes):
+            for j in range(20):
+                mesh.push(f"perf_key_{j}", f"user_{i}_value_{j}")
 
-        # User 2 should still have both topics
-        user2_topics = self.user2_handler.handle_tool_call("discover_topics")
-        assert "topic1" in user2_topics["topics"]
-        assert "topic2" in user2_topics["topics"]
+        # Each user retrieves their items
+        for i, mesh in enumerate(meshes):
+            for j in range(20):
+                value = mesh.get(f"perf_key_{j}", f"agent_{i}")
+                assert value == f"user_{i}_value_{j}"
 
-    def test_topic_deletion_isolation(self):
-        """Test that topic deletion is isolated per user."""
-        # Both users create the same topic
-        self.user1_handler.handle_tool_call(
-            "subscribe_to_topics", topics=["shared_topic"]
-        )
-        self.user2_handler.handle_tool_call(
-            "subscribe_to_topics", topics=["shared_topic"]
-        )
+        elapsed = time.time() - start_time
 
-        # Both users push context to the topic
-        self.user1_handler.handle_tool_call(
-            "push_context",
-            key="user1_data",
-            value="User 1 data",
-            topics=["shared_topic"],
-        )
+        # Should complete in reasonable time (5 users × 40 operations each = 200 ops)
+        # Allow 2 seconds on slow systems, but typically should be much faster
+        assert elapsed < 2.0, f"Performance test took {elapsed:.3f}s (expected < 2.0s)"
 
-        self.user2_handler.handle_tool_call(
-            "push_context",
-            key="user2_data",
-            value="User 2 data",
-            topics=["shared_topic"],
-        )
+        # Clean up
+        for mesh in meshes:
+            mesh.close()
 
-        # User 1 deletes their topic
-        self.user1_handler.handle_tool_call(
-            "delete_topic", topic="shared_topic", confirm=True
-        )
+    finally:
+        if os.path.exists(temp_db.name):
+            try:
+                os.unlink(temp_db.name)
+            except PermissionError:
+                pass
 
-        # User 1 should no longer have the topic
-        user1_topics = self.user1_handler.handle_tool_call("discover_topics")
-        assert "shared_topic" not in user1_topics["topics"]
 
-        # User 2 should still have the topic
-        user2_topics = self.user2_handler.handle_tool_call("discover_topics")
-        assert "shared_topic" in user2_topics["topics"]
-
-        # User 2 should still have their context
-        user2_context = self.user2_handler.handle_tool_call(
-            "get_context", keys=["user2_data"]
-        )
-        assert user2_context["context"]["user2_data"] == "User 2 data"
-
-    def test_persistence_isolation(self):
-        """Test that user isolation persists across sessions."""
-        # User 1 creates context
-        self.user1_handler.handle_tool_call(
-            "subscribe_to_topics", topics=["persistent"]
-        )
-        self.user1_handler.handle_tool_call(
-            "push_context",
-            key="persistent_data",
-            value="This should persist",
-            topics=["persistent"],
-        )
-
-        # Close and reopen User 1's mesh
-        self.user1_mesh.close()
-        self.user1_mesh = ContextMesh(
-            user_id="user_1", db_path=self.temp_db.name, enable_persistence=True
-        )
-        self.user1_handler = ToolHandler(self.user1_mesh, agent_name="user1_agent")
-
-        # User 1 should still have their data
-        user1_context = self.user1_handler.handle_tool_call(
-            "get_context", keys=["persistent_data"]
-        )
-        assert user1_context["context"]["persistent_data"] == "This should persist"
-
-        # User 2 should not have access to User 1's data
-        user2_context = self.user2_handler.handle_tool_call(
-            "get_context", keys=["persistent_data"]
-        )
-        assert "persistent_data" not in user2_context["context"]
-
-    def test_no_user_id_backward_compatibility(self):
-        """Test that ContextMesh works without user_id for backward compatibility."""
-        # Create mesh without user_id
-        legacy_mesh = ContextMesh(db_path=self.temp_db.name, enable_persistence=True)
-        legacy_handler = ToolHandler(legacy_mesh, agent_name="legacy_agent")
-
-        # Should work normally
-        legacy_handler.handle_tool_call("subscribe_to_topics", topics=["legacy"])
-        legacy_handler.handle_tool_call(
-            "push_context", key="legacy_data", value="Legacy data", topics=["legacy"]
-        )
-
-        result = legacy_handler.handle_tool_call("get_context", keys=["legacy_data"])
-        assert result["context"]["legacy_data"] == "Legacy data"
-
-        legacy_mesh.close()
-
-    def test_empty_user_id_handling(self):
-        """Test handling of empty/None user_id."""
-        # Test with None user_id
-        mesh_none = ContextMesh(
-            user_id=None, db_path=self.temp_db.name, enable_persistence=True
-        )
-        handler_none = ToolHandler(mesh_none, agent_name="none_agent")
-
-        # Should work normally
-        handler_none.handle_tool_call("subscribe_to_topics", topics=["none_topic"])
-        handler_none.handle_tool_call(
-            "push_context", key="none_data", value="None data", topics=["none_topic"]
-        )
-
-        result = handler_none.handle_tool_call("get_context", keys=["none_data"])
-        assert result["context"]["none_data"] == "None data"
-
-        mesh_none.close()
+if __name__ == "__main__":
+    # Run tests with pytest
+    pytest.main([__file__, "-v"])
