@@ -7,6 +7,8 @@
 - **Core Concepts** (`docs/core-concepts.md`) - Architecture, design principles, and methodology
 - **Installation** (`docs/installation.md`) - Basic setup with SQLite/PostgreSQL options
 - **MkDocs Configuration** (`mkdocs.yml`) - Complete navigation and theme setup
+- **GitHub Pages Workflow** (`.github/workflows/docs.yml`) - Automatic deployment setup
+- **Setup Guides** (`README.md`, `GITHUB_PAGES_SETUP.md`) - Complete deployment instructions
 
 ### API Reference (Partially Complete)
 - **Overview** (`docs/api/overview.md`) - Complete with common patterns and imports
