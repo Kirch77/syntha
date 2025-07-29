@@ -63,13 +63,13 @@ from .prompts import (
 )
 from .reports import OutcomeLogger
 from .tools import (
-    ToolHandler, 
+    ToolHandler,
     get_all_tool_schemas,
     create_role_based_handler,
     create_restricted_handler,
     create_multi_agent_handlers,
     get_role_info,
-    PREDEFINED_ROLES
+    PREDEFINED_ROLES,
 )
 
 __version__ = "0.2.0"
@@ -89,7 +89,7 @@ __all__ = [
     "create_database_backend",
     # Tool access control
     "create_role_based_handler",
-    "create_restricted_handler", 
+    "create_restricted_handler",
     "create_multi_agent_handlers",
     "get_role_info",
     "PREDEFINED_ROLES",

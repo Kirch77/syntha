@@ -626,12 +626,12 @@ class ToolHandler:
     """
 
     def __init__(
-        self, 
-        context_mesh: ContextMesh, 
+        self,
+        context_mesh: ContextMesh,
         agent_name: Optional[str] = None,
         allowed_tools: Optional[List[str]] = None,
         denied_tools: Optional[List[str]] = None,
-        role_based_access: Optional[Dict[str, List[str]]] = None
+        role_based_access: Optional[Dict[str, List[str]]] = None,
     ):
         """
         Initialize the tool handler with optional access control.
@@ -642,17 +642,17 @@ class ToolHandler:
             allowed_tools: List of tool names this agent can access (if None, all tools allowed)
             denied_tools: List of tool names this agent cannot access (takes precedence over allowed_tools)
             role_based_access: Dict mapping roles to allowed tools (e.g., {"admin": ["delete_topic"], "user": ["get_context"]})
-        
+
         Examples:
             # Allow all tools (default)
             handler = ToolHandler(mesh, "agent1")
-            
+
             # Only allow read operations
             handler = ToolHandler(mesh, "agent1", allowed_tools=["get_context", "list_context"])
-            
+
             # Allow all except dangerous operations
             handler = ToolHandler(mesh, "agent1", denied_tools=["delete_topic"])
-            
+
             # Role-based access
             roles = {
                 "reader": ["get_context", "list_context", "discover_topics"],
@@ -666,8 +666,8 @@ class ToolHandler:
         self.allowed_tools = set(allowed_tools) if allowed_tools is not None else None
         self.denied_tools = set(denied_tools) if denied_tools else set()
         self.role_based_access = role_based_access or {}
-        self.agent_role = None  # Can be set later with set_agent_role()
-        
+        self.agent_role: Optional[str] = None  # Can be set later with set_agent_role()
+
         # All available handlers
         self.all_handlers = {
             "get_context": self.handle_get_context,
@@ -678,35 +678,38 @@ class ToolHandler:
             "unsubscribe_from_topics": self.handle_unsubscribe_from_topics,
             "delete_topic": self.handle_delete_topic,
         }
-        
+
         # Filtered handlers based on access control
         self.handlers = self._filter_handlers()
 
     def _filter_handlers(self) -> Dict[str, Any]:
         """Filter handlers based on access control settings."""
         available_tools = set(self.all_handlers.keys())
-        
+
         # Apply role-based access if agent has a role
         if self.agent_role and self.agent_role in self.role_based_access:
             role_tools = set(self.role_based_access[self.agent_role])
             available_tools = available_tools.intersection(role_tools)
-        
+
         # Apply allowed_tools filter
         if self.allowed_tools is not None:
             available_tools = available_tools.intersection(self.allowed_tools)
-        
+
         # Apply denied_tools filter (takes precedence)
         available_tools = available_tools - self.denied_tools
-        
-        return {tool: handler for tool, handler in self.all_handlers.items() 
-                if tool in available_tools}
+
+        return {
+            tool: handler
+            for tool, handler in self.all_handlers.items()
+            if tool in available_tools
+        }
 
     def set_agent_name(self, agent_name: str):
         """Set the agent name for this tool handler instance."""
         self.agent_name = agent_name
         self.handlers = self._filter_handlers()
 
-    def set_agent_role(self, role: str):
+    def set_agent_role(self, role: Optional[str]):
         """Set the agent role for role-based access control."""
         self.agent_role = role
         self.handlers = self._filter_handlers()
@@ -761,7 +764,7 @@ class ToolHandler:
             "denied_tools": list(self.denied_tools),
             "allowed_tools": list(self.allowed_tools) if self.allowed_tools else "all",
             "total_available": len(self.handlers),
-            "total_possible": len(self.all_handlers)
+            "total_possible": len(self.all_handlers),
         }
 
     def _check_agent_name(self) -> Optional[Dict[str, Any]]:
@@ -867,10 +870,11 @@ class ToolHandler:
         # Get schemas for tools this agent has access to
         available_tool_names = set(self.handlers.keys())
         all_syntha_schemas = get_all_tool_schemas()
-        
+
         # Filter schemas to only include tools this agent can access
         syntha_schemas = [
-            schema for schema in all_syntha_schemas 
+            schema
+            for schema in all_syntha_schemas
             if schema.get("name") in available_tool_names
         ]
 
@@ -1025,51 +1029,75 @@ def create_hybrid_tool_handler(context_mesh, agent_name: str, user_tool_handler=
 
     return hybrid_handler
 
+
 # Add these at the end of the file, before the existing convenience functions
 
 # Pre-defined role configurations for common use cases
 PREDEFINED_ROLES = {
     "readonly": {
         "description": "Read-only access to context and discovery",
-        "tools": ["get_context", "list_context", "discover_topics"]
+        "tools": ["get_context", "list_context", "discover_topics"],
     },
     "contributor": {
         "description": "Can read, write, and manage topic subscriptions",
-        "tools": ["get_context", "list_context", "discover_topics", "push_context", "subscribe_to_topics", "unsubscribe_from_topics"]
+        "tools": [
+            "get_context",
+            "list_context",
+            "discover_topics",
+            "push_context",
+            "subscribe_to_topics",
+            "unsubscribe_from_topics",
+        ],
     },
     "moderator": {
         "description": "Contributor permissions plus ability to manage others' subscriptions",
-        "tools": ["get_context", "list_context", "discover_topics", "push_context", "subscribe_to_topics", "unsubscribe_from_topics"]
+        "tools": [
+            "get_context",
+            "list_context",
+            "discover_topics",
+            "push_context",
+            "subscribe_to_topics",
+            "unsubscribe_from_topics",
+        ],
     },
     "admin": {
         "description": "Full access including destructive operations",
-        "tools": ["get_context", "list_context", "discover_topics", "push_context", "subscribe_to_topics", "unsubscribe_from_topics", "delete_topic"]
-    }
+        "tools": [
+            "get_context",
+            "list_context",
+            "discover_topics",
+            "push_context",
+            "subscribe_to_topics",
+            "unsubscribe_from_topics",
+            "delete_topic",
+        ],
+    },
 }
 
+
 def create_role_based_handler(
-    context_mesh: ContextMesh, 
-    agent_name: str, 
+    context_mesh: ContextMesh,
+    agent_name: str,
     role: str,
-    custom_roles: Optional[Dict[str, Dict[str, Any]]] = None
+    custom_roles: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> ToolHandler:
     """
     Create a ToolHandler with predefined role-based access.
-    
+
     Args:
         context_mesh: The ContextMesh instance
         agent_name: Name of the agent
         role: Role name (readonly, contributor, moderator, admin, or custom role)
         custom_roles: Optional dict of custom role definitions
-        
+
     Returns:
         ToolHandler configured for the specified role
-        
+
     Examples:
         # Use predefined roles
         readonly_handler = create_role_based_handler(mesh, "viewer", "readonly")
         admin_handler = create_role_based_handler(mesh, "admin", "admin")
-        
+
         # Use custom roles
         custom_roles = {
             "analyst": {
@@ -1080,39 +1108,38 @@ def create_role_based_handler(
         analyst_handler = create_role_based_handler(mesh, "analyst1", "analyst", custom_roles)
     """
     roles = {**PREDEFINED_ROLES, **(custom_roles or {})}
-    
+
     if role not in roles:
         available_roles = list(roles.keys())
         raise ValueError(f"Unknown role '{role}'. Available roles: {available_roles}")
-    
+
     allowed_tools = roles[role]["tools"]
     handler = ToolHandler(context_mesh, agent_name, allowed_tools=allowed_tools)
     handler.set_agent_role(role)
     return handler
 
+
 def create_restricted_handler(
-    context_mesh: ContextMesh,
-    agent_name: str,
-    restriction_level: str = "safe"
+    context_mesh: ContextMesh, agent_name: str, restriction_level: str = "safe"
 ) -> ToolHandler:
     """
     Create a ToolHandler with common restriction patterns.
-    
+
     Args:
         context_mesh: The ContextMesh instance
         agent_name: Name of the agent
         restriction_level: Level of restriction (safe, minimal, readonly)
-        
+
     Returns:
         ToolHandler with appropriate restrictions
-        
+
     Examples:
         # Safe mode: all tools except destructive ones
         safe_handler = create_restricted_handler(mesh, "agent1", "safe")
-        
+
         # Minimal mode: only basic context operations
         minimal_handler = create_restricted_handler(mesh, "agent1", "minimal")
-        
+
         # Readonly mode: no write operations
         readonly_handler = create_restricted_handler(mesh, "agent1", "readonly")
     """
@@ -1121,28 +1148,38 @@ def create_restricted_handler(
         return ToolHandler(context_mesh, agent_name, denied_tools=["delete_topic"])
     elif restriction_level == "minimal":
         # Only basic context operations
-        return ToolHandler(context_mesh, agent_name, allowed_tools=["get_context", "push_context", "list_context"])
+        return ToolHandler(
+            context_mesh,
+            agent_name,
+            allowed_tools=["get_context", "push_context", "list_context"],
+        )
     elif restriction_level == "readonly":
         # Only read operations
-        return ToolHandler(context_mesh, agent_name, allowed_tools=["get_context", "list_context", "discover_topics"])
+        return ToolHandler(
+            context_mesh,
+            agent_name,
+            allowed_tools=["get_context", "list_context", "discover_topics"],
+        )
     else:
         available_levels = ["safe", "minimal", "readonly"]
-        raise ValueError(f"Unknown restriction level '{restriction_level}'. Available levels: {available_levels}")
+        raise ValueError(
+            f"Unknown restriction level '{restriction_level}'. Available levels: {available_levels}"
+        )
+
 
 def create_multi_agent_handlers(
-    context_mesh: ContextMesh,
-    agent_configs: Dict[str, Dict[str, Any]]
+    context_mesh: ContextMesh, agent_configs: Dict[str, Dict[str, Any]]
 ) -> Dict[str, ToolHandler]:
     """
     Create multiple ToolHandlers with different access configurations.
-    
+
     Args:
         context_mesh: The ContextMesh instance
         agent_configs: Dict mapping agent names to their configuration
-        
+
     Returns:
         Dict mapping agent names to their ToolHandler instances
-        
+
     Examples:
         configs = {
             "admin": {"role": "admin"},
@@ -1154,15 +1191,12 @@ def create_multi_agent_handlers(
         handlers = create_multi_agent_handlers(mesh, configs)
     """
     handlers = {}
-    
+
     for agent_name, config in agent_configs.items():
         if "role" in config:
             # Use role-based creation
             handlers[agent_name] = create_role_based_handler(
-                context_mesh, 
-                agent_name, 
-                config["role"],
-                config.get("custom_roles")
+                context_mesh, agent_name, config["role"], config.get("custom_roles")
             )
         else:
             # Use direct ToolHandler creation
@@ -1171,31 +1205,34 @@ def create_multi_agent_handlers(
                 agent_name,
                 allowed_tools=config.get("allowed_tools"),
                 denied_tools=config.get("denied_tools"),
-                role_based_access=config.get("role_based_access")
+                role_based_access=config.get("role_based_access"),
             )
-    
+
     return handlers
 
-def get_role_info(role: str = None) -> Dict[str, Any]:
+
+def get_role_info(role: Optional[str] = None) -> Dict[str, Any]:
     """
     Get information about available roles and their permissions.
-    
+
     Args:
         role: Optional specific role to get info for
-        
+
     Returns:
         Role information dict
-        
+
     Examples:
         # Get all roles
         all_roles = get_role_info()
-        
+
         # Get specific role
         admin_info = get_role_info("admin")
     """
     if role:
         if role not in PREDEFINED_ROLES:
-            raise ValueError(f"Unknown role '{role}'. Available roles: {list(PREDEFINED_ROLES.keys())}")
+            raise ValueError(
+                f"Unknown role '{role}'. Available roles: {list(PREDEFINED_ROLES.keys())}"
+            )
         return PREDEFINED_ROLES[role]
-    
+
     return PREDEFINED_ROLES

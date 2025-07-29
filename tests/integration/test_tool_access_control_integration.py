@@ -16,7 +16,7 @@ from syntha.tools import (
     ToolHandler,
     create_role_based_handler,
     create_restricted_handler,
-    create_multi_agent_handlers
+    create_multi_agent_handlers,
 )
 
 
@@ -37,67 +37,76 @@ class TestRealWorldAccessControlScenarios:
         team_configs = {
             "tech_lead": {"role": "admin"},
             "senior_dev": {"role": "contributor"},
-            "junior_dev": {"allowed_tools": ["get_context", "push_context", "list_context", "subscribe_to_topics"]},
-            "qa_engineer": {"allowed_tools": ["get_context", "push_context", "list_context", "discover_topics"]},
+            "junior_dev": {
+                "allowed_tools": [
+                    "get_context",
+                    "push_context",
+                    "list_context",
+                    "subscribe_to_topics",
+                ]
+            },
+            "qa_engineer": {
+                "allowed_tools": [
+                    "get_context",
+                    "push_context",
+                    "list_context",
+                    "discover_topics",
+                ]
+            },
             "pm": {"allowed_tools": ["get_context", "list_context", "discover_topics"]},
             "deployment_bot": {"allowed_tools": ["get_context", "push_context"]},
         }
-        
+
         handlers = create_multi_agent_handlers(self.mesh, team_configs)
-        
+
         # Tech lead sets up project context
         result = handlers["tech_lead"].handle_tool_call(
             "push_context",
             key="project_status",
             value="Sprint 1 - In Progress",
-            topics=["development", "management"]
+            topics=["development", "management"],
         )
         assert result["success"] is True
-        
+
         # Senior dev subscribes to development topics
         result = handlers["senior_dev"].handle_tool_call(
-            "subscribe_to_topics",
-            topics=["development", "architecture"]
+            "subscribe_to_topics", topics=["development", "architecture"]
         )
         assert result["success"] is True
-        
+
         # PM tries to push code context (should fail)
         result = handlers["pm"].handle_tool_call(
             "push_context",
             key="code_review",
             value="Ready for review",
-            topics=["development"]
+            topics=["development"],
         )
         assert result["success"] is False
         assert "Access denied" in result["error"]
-        
+
         # PM can read context (should succeed)
         result = handlers["pm"].handle_tool_call("list_context")
         assert result["success"] is True
-        
+
         # Junior dev can push context (should succeed)
         result = handlers["junior_dev"].handle_tool_call(
             "push_context",
             key="bug_report",
             value="Found issue in login flow",
-            topics=["development"]
+            topics=["development"],
         )
         assert result["success"] is True
-        
+
         # Junior dev tries to delete topic (should fail)
         result = handlers["junior_dev"].handle_tool_call(
-            "delete_topic",
-            topic="development",
-            confirm=True
+            "delete_topic", topic="development", confirm=True
         )
         assert result["success"] is False
         assert "Access denied" in result["error"]
-        
+
         # Tech lead can delete topic (should succeed)
         result = handlers["tech_lead"].handle_tool_call(
-            "delete_topic",
-            topic="development", 
-            confirm=True
+            "delete_topic", topic="development", confirm=True
         )
         assert result["success"] is True
 
@@ -110,47 +119,44 @@ class TestRealWorldAccessControlScenarios:
             "junior_support": {"role": "readonly"},
             "support_bot": {"allowed_tools": ["get_context", "push_context"]},
         }
-        
+
         handlers = create_multi_agent_handlers(self.mesh, support_configs)
-        
+
         # Manager sets up customer context
         result = handlers["support_manager"].handle_tool_call(
             "push_context",
             key="customer_123",
-            value=json.dumps({
-                "name": "John Doe",
-                "tier": "premium",
-                "open_tickets": 2
-            }),
-            topics=["customer_support", "premium_customers"]
+            value=json.dumps(
+                {"name": "John Doe", "tier": "premium", "open_tickets": 2}
+            ),
+            topics=["customer_support", "premium_customers"],
         )
         assert result["success"] is True
-        
+
         # Senior support subscribes to premium customers
         result = handlers["senior_support"].handle_tool_call(
-            "subscribe_to_topics",
-            topics=["premium_customers"]
+            "subscribe_to_topics", topics=["premium_customers"]
         )
         assert result["success"] is True
-        
+
         # Junior support can read but not write
         result = handlers["junior_support"].handle_tool_call("list_context")
         assert result["success"] is True
-        
+
         result = handlers["junior_support"].handle_tool_call(
             "push_context",
             key="note",
             value="Customer called",
-            topics=["customer_support"]
+            topics=["customer_support"],
         )
         assert result["success"] is False
-        
+
         # Support bot can update context
         result = handlers["support_bot"].handle_tool_call(
             "push_context",
             key="bot_interaction",
             value="Automated response sent",
-            topics=["customer_support"]
+            topics=["customer_support"],
         )
         assert result["success"] is True
 
@@ -161,8 +167,11 @@ class TestRealWorldAccessControlScenarios:
             "lab_director": {"role": "admin"},
             "researcher": {
                 "allowed_tools": [
-                    "get_context", "push_context", "list_context", 
-                    "subscribe_to_topics", "discover_topics"
+                    "get_context",
+                    "push_context",
+                    "list_context",
+                    "subscribe_to_topics",
+                    "discover_topics",
                 ]
             },
             "data_analyst": {
@@ -170,45 +179,39 @@ class TestRealWorldAccessControlScenarios:
             },
             "intern": {"role": "readonly"},
         }
-        
+
         handlers = create_multi_agent_handlers(self.mesh, research_configs)
-        
+
         # Lab director sets up research project
         result = handlers["lab_director"].handle_tool_call(
             "push_context",
             key="project_alpha",
-            value=json.dumps({
-                "status": "active",
-                "budget": 100000,
-                "team_size": 5
-            }),
-            topics=["research", "project_alpha"]
+            value=json.dumps({"status": "active", "budget": 100000, "team_size": 5}),
+            topics=["research", "project_alpha"],
         )
         assert result["success"] is True
-        
+
         # Researcher subscribes to project
         result = handlers["researcher"].handle_tool_call(
-            "subscribe_to_topics",
-            topics=["project_alpha"]
+            "subscribe_to_topics", topics=["project_alpha"]
         )
         assert result["success"] is True
-        
+
         # Data analyst can push analysis results
         result = handlers["data_analyst"].handle_tool_call(
             "push_context",
             key="analysis_results",
             value="Initial data shows promising trends",
-            topics=["project_alpha"]
+            topics=["project_alpha"],
         )
         assert result["success"] is True
-        
+
         # Intern can only read
         result = handlers["intern"].handle_tool_call("discover_topics")
         assert result["success"] is True
-        
+
         result = handlers["intern"].handle_tool_call(
-            "subscribe_to_topics",
-            topics=["project_alpha"]
+            "subscribe_to_topics", topics=["project_alpha"]
         )
         assert result["success"] is False
 
@@ -228,25 +231,26 @@ class TestAccessControlWithLLMIntegration:
         """Simulate OpenAI function calling with access control."""
         # Create handler with restricted access
         handler = ToolHandler(
-            self.mesh, "assistant",
-            allowed_tools=["get_context", "push_context", "list_context"]
+            self.mesh,
+            "assistant",
+            allowed_tools=["get_context", "push_context", "list_context"],
         )
-        
+
         # Get tool schemas for LLM
         tools = handler.get_schemas()
         tool_names = {tool["name"] for tool in tools}
-        
+
         # Should only include allowed tools
         assert len(tools) == 3
         assert "get_context" in tool_names
         assert "push_context" in tool_names
         assert "list_context" in tool_names
         assert "delete_topic" not in tool_names
-        
+
         # Simulate LLM making allowed tool call
         result = handler.handle_tool_call("list_context")
         assert result["success"] is True
-        
+
         # Simulate LLM trying to call denied tool (shouldn't happen with proper schemas)
         result = handler.handle_tool_call("delete_topic", topic="test", confirm=True)
         assert result["success"] is False
@@ -256,56 +260,52 @@ class TestAccessControlWithLLMIntegration:
         """Simulate Anthropic function calling with role-based access."""
         # Create role-based handler
         handler = create_role_based_handler(self.mesh, "claude", "contributor")
-        
+
         # Get tool schemas
         tools = handler.get_schemas()
         tool_names = {tool["name"] for tool in tools}
-        
+
         # Contributor should have most tools except delete
         assert "get_context" in tool_names
         assert "push_context" in tool_names
         assert "subscribe_to_topics" in tool_names
         assert "delete_topic" not in tool_names
-        
+
         # Test allowed operations
         result = handler.handle_tool_call(
             "push_context",
             key="ai_insight",
             value="Claude generated this insight",
-            topics=["ai_research"]
+            topics=["ai_research"],
         )
         assert result["success"] is True
-        
-        result = handler.handle_tool_call(
-            "subscribe_to_topics",
-            topics=["ai_research"]
-        )
+
+        result = handler.handle_tool_call("subscribe_to_topics", topics=["ai_research"])
         assert result["success"] is True
 
     def test_custom_tool_integration(self):
         """Test access control with custom tools."""
         handler = ToolHandler(
-            self.mesh, "agent1",
-            allowed_tools=["get_context", "push_context"]
+            self.mesh, "agent1", allowed_tools=["get_context", "push_context"]
         )
-        
+
         # Custom tools that would be added by user
         custom_tools = [
             {
                 "name": "analyze_data",
                 "description": "Analyze data",
-                "parameters": {"type": "object", "properties": {}}
+                "parameters": {"type": "object", "properties": {}},
             },
             {
                 "name": "get_context",  # Name conflict with Syntha tool
                 "description": "Custom get context",
-                "parameters": {"type": "object", "properties": {}}
-            }
+                "parameters": {"type": "object", "properties": {}},
+            },
         ]
-        
+
         # Merge with access-controlled Syntha tools
         merged_schemas = handler.get_schemas(merge_with=custom_tools)
-        
+
         # Should have custom tools + allowed Syntha tools
         tool_names = {tool["name"] for tool in merged_schemas}
         assert "analyze_data" in tool_names
@@ -329,27 +329,32 @@ class TestDynamicAccessControlScenarios:
         """Test agent getting promoted and gaining more access."""
         # Start as junior developer
         handler = ToolHandler(
-            self.mesh, "developer",
-            allowed_tools=["get_context", "push_context", "list_context"]
+            self.mesh,
+            "developer",
+            allowed_tools=["get_context", "push_context", "list_context"],
         )
-        
+
         # Initially limited tools
         assert len(handler.get_available_tools()) == 3
         assert "subscribe_to_topics" not in handler.get_available_tools()
-        
+
         # Try to subscribe (should fail)
-        result = handler.handle_tool_call("subscribe_to_topics", topics=["architecture"])
+        result = handler.handle_tool_call(
+            "subscribe_to_topics", topics=["architecture"]
+        )
         assert result["success"] is False
-        
+
         # Get promoted - add more permissions
         handler.add_allowed_tool("subscribe_to_topics")
         handler.add_allowed_tool("unsubscribe_from_topics")
         handler.add_allowed_tool("discover_topics")
-        
+
         # Now can subscribe
-        result = handler.handle_tool_call("subscribe_to_topics", topics=["architecture"])
+        result = handler.handle_tool_call(
+            "subscribe_to_topics", topics=["architecture"]
+        )
         assert result["success"] is True
-        
+
         # Still can't delete (not added)
         result = handler.handle_tool_call("delete_topic", topic="test", confirm=True)
         assert result["success"] is False
@@ -358,22 +363,24 @@ class TestDynamicAccessControlScenarios:
         """Test temporarily granting emergency access."""
         # Start with safe handler
         handler = create_restricted_handler(self.mesh, "ops_agent", "safe")
-        
+
         # Initially can't delete
         assert "delete_topic" not in handler.get_available_tools()
-        
+
         # Create a topic first by subscribing to it
         handler2 = ToolHandler(self.mesh, "admin")
         handler2.handle_tool_call("subscribe_to_topics", topics=["corrupted_data"])
-        
+
         # Emergency: need to delete corrupted topic
         handler.remove_denied_tool("delete_topic")
-        
+
         # Now can delete
         assert "delete_topic" in handler.get_available_tools()
-        result = handler.handle_tool_call("delete_topic", topic="corrupted_data", confirm=True)
+        result = handler.handle_tool_call(
+            "delete_topic", topic="corrupted_data", confirm=True
+        )
         assert result["success"] is True
-        
+
         # Remove emergency access
         handler.add_denied_tool("delete_topic")
         assert "delete_topic" not in handler.get_available_tools()
@@ -383,15 +390,21 @@ class TestDynamicAccessControlScenarios:
         # Start as readonly
         handler = create_role_based_handler(self.mesh, "agent1", "readonly")
         readonly_tools = set(handler.get_available_tools())
-        
+
         # Transition to contributor
         handler.set_agent_role("contributor")
         # Manually set contributor tools (since role transition needs manual tool update)
-        handler.set_allowed_tools([
-            "get_context", "list_context", "discover_topics", 
-            "push_context", "subscribe_to_topics", "unsubscribe_from_topics"
-        ])
-        
+        handler.set_allowed_tools(
+            [
+                "get_context",
+                "list_context",
+                "discover_topics",
+                "push_context",
+                "subscribe_to_topics",
+                "unsubscribe_from_topics",
+            ]
+        )
+
         contributor_tools = set(handler.get_available_tools())
         assert len(contributor_tools) > len(readonly_tools)
         assert "push_context" in contributor_tools
@@ -412,42 +425,43 @@ class TestAccessControlPerformance:
     def test_access_control_overhead(self):
         """Test that access control doesn't significantly impact performance."""
         import time
-        
+
         # Handler without restrictions
         unrestricted_handler = ToolHandler(self.mesh, "agent1")
-        
+
         # Handler with restrictions
         restricted_handler = ToolHandler(
-            self.mesh, "agent1",
-            allowed_tools=["get_context", "push_context", "list_context"]
+            self.mesh,
+            "agent1",
+            allowed_tools=["get_context", "push_context", "list_context"],
         )
-        
+
         # Time schema generation
         start_time = time.time()
         for _ in range(100):
             unrestricted_handler.get_schemas()
         unrestricted_time = time.time() - start_time
-        
+
         start_time = time.time()
         for _ in range(100):
             restricted_handler.get_schemas()
         restricted_time = time.time() - start_time
-        
+
         # Restricted should not be significantly slower
         # Allow up to 50% overhead (generous threshold)
         assert restricted_time < unrestricted_time * 1.5
-        
+
         # Time tool calls
         start_time = time.time()
         for _ in range(100):
             unrestricted_handler.handle_tool_call("list_context")
         unrestricted_call_time = time.time() - start_time
-        
+
         start_time = time.time()
         for _ in range(100):
             restricted_handler.handle_tool_call("list_context")
         restricted_call_time = time.time() - start_time
-        
+
         # Tool call performance should be similar (but handle edge case of very fast execution)
         if unrestricted_call_time > 0:
             assert restricted_call_time < unrestricted_call_time * 1.2
@@ -467,23 +481,26 @@ class TestAccessControlPerformance:
             elif i % 4 == 2:
                 configs[f"agent_{i}"] = {"role": "readonly"}
             else:
-                configs[f"agent_{i}"] = {"allowed_tools": ["get_context", "push_context"]}
-        
+                configs[f"agent_{i}"] = {
+                    "allowed_tools": ["get_context", "push_context"]
+                }
+
         # Time the creation
         import time
+
         start_time = time.time()
         handlers = create_multi_agent_handlers(self.mesh, configs)
         creation_time = time.time() - start_time
-        
+
         # Should create all handlers
         assert len(handlers) == 100
-        
+
         # Should be reasonably fast (less than 1 second for 100 agents)
         assert creation_time < 1.0
-        
+
         # Verify different access levels
         assert len(handlers["agent_0"].get_available_tools()) == 7  # admin
-        assert len(handlers["agent_1"].get_available_tools()) == 6  # contributor  
+        assert len(handlers["agent_1"].get_available_tools()) == 6  # contributor
         assert len(handlers["agent_2"].get_available_tools()) == 3  # readonly
         assert len(handlers["agent_3"].get_available_tools()) == 2  # custom
 
@@ -503,30 +520,31 @@ class TestAccessControlEdgeCases:
         """Test access control works with user isolation."""
         # Create mesh with user isolation
         user_mesh = ContextMesh(enable_persistence=False, user_id="user123")
-        
+
         try:
             handler = ToolHandler(
-                user_mesh, "agent1",
-                allowed_tools=["get_context", "push_context"]
+                user_mesh, "agent1", allowed_tools=["get_context", "push_context"]
             )
-            
+
             # Should work normally
             result = handler.handle_tool_call(
                 "push_context",
                 key="user_data",
                 value="User specific data",
-                topics=["personal"]
+                topics=["personal"],
             )
             assert result["success"] is True
-            
+
             result = handler.handle_tool_call("get_context")
             assert result["success"] is True
-            
+
             # Access control should still work
-            result = handler.handle_tool_call("delete_topic", topic="test", confirm=True)
+            result = handler.handle_tool_call(
+                "delete_topic", topic="test", confirm=True
+            )
             assert result["success"] is False
             assert "Access denied" in result["error"]
-            
+
         finally:
             user_mesh.close()
 
@@ -534,10 +552,10 @@ class TestAccessControlEdgeCases:
         """Test concurrent modifications to access control."""
         import threading
         import time
-        
+
         handler = ToolHandler(self.mesh, "agent1")
         results = []
-        
+
         def modify_access():
             # Repeatedly modify access control
             for i in range(10):
@@ -547,25 +565,27 @@ class TestAccessControlEdgeCases:
                 handler.set_denied_tools([])
                 handler.set_allowed_tools(None)  # Reset to all
                 time.sleep(0.01)
-        
+
         def use_tools():
             # Repeatedly use tools
             for i in range(20):
                 result = handler.handle_tool_call("list_context")
                 results.append(result["success"])
                 time.sleep(0.005)
-        
+
         # Run concurrently
         modifier_thread = threading.Thread(target=modify_access)
         user_thread = threading.Thread(target=use_tools)
-        
+
         modifier_thread.start()
         user_thread.start()
-        
+
         modifier_thread.join()
         user_thread.join()
-        
+
         # Should not crash and most calls should succeed
         assert len(results) == 20
         success_rate = sum(results) / len(results)
-        assert success_rate > 0.3  # At least 30% should succeed (lower threshold for concurrency) 
+        assert (
+            success_rate > 0.3
+        )  # At least 30% should succeed (lower threshold for concurrency)
