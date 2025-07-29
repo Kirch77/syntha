@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753204110418,
+  "lastUpdate": 1753752492930,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -2162,6 +2162,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000017224751434889176",
             "extra": "mean: 829.9212883762558 usec\nrounds: 1127"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "distinct": true,
+          "id": "63c7c8b338e95641e1e53574b797e0f11eea5bfc",
+          "message": "Enhance tool access control and role management in ToolHandler\n\n- Introduced role-based access control in ToolHandler, allowing agents to have specific permissions based on their roles.\n- Added methods for setting allowed and denied tools, as well as managing agent roles dynamically.\n- Implemented predefined roles with associated tool permissions for common use cases, improving security and flexibility.\n- Updated the ToolHandler initialization to support access control configurations, enhancing the overall functionality of context management tools.\n\nThese changes improve the security and usability of the tool management system, enabling more granular control over agent capabilities.",
+          "timestamp": "2025-07-28T21:27:34-04:00",
+          "tree_id": "e650630a78c5a052a9cd7664746c8d5a3df3fa15",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/63c7c8b338e95641e1e53574b797e0f11eea5bfc"
+        },
+        "date": 1753752492562,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 309676.4681041821,
+            "unit": "iter/sec",
+            "range": "stddev: 6.06278715424349e-7",
+            "extra": "mean: 3.2291765858798724 usec\nrounds: 45921"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 472911.02150096,
+            "unit": "iter/sec",
+            "range": "stddev: 5.767821837755211e-7",
+            "extra": "mean: 2.1145626862874245 usec\nrounds: 126152"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2256.253419731826,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000010880568065144138",
+            "extra": "mean: 443.2126246345404 usec\nrounds: 2395"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4783.8197035691355,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000017338689229283135",
+            "extra": "mean: 209.03797842839165 usec\nrounds: 4543"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 719.3543441875636,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00008624823430305218",
+            "extra": "mean: 1.390135484799771 msec\nrounds: 625"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1798.6233062215315,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000118126072434552",
+            "extra": "mean: 555.9807862718937 usec\nrounds: 3074"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 534381.2266400654,
+            "unit": "iter/sec",
+            "range": "stddev: 4.743498543540849e-7",
+            "extra": "mean: 1.8713232242223845 usec\nrounds: 1253"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 13.815969970661968,
+            "unit": "iter/sec",
+            "range": "stddev: 0.006576147905144142",
+            "extra": "mean: 72.3800067692306 msec\nrounds: 13"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 103923.8987177825,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000001380451377486491",
+            "extra": "mean: 9.622425759022157 usec\nrounds: 21080"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1190.9226586325872,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000013321174994488003",
+            "extra": "mean: 839.6850901705037 usec\nrounds: 1231"
           }
         ]
       }
