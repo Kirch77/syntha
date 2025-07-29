@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753831378405,
+  "lastUpdate": 1753832021593,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -3008,6 +3008,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00005721239568251848",
             "extra": "mean: 844.2120151642556 usec\nrounds: 1187"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "distinct": true,
+          "id": "2647dd19e48d688afe517788a45e28da5837aa3c",
+          "message": "Merge branch 'main' of https://github.com/Kirch77/Syntha_v2",
+          "timestamp": "2025-07-29T19:33:01-04:00",
+          "tree_id": "64c83f5a38bb27bf0e7d99a37471826790b04bea",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/2647dd19e48d688afe517788a45e28da5837aa3c"
+        },
+        "date": 1753832021138,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 316193.7609658647,
+            "unit": "iter/sec",
+            "range": "stddev: 5.832824157506403e-7",
+            "extra": "mean: 3.1626177472488366 usec\nrounds: 29075"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 484241.9107838304,
+            "unit": "iter/sec",
+            "range": "stddev: 4.866542095568549e-7",
+            "extra": "mean: 2.065083541367423 usec\nrounds: 61275"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2223.6643604315227,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000009081838764577735",
+            "extra": "mean: 449.7081564080745 usec\nrounds: 2372"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4884.857184047277,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001143572103169255",
+            "extra": "mean: 204.71427563240746 usec\nrounds: 4506"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 729.4861006841959,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00006330585168788365",
+            "extra": "mean: 1.3708280377954907 msec\nrounds: 635"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1833.0750152824871,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000019792409173252517",
+            "extra": "mean: 545.5314112422695 usec\nrounds: 2704"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 518425.25231821655,
+            "unit": "iter/sec",
+            "range": "stddev: 6.55352844315222e-7",
+            "extra": "mean: 1.9289183841418784 usec\nrounds: 1213"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 20.874830955382897,
+            "unit": "iter/sec",
+            "range": "stddev: 0.003385617891583868",
+            "extra": "mean: 47.90457954545182 msec\nrounds: 22"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 104895.0808059334,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000015804410014253055",
+            "extra": "mean: 9.533335522664803 usec\nrounds: 19793"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1207.5800083529991,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00002062153542620996",
+            "extra": "mean: 828.1024802355627 usec\nrounds: 1189"
           }
         ]
       }
