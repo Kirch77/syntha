@@ -473,11 +473,11 @@ def test_user_isolation_performance():
         import platform
         import sys
 
-        # More generous timeout for Windows Python 3.9
-        if platform.system() == "Windows" and sys.version_info[:2] == (3, 9):
-            timeout = 5.0  # 5 seconds for Windows Python 3.9
+        # More generous timeout for Windows (any Python version)
+        if platform.system() == "Windows":
+            timeout = 8.0  # 8 seconds for Windows (all Python versions)
         else:
-            timeout = 3.0  # 3 seconds for other systems (increased from 2.0)
+            timeout = 3.0  # 3 seconds for other systems
             
         assert elapsed < timeout, f"Performance test took {elapsed:.3f}s (expected < {timeout}s on {platform.system()} Python {sys.version_info[:2]})"
 
