@@ -1,0 +1,156 @@
+site_name: Syntha SDK
+site_description: Context Management Framework for AI Agents
+site_author: Syntha Team
+site_url: https://syntha.ai
+
+repo_name: syntha/syntha
+repo_url: https://github.com/syntha/syntha
+edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; 2025 Syntha
+
+theme:
+  name: material
+  language: en
+  palette:
+    - media: "(prefers-color-scheme)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - content.tabs.link
+    - content.tooltips
+    - header.autohide
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.instant.result
+    - navigation.instant.suggest
+    - navigation.instant.tracking
+    - navigation.instant.worker
+    - navigation.instant.worker.offline
+    - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - navigation.tracking.instant
+    - navigation.tracking.instant.worker
+    - navigation.tracking.instant.worker.offline
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/syntha/syntha
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/syntha_ai
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/syntha
+
+nav:
+  - Home: index.md
+  - Guides:
+    - Overview: guide/overview.md
+    - Basics: guide/basics.md
+    - Context: guide/context_guide.md
+    - Tools: guide/tool_guide.md
+    - Conclusion: guide/conclusion.md
+  - Getting Started:
+    - Quick Start: getting-started/quickstart.md
+  - Core Concepts:
+    - Overview: core-concepts/overview.md
+  - API Reference:
+    - ContextMesh: api/context-mesh.md
+    - ContextMesh Reference: api/context-mesh-ref.md
+    - ToolHandler Reference: api/tool-handler-ref.md
+    - Prompt Builders Reference: api/prompt-builders-ref.md
+    - Tools Reference: api/tools-ref.md
+    - Tool Schemas Reference: api/tool-schemas-ref.md
+
+plugins:
+  - search
+  - macros
+  - git-revision-date-localized:
+      enable_creation_date: true
+      enable_git_follow: false
+  - minify:
+      minify_html: true
+  - section-index
+  - autorefs
+  - gen-files:
+      scripts:
+        - docs/gen_ref_pages.py
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra_css:
+  - docs/stylesheets/extra.css 
