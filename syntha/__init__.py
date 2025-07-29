@@ -62,7 +62,15 @@ from .prompts import (
     inject_context_into_prompt,
 )
 from .reports import OutcomeLogger
-from .tools import ToolHandler, get_all_tool_schemas
+from .tools import (
+    ToolHandler, 
+    get_all_tool_schemas,
+    create_role_based_handler,
+    create_restricted_handler,
+    create_multi_agent_handlers,
+    get_role_info,
+    PREDEFINED_ROLES
+)
 
 __version__ = "0.2.0"
 __author__ = "Syntha Team"
@@ -79,6 +87,12 @@ __all__ = [
     "DatabaseBackend",
     "SQLiteBackend",
     "create_database_backend",
+    # Tool access control
+    "create_role_based_handler",
+    "create_restricted_handler", 
+    "create_multi_agent_handlers",
+    "get_role_info",
+    "PREDEFINED_ROLES",
     # Logging
     "get_logger",
     "get_context_logger",

@@ -293,3 +293,7 @@ local_settings.py
 *.pid
 *.sock
 *.lock
+
+
+#other
+testing_temp.py
