@@ -62,10 +62,10 @@ context = ContextMesh(
 
 First, install the PostgreSQL adapter:
 
-```bash
-pip install psycopg2-binary
-```
+For production environments, install `psycopg2`:
 
+```bash
+pip install psycopg2
 Then configure Syntha:
 
 ```python
