@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753829423129,
+  "lastUpdate": 1753830731127,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -2820,6 +2820,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00002068964318983554",
             "extra": "mean: 825.4429457495532 usec\nrounds: 1235"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "distinct": true,
+          "id": "35e528b95284840ff002da00cfc8709ffef4d63f",
+          "message": "Enhance PostgreSQL backend for user isolation and context management\n\n- Implemented unique constraints for handling NULL user_id in context_items, agent_topics, and agent_permissions tables.\n- Updated save and retrieval methods to support legacy mode where user_id can be NULL, ensuring proper context management.\n- Improved cleanup and deletion methods to respect user isolation by filtering on user_id.\n- Enhanced tests to validate the new behavior and ensure robustness in user-specific context handling.\n\nThese changes strengthen the user isolation features in the PostgreSQL backend, improving the overall functionality and reliability of the Syntha SDK.",
+          "timestamp": "2025-07-29T19:11:33-04:00",
+          "tree_id": "f36988de38c7619ebf7e5d9e0b3f8dec7899a737",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/35e528b95284840ff002da00cfc8709ffef4d63f"
+        },
+        "date": 1753830730656,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 308576.7986000278,
+            "unit": "iter/sec",
+            "range": "stddev: 5.988911923644231e-7",
+            "extra": "mean: 3.2406843435309067 usec\nrounds: 28889"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 474972.84124956524,
+            "unit": "iter/sec",
+            "range": "stddev: 5.50083314864595e-7",
+            "extra": "mean: 2.105383535970575 usec\nrounds: 133977"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2181.020647224915,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000323471402848236",
+            "extra": "mean: 458.5009322458176 usec\nrounds: 2391"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4621.8440189464245,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000009682095436372377",
+            "extra": "mean: 216.36385734799325 usec\nrounds: 4178"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 692.0287881252342,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00010658966698713442",
+            "extra": "mean: 1.4450265901640975 msec\nrounds: 610"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1740.4715712277964,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000010314311649285954",
+            "extra": "mean: 574.5569284389754 usec\nrounds: 2697"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 527199.4255277755,
+            "unit": "iter/sec",
+            "range": "stddev: 6.100273651456594e-7",
+            "extra": "mean: 1.8968154204623937 usec\nrounds: 1712"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 22.18150454516312,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0038350145390341444",
+            "extra": "mean: 45.082604652174474 msec\nrounds: 23"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 104900.37589749858,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000012980123904237023",
+            "extra": "mean: 9.532854305280383 usec\nrounds: 20440"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1175.1464455326516,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000019659507562847423",
+            "extra": "mean: 850.957771094424 usec\nrounds: 1197"
           }
         ]
       }
