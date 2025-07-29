@@ -9,19 +9,20 @@ Tests the new access control features including:
 - Access validation and error handling
 """
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 pytestmark = [pytest.mark.access_control, pytest.mark.tools, pytest.mark.unit]
 
 from syntha.context import ContextMesh
 from syntha.tools import (
-    ToolHandler,
-    create_role_based_handler,
-    create_restricted_handler,
-    create_multi_agent_handlers,
-    get_role_info,
     PREDEFINED_ROLES,
+    ToolHandler,
+    create_multi_agent_handlers,
+    create_restricted_handler,
+    create_role_based_handler,
+    get_role_info,
 )
 
 
