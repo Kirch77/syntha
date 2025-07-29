@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753752492930,
+  "lastUpdate": 1753753015860,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -2256,6 +2256,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000013321174994488003",
             "extra": "mean: 839.6850901705037 usec\nrounds: 1231"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "distinct": true,
+          "id": "5ae8b0a10ec795e691e2b51239cf271f9d2ac923",
+          "message": "Refactor tool access control examples for improved readability and consistency\n\n- Cleaned up whitespace and formatting in the tool access control examples to enhance readability.\n- Consolidated multiple lines of code into single lines where appropriate, maintaining functionality.\n- Updated comments for clarity and consistency throughout the examples.\n- Ensured that the examples effectively demonstrate access control features while maintaining a clean code structure.\n\nThese changes improve the overall presentation and maintainability of the tool access control examples.",
+          "timestamp": "2025-07-28T21:34:56-04:00",
+          "tree_id": "c5ff49c99f3b06a4423cf67e757376e018917fd1",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/5ae8b0a10ec795e691e2b51239cf271f9d2ac923"
+        },
+        "date": 1753753015384,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 305247.42185094353,
+            "unit": "iter/sec",
+            "range": "stddev: 5.716645692487395e-7",
+            "extra": "mean: 3.2760309454417396 usec\nrounds: 29245"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 450777.57186724927,
+            "unit": "iter/sec",
+            "range": "stddev: 6.058559648576292e-7",
+            "extra": "mean: 2.2183889847441054 usec\nrounds: 141985"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2230.23710634014,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001937542598463598",
+            "extra": "mean: 448.3828186506224 usec\nrounds: 2327"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4952.680428360054,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001251307181995398",
+            "extra": "mean: 201.9108671485842 usec\nrounds: 4426"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 719.153559970292,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00011082482354753475",
+            "extra": "mean: 1.3905236039453237 msec\nrounds: 659"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1837.390773082858,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001185670558524664",
+            "extra": "mean: 544.2500390497523 usec\nrounds: 3073"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 549310.0320823393,
+            "unit": "iter/sec",
+            "range": "stddev: 4.4534687116326685e-7",
+            "extra": "mean: 1.820465568795773 usec\nrounds: 1336"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 10.570067107799314,
+            "unit": "iter/sec",
+            "range": "stddev: 0.009480408189441722",
+            "extra": "mean: 94.60677872727335 msec\nrounds: 11"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 102845.34202804344,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000014089506384454803",
+            "extra": "mean: 9.723337783516964 usec\nrounds: 20898"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1197.9309959986535,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00006999378451157057",
+            "extra": "mean: 834.7726232480957 usec\nrounds: 1213"
           }
         ]
       }
