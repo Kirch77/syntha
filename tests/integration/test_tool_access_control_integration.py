@@ -425,8 +425,8 @@ class TestAccessControlPerformance:
 
     def test_access_control_overhead(self):
         """Test that access control doesn't significantly impact performance."""
-        import time
         import sys
+        import time
 
         # Handler without restrictions
         unrestricted_handler = ToolHandler(self.mesh, "agent1")
@@ -574,9 +574,9 @@ class TestAccessControlEdgeCases:
 
     def test_concurrent_access_control_modifications(self):
         """Test concurrent modifications to access control."""
+        import sys
         import threading
         import time
-        import sys
 
         handler = ToolHandler(self.mesh, "agent1")
         results = []
