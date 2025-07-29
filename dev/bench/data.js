@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753754934525,
+  "lastUpdate": 1753810442323,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -2632,6 +2632,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000021540915444704976",
             "extra": "mean: 838.7887745176182 usec\nrounds: 1193"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "129435653+Kirch77@users.noreply.github.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ba7b3db38607f336429cae3e6166671cd39f9881",
+          "message": "Create syntha sdk documentation (#5)\n\n* Refactor documentation structure and update MkDocs configuration\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Add GitHub Pages workflow and comprehensive documentation setup\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Add comprehensive documentation for Syntha's persistence, tools, and deployment\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Update docs/installation.md\n\nCo-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>\n\n* Fix test assertions and improve cleanup logic in persistence integration tests\n\n- Updated assertions to provide clearer error messages when expected values do not match.\n- Enhanced the cleanup logic by resetting the last cleanup time to ensure proper triggering of auto cleanup.\n- Adjusted sleep duration comments for better clarity on timing requirements.\n\nThese changes improve the reliability and clarity of the persistence integration tests.\n\n* Fix whitespace issue in persistence integration test\n\n- Removed unnecessary blank line in `test_persistence_integration.py` to improve code cleanliness and readability.\n\nThis change contributes to a more organized and maintainable test codebase.\n\n---------\n\nCo-authored-by: Cursor Agent <cursoragent@cursor.com>\nCo-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+          "timestamp": "2025-07-29T13:33:32-04:00",
+          "tree_id": "0b4b5255db6879d4e07341ee3e95517444f9dbc1",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/ba7b3db38607f336429cae3e6166671cd39f9881"
+        },
+        "date": 1753810441975,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 312955.87893561996,
+            "unit": "iter/sec",
+            "range": "stddev: 6.292127397082691e-7",
+            "extra": "mean: 3.195338599808556 usec\nrounds: 28101"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 489500.34987765906,
+            "unit": "iter/sec",
+            "range": "stddev: 5.223051468887593e-7",
+            "extra": "mean: 2.0428994591115823 usec\nrounds: 124456"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2285.982157363203,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000009910608282847554",
+            "extra": "mean: 437.4487337002943 usec\nrounds: 2377"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4968.91342719644,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000006382181661994262",
+            "extra": "mean: 201.25124227898246 usec\nrounds: 4144"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 697.5802324796394,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002392201183268546",
+            "extra": "mean: 1.4335268596206778 msec\nrounds: 577"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1845.5164057950576,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000028829239920798118",
+            "extra": "mean: 541.8537580375478 usec\nrounds: 3017"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 544859.1574682294,
+            "unit": "iter/sec",
+            "range": "stddev: 4.101456384738504e-7",
+            "extra": "mean: 1.8353366852576205 usec\nrounds: 1491"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 21.457254413412546,
+            "unit": "iter/sec",
+            "range": "stddev: 0.004752372325618576",
+            "extra": "mean: 46.60428499999133 msec\nrounds: 24"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 103891.71008413217,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000015243076087580553",
+            "extra": "mean: 9.625407062702054 usec\nrounds: 20670"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1204.8397129083303,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000014971522725022746",
+            "extra": "mean: 829.985922016238 usec\nrounds: 1231"
           }
         ]
       }
