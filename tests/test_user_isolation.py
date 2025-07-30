@@ -478,8 +478,10 @@ def test_user_isolation_performance():
             timeout = 8.0  # 8 seconds for Windows (all Python versions)
         else:
             timeout = 3.0  # 3 seconds for other systems
-            
-        assert elapsed < timeout, f"Performance test took {elapsed:.3f}s (expected < {timeout}s on {platform.system()} Python {sys.version_info[:2]})"
+
+        assert (
+            elapsed < timeout
+        ), f"Performance test took {elapsed:.3f}s (expected < {timeout}s on {platform.system()} Python {sys.version_info[:2]})"
 
         # Clean up
         for mesh in meshes:
