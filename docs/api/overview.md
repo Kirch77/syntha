@@ -11,7 +11,7 @@ The heart of Syntha - manages shared context storage, routing, and persistence.
 from syntha import ContextMesh
 
 context = ContextMesh(user_id="user123")
-context.push("data", {"key": "value"})
+context.push("data", {"context": "value is in json"})
 result = context.get("data", "agent_name")
 ```
 
@@ -52,7 +52,7 @@ backend = create_database_backend("postgresql", host="localhost")
 from syntha import ContextMesh, ToolHandler
 
 # Prompt integration
-from syntha import build_system_prompt, build_message_prompt
+from syntha import build_system_prompt, build_message_prompt, build_custom_prompt, inject_context_into_prompt
 
 # Tool schemas
 from syntha import get_all_tool_schemas
@@ -99,12 +99,13 @@ sales_context = context.get_all_for_agent("SalesAgent")
 handler = ToolHandler(context, "MyAgent")
 
 # Get all available tool schemas
-schemas = handler.get_tool_schemas()
+schemas = handler.get_schemas()
 
 # Handle function calls from LLM
 result = handler.handle_tool_call("push_context", 
-                                  key="status", 
-                                  value="processing")
+    key="status", 
+    value="processing"
+)
 ```
 
 ## Error Handling

@@ -57,6 +57,7 @@ from .logging import (
 )
 from .persistence import DatabaseBackend, SQLiteBackend, create_database_backend
 from .prompts import (
+    build_custom_prompt,
     build_message_prompt,
     build_system_prompt,
     inject_context_into_prompt,
@@ -78,6 +79,7 @@ __author__ = "Syntha Team"
 __all__ = [
     # Core components
     "ContextMesh",
+    "build_custom_prompt",
     "build_system_prompt",
     "build_message_prompt",
     "inject_context_into_prompt",

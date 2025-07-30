@@ -5,6 +5,7 @@ The Persistence API provides database backends for storing context data permanen
 ## Overview
 
 Syntha's persistence layer automatically handles:
+
 - Context item storage and retrieval
 - Topic subscription management
 - Agent permission tracking
@@ -18,7 +19,7 @@ Syntha's persistence layer automatically handles:
 Factory function to create database backend instances.
 
 ```python
-def create_database_backend(backend_type: str, **config) -> DatabaseBackend
+def create_database_backend(backend_type: str = "sqlite", **config) -> DatabaseBackend
 ```
 
 #### Parameters

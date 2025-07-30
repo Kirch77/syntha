@@ -12,7 +12,7 @@ all_schemas = get_all_tool_schemas()
 
 # Or get schemas from a specific handler
 handler = ToolHandler(context, "MyAgent")
-handler_schemas = handler.get_tool_schemas()
+handler_schemas = handler.get_schemas()
 ```
 
 ## Core Tool Schemas
@@ -57,7 +57,7 @@ Share context with other agents through topic-based routing.
 ```json
 {
   "name": "push_context",
-  "description": "Share context with other agents through topic-based routing.\n        \n        🎯 ROUTING OPTIONS (choose one):\n        \n        1. **Topic Broadcasting** (RECOMMENDED):\n           - Use 'topics' parameter: [\"sales\", \"support\"]\n           - Routes to agents subscribed to those topics\n           - Best for: workflows, broadcasts, team coordination\n        \n        2. **Direct Agent Targeting**:\n           - Use 'subscribers' parameter: [\"Agent1\", \"Agent2\"]\n           - Routes only to those specific agents\n           - Best for: private messages, specific coordination\n        \n        3. **Global Context** (default):\n           - Don't specify topics or subscribers\n           - Available to all agents in the system\n           - Best for: shared configuration, system-wide state\n        \n        💡 TIP: Most agents should use topic broadcasting for scalability!",
+  "description": "Share context with other agents by pushing to specific topics.\n        \n        💡 TIP: Use 'discover_topics' first to see what topics exist and have subscribers!\n        \n        Choose topics based on:\n        - Content relevance (e.g., 'sales' for pricing data, 'support' for customer issues)\n        - Subscriber count (more subscribers = broader reach)\n        - Common patterns: sales, marketing, support, product, analytics, customer_data\n        \n        For keys, use descriptive names like: 'q4_pricing', 'customer_feedback_summary', 'product_roadmap'\n        \n        You don't need to specify your agent name - the system knows who you are.",
   "parameters": {
     "type": "object",
     "properties": {
@@ -74,18 +74,12 @@ Share context with other agents through topic-based routing.
         "items": {
           "type": "string"
         },
-        "description": "Topics to broadcast this context to (e.g., ['sales', 'support']). Cannot be used with subscribers."
+        "description": "Topics to broadcast to (e.g., ['sales', 'marketing', 'support'])"
       },
-      "subscribers": {
-        "type": "array",
-        "items": {
-          "type": "string"
-        },
-        "description": "Specific agent names to send this context to. Cannot be used with topics."
-      },
-      "ttl": {
-        "type": "integer",
-        "description": "Time-to-live in seconds. Context will automatically expire after this time."
+
+      "ttl_hours": {
+        "type": "number",
+        "description": "How long context should remain available (hours). Default: 24 hours"
       }
     },
     "required": ["key", "value"]

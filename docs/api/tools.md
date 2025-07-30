@@ -66,6 +66,7 @@ def handle_tool_call(self, tool_name: str, **kwargs) -> Dict[str, Any]
 ```
 
 **Parameters:**
+
 - **tool_name** (str): Name of the tool to execute
 - **kwargs**: Tool-specific parameters
 
@@ -85,20 +86,24 @@ else:
     print(f"Error: {result['error']}")
 ```
 
-#### get_tool_schemas()
+#### get_schemas()
 
 Get OpenAI-compatible function schemas for all available tools.
 
 ```python
-def get_tool_schemas(self) -> List[Dict[str, Any]]
+def get_schemas(self, merge_with: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]
 ```
+
+**Parameters:**
+
+- **merge_with** (Optional[List[Dict[str, Any]]]): Existing tool schemas to merge with
 
 **Returns:** List of function schemas compatible with OpenAI API
 
 **Example:**
 ```python
 # Get schemas for LLM function calling
-schemas = handler.get_tool_schemas()
+schemas = handler.get_schemas()
 
 # Use with OpenAI
 client.chat.completions.create(
@@ -106,6 +111,10 @@ client.chat.completions.create(
     messages=messages,
     tools=[{"type": "function", "function": schema} for schema in schemas]
 )
+
+# Merge with existing tools
+existing_tools = [{"name": "custom_tool", ...}]
+merged_schemas = handler.get_schemas(merge_with=existing_tools)
 ```
 
 #### set_agent_role()
@@ -113,7 +122,7 @@ client.chat.completions.create(
 Set the agent's role for role-based access control.
 
 ```python
-def set_agent_role(self, role: str) -> None
+def set_agent_role(self, role: Optional[str]) -> None
 ```
 
 **Example:**
@@ -137,6 +146,7 @@ The following tools are available through ToolHandler:
 Retrieve specific context from the shared knowledge base.
 
 **Parameters:**
+
 - `keys` (Optional[List[str]]): Specific context keys to retrieve
 
 **Example:**
@@ -148,34 +158,37 @@ result = handler.handle_tool_call("get_context", keys=["user_preferences"])
 Share context with other agents through topic-based routing.
 
 **Parameters:**
+
 - `key` (str): Context identifier
 - `value` (str): Context data (JSON string for complex data)
-- `topics` (Optional[List[str]]): Topics to broadcast to
-- `ttl` (Optional[int]): Time-to-live in seconds
+- `topics` (List[str]): Topics to broadcast to
+- `ttl_hours` (Optional[float]): Time-to-live in hours (default: 24.0)
 
 **Example:**
 ```python
 result = handler.handle_tool_call("push_context",
-                                  key="customer_update",
-                                  value='{"name": "Acme Corp", "status": "active"}',
-                                  topics=["sales", "support"])
+    key="customer_update",
+    value='{"name": "Acme Corp", "status": "active"}',
+    topics=["sales", "support"])
 ```
 
 ### list_context
 Discover available context keys.
 
 **Parameters:**
-- `pattern` (Optional[str]): Filter pattern for keys
+
+- No parameters required (agent name is automatically injected)
 
 **Example:**
 ```python
-result = handler.handle_tool_call("list_context", pattern="user_*")
+result = handler.handle_tool_call("list_context")
 ```
 
 ### subscribe_to_topics
 Subscribe to topic-based context routing.
 
 **Parameters:**
+
 - `topics` (List[str]): Topics to subscribe to
 
 **Example:**
@@ -188,7 +201,8 @@ result = handler.handle_tool_call("subscribe_to_topics",
 Find available topics and their subscriber counts.
 
 **Parameters:**
-- `pattern` (Optional[str]): Filter pattern for topic names
+
+- No parameters required
 
 **Example:**
 ```python
@@ -199,6 +213,7 @@ result = handler.handle_tool_call("discover_topics")
 Unsubscribe from specific topics.
 
 **Parameters:**
+
 - `topics` (List[str]): Topics to unsubscribe from
 
 **Example:**
@@ -211,6 +226,7 @@ result = handler.handle_tool_call("unsubscribe_from_topics",
 Delete an entire topic and all associated context.
 
 **Parameters:**
+
 - `topic` (str): Name of the topic to delete
 - `confirm` (bool): Confirmation flag (must be True)
 
@@ -298,6 +314,7 @@ def create_restricted_handler(
 ```
 
 **Restriction Levels:**
+
 - **safe**: All tools except destructive ones
 - **minimal**: Only basic context operations
 - **readonly**: No write operations
@@ -421,7 +438,7 @@ handler = ToolHandler(context, "AssistantAgent")
 
 # Get tool schemas
 tools = [{"type": "function", "function": schema} 
-         for schema in handler.get_tool_schemas()]
+         for schema in handler.get_schemas()]
 
 # Use with OpenAI
 response = openai.chat.completions.create(
@@ -451,7 +468,7 @@ context = ContextMesh(user_id="user123")
 handler = ToolHandler(context, "ClaudeAgent")
 
 # Convert schemas to Anthropic format
-tools = handler.get_tool_schemas()
+tools = handler.get_schemas()
 
 # Use with Anthropic
 client = anthropic.Anthropic()

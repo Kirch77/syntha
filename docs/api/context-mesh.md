@@ -99,13 +99,13 @@ context.push("session_token", "abc123", ttl=3600)
 Retrieve a specific context item for an agent.
 
 ```python
-def get(self, key: str, agent_name: str) -> Any
+def get(self, key: str, agent_name: Optional[str] = None) -> Any
 ```
 
 #### Parameters
 
 - **key** (str): The context key to retrieve
-- **agent_name** (str): Name of the requesting agent
+- **agent_name** (Optional[str]): Name of the requesting agent (optional for global context)
 
 #### Returns
 
@@ -118,6 +118,9 @@ The context value, or `None` if not found or not accessible.
 user_prefs = context.get("user_preferences", "ChatAgent")
 if user_prefs:
     print(f"Theme: {user_prefs['theme']}")
+
+# Retrieve global context (no agent name needed)
+status = context.get("api_status")
 ```
 
 ### get_all_for_agent()
@@ -143,6 +146,30 @@ Dictionary mapping context keys to values that the agent can access.
 all_context = context.get_all_for_agent("SalesAgent")
 for key, value in all_context.items():
     print(f"{key}: {value}")
+```
+
+### get_keys_for_agent()
+
+Get all context keys accessible to an agent.
+
+```python
+def get_keys_for_agent(self, agent_name: str) -> List[str]
+```
+
+#### Parameters
+
+- **agent_name** (str): Name of the requesting agent
+
+#### Returns
+
+List of context keys that the agent can access.
+
+#### Example
+
+```python
+# Get all accessible keys for an agent
+keys = context.get_keys_for_agent("SalesAgent")
+print(f"Available keys: {keys}")
 ```
 
 ## Topic Management
@@ -205,31 +232,27 @@ def delete_topic(self, topic: str) -> int
 !!! warning "Destructive Operation"
     This permanently removes the topic, unsubscribes all agents, and deletes associated context items.
 
+#### Returns
+
+Number of context items removed.
+
 ## Utility Methods
 
-### list_keys()
+### remove()
 
-List all context keys accessible to an agent.
-
-```python
-def list_keys(self, agent_name: str) -> List[str]
-```
-
-### exists()
-
-Check if a context key exists and is accessible to an agent.
+Remove a specific context item.
 
 ```python
-def exists(self, key: str, agent_name: str) -> bool
+def remove(self, key: str) -> bool
 ```
 
-### delete()
+#### Parameters
 
-Delete a specific context item.
+- **key** (str): The context key to remove
 
-```python
-def delete(self, key: str) -> bool
-```
+#### Returns
+
+`True` if item was removed, `False` if it didn't exist.
 
 ### clear()
 
@@ -247,7 +270,9 @@ Manually remove expired context items.
 def cleanup_expired(self) -> int
 ```
 
-Returns the number of items removed.
+#### Returns
+
+Number of items removed.
 
 ### size()
 
@@ -268,6 +293,7 @@ def get_stats(self) -> Dict[str, Any]
 #### Returns
 
 Dictionary with statistics:
+
 - `total_items`: Total number of context items
 - `active_items`: Non-expired items
 - `expired_items`: Expired items awaiting cleanup
@@ -282,6 +308,64 @@ Dictionary with statistics:
 stats = context.get_stats()
 print(f"Active items: {stats['active_items']}")
 print(f"Topics: {stats['total_topics']}")
+```
+
+### get_available_keys_by_topic()
+
+Get context keys available to an agent organized by topic.
+
+```python
+def get_available_keys_by_topic(self, agent_name: str) -> Dict[str, List[str]]
+```
+
+#### Parameters
+
+- **agent_name** (str): Name of the requesting agent
+
+#### Returns
+
+Dictionary mapping topic names to lists of available context keys.
+
+#### Example
+
+```python
+# Get context keys organized by topic
+topic_keys = context.get_available_keys_by_topic("SalesAgent")
+for topic, keys in topic_keys.items():
+    print(f"Topic '{topic}': {keys}")
+```
+
+## Agent Permissions
+
+### set_agent_post_permissions()
+
+Set which topics an agent can post to.
+
+```python
+def set_agent_post_permissions(self, agent_name: str, allowed_topics: List[str]) -> None
+```
+
+#### Example
+
+```python
+# Allow agent to post to specific topics
+context.set_agent_post_permissions("SalesAgent", ["sales", "leads"])
+```
+
+### get_agent_post_permissions()
+
+Get topics an agent can post to.
+
+```python
+def get_agent_post_permissions(self, agent_name: str) -> List[str]
+```
+
+### can_agent_post_to_topic()
+
+Check if an agent can post to a specific topic.
+
+```python
+def can_agent_post_to_topic(self, agent_name: str, topic: str) -> bool
 ```
 
 ## Context Manager Support
