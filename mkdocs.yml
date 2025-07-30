@@ -69,8 +69,9 @@ nav:
     - Persistence: api/persistence.md
     - Tool Schemas: api/schemas.md
   - Guides:
-    - Overview: guides/overview.md
+    - Getting Started: guides/overview.md
     - Basics: guides/basics.md
     - Context Management: guides/context.md
     - Tools & Permissions: guides/tools.md
-    - Final Remarks: guides/final-remarks.md 
+    - Advanced Patterns: guides/advanced.md
+    - Real-World Examples: guides/examples.md 
