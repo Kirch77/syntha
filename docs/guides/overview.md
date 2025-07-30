@@ -1,177 +1,185 @@
-# Guides Overview
+# Getting Started with Syntha
 
-Welcome to the Syntha SDK guides! These practical tutorials will help you understand how to effectively use Syntha in your multi-agent systems. Unlike typical documentation that can be overwhelming, these guides focus on real-world usage patterns with working examples you can copy and run immediately.
+Welcome to Syntha! This guide will take you on a step-by-step journey to master context-based multi-agent systems. By the end, you'll understand how to build secure, scalable agent workflows that share information intelligently.
 
-## Why These Guides Exist
+## What You'll Learn
 
-API documentation tells you *what* you can do, but guides show you *how* and *when* to do it. After working with many developers, we've learned that the biggest challenges aren't understanding individual functions—they're understanding how everything fits together and what patterns work best in production.
+These guides are designed as **tutorials**, not reference documentation. Each section builds on the previous one with working examples you can copy and run immediately. You'll learn:
 
-## Context Management Approaches
+1. **Core Concepts** - How context sharing works and why user isolation matters
+2. **Basic Patterns** - Simple context sharing between agents  
+3. **Advanced Routing** - Topic-based vs subscription-based context routing
+4. **Tools & Permissions** - How agents interact with context and access control
+5. **Real-World Integration** - Complete examples with OpenAI and other LLMs
 
-Syntha provides two primary ways to manage context between agents, each with distinct advantages:
+## The Big Picture: Why Syntha Exists
 
-### 1. Topic-Based Context (Recommended for Tools)
+Traditional multi-agent systems struggle with:
+- **Information Silos**: Agents can't share knowledge effectively
+- **Security Risks**: No isolation between different users
+- **Complex Coordination**: Manual agent-to-agent communication
+- **Inconsistent State**: No single source of truth
 
-**How it works:** Agents subscribe to topics and automatically receive relevant context pushed to those topics.
+Syntha solves these problems with a **Context Mesh** - a shared knowledge layer where:
+- Agents push and pull context automatically
+- Users are completely isolated from each other
+- Information routes intelligently based on topics or direct targeting
+- Everything persists across sessions
 
-**Best for:**
-- Agent-to-agent communication through tools
-- Scalable workflows where agents join/leave dynamically  
-- Broadcast scenarios (one agent sharing with many)
-- Domain-specific coordination (sales, support, analytics)
+## User Isolation: The Foundation
 
-**Example pattern:**
-```python
-# Agents subscribe to topics they care about
-sales_agent.subscribe_to_topics(["sales", "customers"])
-support_agent.subscribe_to_topics(["support", "customers"])
-
-# When context is pushed to a topic, subscribers automatically get it
-context.push("new_customer", customer_data, topics=["sales", "support"])
-```
-
-### 2. Subscription-Based Context (For Direct Targeting)
-
-**How it works:** Context is pushed directly to specific named agents.
-
-**Best for:**
-- Private communication between specific agents
-- Sensitive data that should only go to certain agents
-- Direct coordination scenarios
-- Legacy integrations where you know exact agent names
-
-**Example pattern:**
-```python
-# Direct targeting to specific agents
-context.push("confidential_data", secret_info, subscribers=["AdminAgent", "SecurityAgent"])
-```
-
-## Integration Strategies
-
-### Tools vs. Prompts: Choosing Your Approach
-
-Syntha offers two ways to integrate context with your agents:
-
-#### Tool-Based Integration (Agents Control Context)
-Agents actively manage context through function calls:
+**🔐 Critical Security Principle**: Every production deployment MUST use user isolation.
 
 ```python
-# Agent can discover, subscribe, and share context
-handler = ToolHandler(context, "MyAgent")
-result = handler.handle_tool_call("subscribe_to_topics", topics=["sales"])
-```
-
-**Advantages:**
-- Agents have full control over their context
-- Dynamic topic management
-- Works with any LLM that supports function calling
-- Scales well with complex workflows
-
-**Best for:** Multi-agent systems where agents need to actively coordinate
-
-#### Prompt-Based Integration (Context Injected Automatically)
-Context is automatically injected into agent prompts:
-
-```python
-# Context automatically included in prompts
-system_prompt = build_system_prompt("MyAgent", context)
-```
-
-**Advantages:**
-- Simple integration - no function calling needed
-- Works with any LLM (even those without function calling)
-- Transparent to the agent - just appears in prompts
-- Good for simple scenarios
-
-**Best for:** Single agents or simple systems where context is mostly read-only
-
-### Combining Approaches: When and How
-
-You *can* use both tools and prompts together, but be careful about information overload:
-
-**Good combination:**
-- Use prompts for stable, long-term context (user preferences, system config)
-- Use tools for dynamic, workflow-specific context (current tasks, real-time updates)
-
-**Avoid:**
-- Duplicating the same information in both prompts and tools
-- Overwhelming agents with too much context from multiple sources
-
-## Security and User Isolation
-
-One of Syntha's most critical features is user isolation. **Every production deployment must use proper user separation.**
-
-### The Golden Rule: Always Use user_id
-
-```python
-# ✅ CORRECT - Each user gets isolated context
+# ✅ CORRECT - Each user gets their own isolated context
 user1_context = ContextMesh(user_id="user_123")
 user2_context = ContextMesh(user_id="user_456")
 
-# ❌ WRONG - All users share the same context (major security risk)
+# ❌ DANGEROUS - All users share the same context (security risk!)
 shared_context = ContextMesh()  # No user_id!
 ```
 
-### Why User Isolation Matters
+**Why this matters:**
+- **Privacy**: Users can't see each other's data
+- **Security**: Prevents accidental data leaks
+- **Compliance**: Meets GDPR, CCPA, and other data protection requirements
+- **Scalability**: Clean separation enables better performance
 
-- **Privacy:** Users can't see each other's conversations or data
-- **Security:** Prevents accidental data leaks between users
-- **Compliance:** Meets data protection requirements (GDPR, CCPA, etc.)
-- **Scalability:** Clean separation enables better performance and scaling
+## Two Ways to Route Context
 
-## Performance and Persistence
+Syntha provides two powerful routing mechanisms:
 
-### Context Lifecycle Management
-
-Context items can have different lifespans:
-
-- **Permanent:** Configuration, user preferences, long-term knowledge
-- **Session-based:** Temporary data that expires after a session
-- **Time-limited:** Data with explicit TTL (time-to-live)
+### Topic-Based Routing (Recommended)
+Agents subscribe to topics they care about, and context automatically routes to interested parties.
 
 ```python
-# Permanent context
-context.push("user_preferences", prefs)
+# Agents declare their interests
+context.register_agent_topics("SalesAgent", ["sales", "customers"])
+context.register_agent_topics("SupportAgent", ["support", "customers"])
 
-# Session context (expires in 1 hour)
-context.push("session_data", data, ttl=3600)
-
-# Temporary context (expires in 5 minutes)
-context.push("temp_token", token, ttl=300)
+# Push context to topics - all subscribers automatically receive it
+context.push("new_customer", customer_data, topics=["customers"])
 ```
 
-### Best Practices for TTL
+**Best for**: Scalable workflows, agent-to-agent communication, broadcast scenarios
 
-- **Short TTL (minutes):** Temporary tokens, real-time status
-- **Medium TTL (hours):** Session data, current tasks
-- **Long TTL (days):** Cached data, temporary preferences
-- **No TTL:** User preferences, system configuration
+### Subscription-Based Routing (For Private Communication)
+Context goes directly to specific named agents.
 
-## What's Coming Next
+```python
+# Private communication between specific agents
+context.push("api_credentials", secret_data, subscribers=["AuthAgent", "AdminAgent"])
+```
 
-Our guides are structured to build your understanding progressively:
+**Best for**: Sensitive information, private coordination, direct messaging
 
-1. **[Basics](basics.md):** Get started with simple context sharing
-2. **[Context Management](context.md):** Master the context mesh with security best practices
-3. **[Tools & Permissions](tools.md):** Build sophisticated agent coordination with proper access control
-4. **[Final Remarks](final-remarks.md):** Tie everything together with production best practices
+## Two Ways to Use Context
+
+### 1. Tool-Based Integration (Agents Control Context)
+Agents actively manage context through function calls:
+
+```python
+handler = ToolHandler(context, "MyAgent")
+result = handler.handle_tool_call("subscribe_to_topics", topics=["sales"])
+result = handler.handle_tool_call("push_context", key="data", value="info", topics=["sales"])
+```
+
+**Advantages:**
+- Agents have full control
+- Dynamic topic management  
+- Works with any LLM supporting function calling
+- Scales well with complex workflows
+
+### 2. Prompt-Based Integration (Context Injected Automatically)
+Context automatically appears in agent prompts:
+
+```python
+system_prompt = build_system_prompt("MyAgent", context)
+# Prompt now includes all accessible context
+```
+
+**Advantages:**
+- Simple integration
+- Works with any LLM (even without function calling)
+- Transparent to agents
+- Good for simple scenarios
+
+## What Each Tool Does
+
+When you give tools to agents, here's what each one is for:
+
+| Tool | **For Users** | **For AI Agents** |
+|------|---------------|-------------------|
+| `get_context` | Retrieve specific data | Get context they need for current task |
+| `list_context` | See what's available | **Discover what context exists** (avoids pulling everything) |
+| `push_context` | Share information | Share results/findings with other agents |
+| `subscribe_to_topics` | Join conversations | **Subscribe to relevant information streams** |
+| `discover_topics` | Find active topics | **Find what topics exist and who's subscribed** |
+| `unsubscribe_from_topics` | Leave conversations | Stop receiving updates from topics |
+| `delete_topic` | Clean up | Remove entire topics (admin only) |
+
+**Key Insight**: `list_context` is crucial for AI efficiency. It lets agents see what's available without pulling all context (which wastes tokens). They can then selectively use `get_context` for only what they need.
+
+## Persistence: Only Context Mesh Needed
+
+**Simple Rule**: Use Context Mesh persistence instead of separate databases.
+
+```python
+# ✅ RECOMMENDED - Context Mesh handles persistence
+context = ContextMesh(
+    user_id="user123",
+    enable_persistence=True,
+    db_backend="sqlite",  # or "postgresql" 
+    db_path="context.db"
+)
+```
+
+**Why**: Context Mesh already handles:
+- User isolation
+- TTL (time-to-live) expiration
+- Topic-based routing
+- Access control
+
+Adding a separate database creates complexity without benefits.
+
+## Roles and Permissions: When You Need Them
+
+**Simple Answer**: Most applications don't need complex permissions.
+
+**Use roles when**:
+- Different agents should have different capabilities
+- You want to prevent agents from deleting topics
+- You need audit trails of who did what
+- You have untrusted or experimental agents
+
+**Available roles**:
+- `readonly`: Can only view context and discover topics
+- `contributor`: Can read, write, and manage subscriptions  
+- `moderator`: Contributor + can manage others' subscriptions
+- `admin`: Full access including destructive operations
+
+```python
+# Only give delete permissions to trusted agents
+admin_handler = create_role_based_handler(context, "AdminAgent", "admin")
+worker_handler = create_role_based_handler(context, "WorkerAgent", "contributor")
+```
+
+**Skip permissions if**: All your agents are trusted and you want simplicity.
+
+## What's Next
+
+Ready to start building? Our guides follow this progression:
+
+1. **[Basics](basics.md)** - Get your first context mesh working
+2. **[Context Management](context.md)** - Master topic-based and subscription routing  
+3. **[Tools & Permissions](tools.md)** - Build sophisticated agent interactions
+4. **[Advanced Patterns](advanced.md)** - Combine approaches for complex workflows
+5. **[Real-World Examples](examples.md)** - Complete integrations with OpenAI and more
 
 Each guide includes:
-- Working code examples you can copy and run
-- Common pitfalls and how to avoid them
-- Performance tips and best practices
-- Real-world usage patterns
+- ✅ **Working code** you can copy and run immediately
+- 🎯 **Clear explanations** of when and why to use each pattern
+- ⚠️ **Common pitfalls** and how to avoid them
+- 🏗️ **Complete examples** that tie everything together
 
-!!! tip "Follow the Order"
-    These guides build on each other. Even if you're experienced, we recommend reading them in order to understand how the concepts connect.
-
-## Getting Help
-
-As you work through these guides:
-
-- All code examples are tested and should work immediately
-- If something seems wrong or confusing, it might be - look for red warning boxes
-- Each guide focuses on practical usage, not exhaustive API coverage
-- For complete API details, see the [API Reference](../api/overview.md)
-
-Ready to start building? Let's begin with the [Basics](basics.md)!
+Let's start with the [Basics](basics.md)!
