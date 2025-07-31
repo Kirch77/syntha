@@ -240,7 +240,7 @@ class ContextMesh:
 
             # Use the combined list
             if target_agents:
-                final_subscribers = list(target_agents)
+                final_subscribers: Optional[List[str]] = list(target_agents)
             else:
                 # If we have topics but no subscribers, use the special marker
                 # This ensures topic-based context with no subscribers is not accessible
