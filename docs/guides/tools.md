@@ -1,135 +1,349 @@
-# Tools & Permissions: Empowering Your Agents
+# Tools Guide: Give Your Agents Context Superpowers
 
-This guide shows you how to give agents powerful tools to manage context, and when to use permissions to control what they can do. You'll learn what each tool is for, why permissions matter, and how to build sophisticated agent coordination systems.
+This guide shows you exactly which tools to give your agents and when. You'll learn practical patterns that make agents smarter and more efficient.
 
-## Understanding the Tool Ecosystem
-
-When you give tools to agents, you're giving them the ability to actively manage their own context. This is different from just injecting context into prompts - agents become active participants in the information flow.
-
-### Tools vs Direct API: When to Use Each
-
-**Use Tools When:**
-
-- Agents need to actively discover and manage context
-- You want agents to coordinate with each other
-- Working with LLMs that support function calling
-- Building dynamic, multi-agent workflows
-
-**Use Direct API When:**
-
-- You're building system infrastructure
-- Setting up initial configurations
-- Managing agents from your application code
-- You need precise control over context flow
-
-## What Each Tool Does: User vs AI Perspective
-
-Understanding what each tool is **really** for helps you decide which ones to give to your agents:
-
-| Tool | **For Users** | **For AI Agents** | **Why Give It** |
-|------|---------------|-------------------|-----------------|
-| `get_context` | Retrieve specific data | Get context they need for current task | Always - agents need to access information |
-| `list_context` | See what's available | **Discover what exists without pulling everything** | Critical - prevents token waste |
-| `push_context` | Share information | Share results/findings with other agents | Usually - enables agent collaboration |
-| `subscribe_to_topics` | Join conversations | **Subscribe to relevant information streams** | Often - lets agents self-organize |
-| `discover_topics` | Find active topics | **Find what topics exist and who's listening** | Often - helps agents find the right audience |
-| `unsubscribe_from_topics` | Leave conversations | Stop receiving irrelevant updates | Sometimes - prevents information overload |
-| `delete_topic` | Clean up | Remove entire topics and all context | Rarely - only for trusted/admin agents |
-
-**Key Insight**: `list_context` is the most important tool for AI efficiency. It lets agents see what's available without pulling all context (which wastes tokens). They can then selectively use `get_context` for only what they need.
-
-## Setting Up Basic Agent Tools
-
-Let's start with a simple example:
+## Quick Start: Essential Tools Every Agent Needs
 
 ```python
 from syntha import ContextMesh, ToolHandler
 
-# Create context and tool handler
-context = ContextMesh(user_id="company_workspace", enable_persistence=False)
-handler = ToolHandler(context, agent_name="SalesAgent")
-
-# Get the tool schemas to give to your LLM
-tool_schemas = handler.get_schemas()
-print(f"Available tools: {[schema['name'] for schema in tool_schemas]}")
-
-# Simulate agent workflow
-print("\n=== Agent Workflow ===")
-
-# Step 1: Agent subscribes to relevant topics
-result = handler.handle_tool_call("subscribe_to_topics", topics=["sales", "customers"])
-print(f"1. Subscribe: {result['message']}")
-
-# Step 2: Agent discovers what topics exist
-result = handler.handle_tool_call("discover_topics")
-print(f"2. Topics found: {result['topics']}")
-
-# Step 3: Agent shares information
-result = handler.handle_tool_call("push_context", 
-    key="new_lead", 
-    value='{"company": "TechCorp", "value": 75000, "status": "qualified"}',
-    topics=["sales", "customers"]
-)
-print(f"3. Push result: {result['message']}")
-
-# Step 4: Agent lists available context (efficient discovery)
-result = handler.handle_tool_call("list_context")
-print(f"4. Available context: {result['keys']}")
-
-# Step 5: Agent gets specific context
-result = handler.handle_tool_call("get_context", keys=["new_lead"])
-print(f"5. Retrieved: {result['context']}")
-
-context.close()
-```
-
-## The Smart Agent Pattern: List Before Get
-
-The most efficient pattern for AI agents is **list first, then get selectively**:
-
-```python
-from syntha import ContextMesh, ToolHandler
-
-context = ContextMesh(user_id="smart_agent_demo", enable_persistence=False)
-
-# Set up some context first
-context.register_agent_topics("SmartAgent", ["projects", "tasks", "updates"])
-context.push("project_alpha", {"status": "in_progress", "deadline": "2024-03-01"}, topics=["projects"])
-context.push("task_123", {"priority": "high", "assigned_to": "SmartAgent"}, topics=["tasks"])
-context.push("daily_standup", {"meeting_time": "09:00", "participants": 15}, topics=["updates"])
-context.push("project_beta", {"status": "planning", "budget": 50000}, topics=["projects"])
-
+# Create context and handler
+context = ContextMesh(user_id="your_user", enable_persistence=True)
 handler = ToolHandler(context, agent_name="SmartAgent")
 
-print("=== Smart Agent Pattern ===")
+# Get tools for your agent (these are the essentials)
+essential_tools = handler.get_schemas()
 
-# ❌ INEFFICIENT: Get all context (wastes tokens)
-# result = handler.handle_tool_call("get_context")  # Don't do this!
+# Give these to your LLM - your agent now has context superpowers!
+```
 
-# ✅ EFFICIENT: List first to see what's available
-result = handler.handle_tool_call("list_context")
-available_keys = result['keys']
-print(f"Available context: {available_keys}")
+## The Smart Agent Pattern: List → Get → Push
 
-# Agent can now make smart decisions about what to retrieve
-# For example, only get high-priority items
-priority_keys = [key for key in available_keys if 'task' in key or 'project_alpha' in key]
-result = handler.handle_tool_call("get_context", keys=priority_keys)
-print(f"Retrieved priority items: {list(result['context'].keys())}")
+The most efficient pattern for AI agents:
+
+```python
+# 1. ALWAYS start by listing what's available (saves tokens!)
+available = agent.use_tool("list_context")
+
+# 2. Get only what you need (selective retrieval)
+if "user_preferences" in available["keys"]:
+    context = agent.use_tool("get_context", keys=["user_preferences"])
+
+# 3. Share your findings (enable collaboration)  
+agent.use_tool("push_context", 
+               key="analysis_results", 
+               value="Key insights: ...",
+               topics=["analysis", "results"])
+```
+
+## Tool Decision Matrix: Which Tools to Give When
+
+| Agent Type | Essential Tools | Optional Tools | Skip These |
+|------------|----------------|----------------|------------|
+| **Single Agent** | `get_context`, `push_context`, `list_context` | `subscribe_to_topics` | `discover_topics`, `unsubscribe_from_topics` |
+| **Multi-Agent Team** | All tools | None | `delete_topic` (unless admin) |
+| **Read-Only Agent** | `get_context`, `list_context` | `subscribe_to_topics` | `push_context`, `delete_topic` |
+| **Admin Agent** | All tools | None | None |
+
+## Practical Integration Patterns
+
+### Pattern 1: Agent Discovery and Self-Organization
+
+```python
+from syntha import ContextMesh, ToolHandler
+
+context = ContextMesh(user_id="self_organizing", enable_persistence=False)
+
+# Create multiple agents
+agents = {
+    "DataAgent": ToolHandler(context, "DataAgent"),
+    "AnalysisAgent": ToolHandler(context, "AnalysisAgent"),
+    "ReportAgent": ToolHandler(context, "ReportAgent")
+}
+
+print("=== Self-Organizing Agent Pattern ===")
+
+# Step 1: Agents discover existing topics
+for name, handler in agents.items():
+    result = handler.handle_tool_call("discover_topics")
+    print(f"{name} discovers topics: {result.get('topics', [])}")
+
+# Step 2: Agents self-organize by subscribing to relevant topics
+agents["DataAgent"].handle_tool_call("subscribe_to_topics", topics=["data", "raw_input"])
+agents["AnalysisAgent"].handle_tool_call("subscribe_to_topics", topics=["data", "analysis"])
+agents["ReportAgent"].handle_tool_call("subscribe_to_topics", topics=["analysis", "reports"])
+
+# Step 3: Data flows through the pipeline
+agents["DataAgent"].handle_tool_call("push_context",
+    key="raw_data",
+    value='{"sales": [100, 200, 150], "date": "2024-01-15"}',
+    topics=["data"]
+)
+
+agents["AnalysisAgent"].handle_tool_call("push_context",
+    key="analysis_result", 
+    value='{"trend": "increasing", "growth_rate": 0.25}',
+    topics=["analysis"]
+)
+
+agents["ReportAgent"].handle_tool_call("push_context",
+    key="final_report",
+    value='{"summary": "Sales trending up 25%", "recommendation": "Increase inventory"}',
+    topics=["reports"]
+)
+
+# Step 4: Each agent sees only relevant information
+for name, handler in agents.items():
+    result = handler.handle_tool_call("list_context")
+    print(f"{name} sees: {result['keys']}")
 
 context.close()
 ```
 
-**Why this matters:**
+### Pattern 2: Selective Tool Distribution
 
-- Saves tokens (and money) by not retrieving unnecessary context
-- Helps agents focus on relevant information
-- Scales better as context grows
-- Gives agents control over their information diet
+Not all agents need all tools. Here's how to give different capabilities:
 
-## Permissions and Roles: When You Need Them
+```python
+from syntha import ContextMesh, create_restricted_handler
+
+context = ContextMesh(user_id="selective_tools", enable_persistence=False)
+
+print("=== Selective Tool Distribution ===")
+
+# Create agents with only the tools they need
+
+# Discovery agent: Only needs to find and read
+discovery_handler = create_restricted_handler(
+    context, 
+    "DiscoveryAgent", 
+    allowed_tools=["list_context", "get_context", "discover_topics"]
+)
+
+# Worker agent: Can read, write, and subscribe, but not delete
+worker_handler = create_restricted_handler(
+    context,
+    "WorkerAgent",
+    allowed_tools=["list_context", "get_context", "push_context", "subscribe_to_topics"]
+)
+
+# Cleanup agent: Has destructive powers
+cleanup_handler = create_restricted_handler(
+    context,
+    "CleanupAgent", 
+    allowed_tools=["list_context", "discover_topics", "delete_topic"]
+)
+
+# Test the restrictions
+print(f"Discovery tools: {discovery_handler.get_available_tools()}")
+print(f"Worker tools: {worker_handler.get_available_tools()}")
+print(f"Cleanup tools: {cleanup_handler.get_available_tools()}")
+
+# Worker sets up topics and data
+worker_handler.handle_tool_call("subscribe_to_topics", topics=["work"])
+worker_handler.handle_tool_call("push_context",
+    key="completed_task",
+    value='{"task_id": "123", "status": "done"}',
+    topics=["work"]
+)
+
+# Discovery agent can find and read
+result = discovery_handler.handle_tool_call("discover_topics")
+print(f"Discovery found topics: {result['topics']}")
+
+# Cleanup agent can remove topics when needed
+# cleanup_handler.handle_tool_call("delete_topic", topic="work", confirm=True)
+
+context.close()
+```
+
+### Pattern 3: Agent Hierarchies and Escalation
+
+```python
+from syntha import ContextMesh, create_role_based_handler
+
+context = ContextMesh(user_id="hierarchy", enable_persistence=False)
+
+# Create agent hierarchy
+junior_agent = create_role_based_handler(context, "JuniorAgent", "readonly")
+senior_agent = create_role_based_handler(context, "SeniorAgent", "contributor") 
+manager_agent = create_role_based_handler(context, "ManagerAgent", "admin")
+
+print("=== Agent Hierarchy Pattern ===")
+
+# Manager sets up initial context
+manager_agent.handle_tool_call("push_context",
+    key="project_guidelines",
+    value='{"quality_threshold": 0.95, "deadline": "2024-03-01"}',
+    topics=["guidelines"]
+)
+
+# Senior agent does work and reports
+senior_agent.handle_tool_call("subscribe_to_topics", topics=["guidelines", "work"])
+senior_agent.handle_tool_call("push_context",
+    key="work_in_progress",
+    value='{"feature": "user_auth", "progress": 80, "quality": 0.92}',
+    topics=["work"]
+)
+
+# Junior agent can only observe
+junior_result = junior_agent.handle_tool_call("list_context")
+print(f"Junior can see: {junior_result['keys']}")
+
+# Senior agent notices quality issue and escalates
+senior_agent.handle_tool_call("push_context",
+    key="quality_concern",
+    value='{"issue": "Quality below threshold", "current": 0.92, "required": 0.95}',
+    topics=["escalation"]
+)
+
+# Manager can see everything and take action
+manager_result = manager_agent.handle_tool_call("list_context") 
+print(f"Manager sees: {manager_result['keys']}")
+
+context.close()
+```
+
+## When to Use Permissions and Roles
 
 **Simple Answer**: Most applications don't need complex permissions. Use them when you have specific security or control requirements.
+
+### Use Permissions When:
+
+- **Multi-tenant applications**: Different users should see different data
+- **Agent hierarchies**: Junior agents shouldn't delete senior agent work
+- **Production safety**: Prevent agents from accidentally destroying important data
+- **Compliance requirements**: Audit trails and access controls are mandatory
+
+### Skip Permissions When:
+
+- **Single user applications**: Just use different `user_id` values
+- **Trusted environments**: All agents are working toward the same goal
+- **Prototyping**: Keep it simple until you need the complexity
+
+## Tool Performance Tips
+
+### 1. Use `list_context` First (Always!)
+
+```python
+# ❌ Inefficient - pulls all context
+context_result = handler.handle_tool_call("get_context")
+
+# ✅ Efficient - see what's available first
+available = handler.handle_tool_call("list_context")
+if "user_preferences" in available["keys"]:
+    context_result = handler.handle_tool_call("get_context", keys=["user_preferences"])
+```
+
+### 2. Set Smart TTL Values
+
+```python
+# Short-lived data (user session)
+handler.handle_tool_call("push_context",
+    key="current_session",
+    value=session_data,
+    ttl_hours=8  # Expires after 8 hours
+)
+
+# Long-lived data (user preferences)
+handler.handle_tool_call("push_context", 
+    key="user_preferences",
+    value=preferences,
+    ttl_hours=168  # Expires after 1 week
+)
+```
+
+### 3. Use Topics for Organization
+
+```python
+# Organize by function
+handler.handle_tool_call("subscribe_to_topics", topics=["user_data", "preferences"])
+
+# Organize by urgency  
+handler.handle_tool_call("subscribe_to_topics", topics=["urgent", "normal", "low_priority"])
+
+# Organize by workflow stage
+handler.handle_tool_call("subscribe_to_topics", topics=["input", "processing", "output"])
+```
+
+## Common Patterns Summary
+
+### The Efficient Agent (Most Common)
+
+```python
+# 1. List what's available (saves tokens)
+available = handler.handle_tool_call("list_context")
+
+# 2. Get only what you need
+relevant_keys = [k for k in available["keys"] if "user" in k]
+if relevant_keys:
+    context = handler.handle_tool_call("get_context", keys=relevant_keys)
+
+# 3. Do your work with context
+
+# 4. Share results for other agents
+handler.handle_tool_call("push_context",
+    key="analysis_result",
+    value=results,
+    topics=["analysis"]
+)
+```
+
+### The Team Player (Multi-Agent)
+
+```python
+# Subscribe to team topics
+handler.handle_tool_call("subscribe_to_topics", topics=["team", "project_alpha"])
+
+# Check what teammates have shared
+available = handler.handle_tool_call("list_context")
+
+# Share your contributions
+handler.handle_tool_call("push_context",
+    key="my_contribution",
+    value=work_result,
+    topics=["team", "project_alpha"]
+)
+```
+
+### The Explorer (Discovery-Focused)
+
+```python
+# Find active topics
+topics_result = handler.handle_tool_call("discover_topics")
+active_topics = topics_result.get("topics", [])
+
+# Join interesting conversations
+relevant_topics = [t for t in active_topics if "research" in t]
+if relevant_topics:
+    handler.handle_tool_call("subscribe_to_topics", topics=relevant_topics)
+```
+
+## Quick Reference: Tool Cheat Sheet
+
+| Tool | When to Use | Performance Impact |
+|------|-------------|-------------------|
+| `list_context` | **Always first!** | Low - just returns keys |
+| `get_context` | After listing, get specific items | Medium - depends on data size |
+| `push_context` | Share results, save for later | Low - async operation |
+| `subscribe_to_topics` | Multi-agent setups | Low - just updates subscriptions |
+| `discover_topics` | Find existing conversations | Low - returns topic list |
+| `unsubscribe_from_topics` | Reduce noise | Low - updates subscriptions |
+| `delete_topic` | Cleanup, admin tasks | Medium - removes all data |
+
+## What You've Learned
+
+You now know:
+
+- ✅ **Which tools to give which agents** - Use the decision matrix
+- ✅ **The smart agent pattern** - List → Get → Push
+- ✅ **When to use permissions** - Security and hierarchy scenarios
+- ✅ **Performance optimization** - List first, selective retrieval
+- ✅ **Common integration patterns** - Self-organization, hierarchies, teams
+
+**Your agents are now ready to be context-aware and efficient!**
+
+Next: Check out the [Framework Integration Guide](examples.md) to see how to add these tools to your existing LangChain, LangGraph, or Agno agents.
 
 ### When to Use Permissions
 

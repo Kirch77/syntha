@@ -1,695 +1,1105 @@
-# Real-World Examples: Complete Integrations
+# Framework Integration Guide: Connect Syntha to Your Existing Tools
 
-This guide provides complete, production-ready examples you can use immediately. Each example includes full working code, error handling, and best practices for real applications.
+This guide shows you how to seamlessly integrate Syntha with your existing frameworks and tools. You'll learn practical patterns that work immediately in production environments.
 
-## OpenAI Integration: Complete Working Example
+## Quick Start: Add Context to Any Agent in 3 Steps
 
-Here's a complete example showing how to integrate Syntha with OpenAI, including actual API calls and proper context management.
-
-### Basic OpenAI Integration
+Want to add powerful context management to an existing agent? Here's how:
 
 ```python
-import openai
+from syntha import ContextMesh, ToolHandler
+
+# Step 1: Create context for your user/workspace
+context = ContextMesh(user_id="your_user_id", enable_persistence=True)
+
+# Step 2: Create a tool handler for your agent
+handler = ToolHandler(context, agent_name="YourAgent")
+
+# Step 3: Add Syntha tools to your existing tools
+existing_tools = [...your existing tools...]
+all_tools = handler.get_schemas(merge_with=existing_tools)
+
+# That's it! Your agent now has context management superpowers
+```
+
+## Integration Patterns
+
+### Pattern 1: Non-Destructive Integration
+
+Syntha never modifies your existing tools. It adds context capabilities alongside them:
+
+```python
+# Your existing tools stay exactly the same
+existing_tools = [
+    {"name": "send_email", "description": "Send an email", ...},
+    {"name": "get_weather", "description": "Get weather data", ...}
+]
+
+# Syntha tools are added automatically
+handler = ToolHandler(context, "MyAgent")
+combined_tools = handler.get_schemas(merge_with=existing_tools)
+
+# Result: existing_tools + syntha_context_tools
+print(f"Before: {len(existing_tools)} tools")
+print(f"After: {len(combined_tools)} tools")  # More tools, same functionality
+```
+
+### Pattern 2: Automatic Conflict Resolution
+
+If tool names conflict, Syntha automatically renames to avoid issues:
+
+```python
+# If you already have a "get_context" tool, Syntha becomes "syntha_get_context"
+existing_tools = [{"name": "get_context", "description": "My existing tool"}]
+combined_tools = handler.get_schemas(merge_with=existing_tools)
+
+# Your tool: "get_context" 
+# Syntha tool: "syntha_get_context"
+# No conflicts!
+```
+
+## Framework-Specific Integrations
+
+### LangChain Integration: Complete Workflow
+
+LangChain is perfect for building complex agent workflows. Here's how to add Syntha's context management:
+
+```python
+from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.tools import tool
+from langchain_openai import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+from syntha import ContextMesh, ToolHandler
 import json
-import os
-from syntha import ContextMesh, ToolHandler, build_system_prompt
 
-class SynthaOpenAIAgent:
-    """Complete OpenAI integration with Syntha context management"""
-    
-    def __init__(self, user_id: str, agent_name: str, api_key: str):
-        self.client = openai.OpenAI(api_key=api_key)
-        self.context = ContextMesh(
-            user_id=user_id,
-            enable_persistence=True,
-            db_backend="sqlite",
-            db_path=f"context_{user_id}.db"
-        )
-        self.handler = ToolHandler(self.context, agent_name)
-        self.agent_name = agent_name
-        
-        # Subscribe to relevant topics
-        self.handler.handle_tool_call("subscribe_to_topics", 
-                                      topics=["conversations", "user_data"])
-    
-    def chat(self, user_message: str, use_context: bool = True) -> str:
-        """Chat with OpenAI using Syntha context"""
-        
-        # Build messages with context
-        messages = []
-        
-        if use_context:
-            # Add system prompt with context
-            system_prompt = build_system_prompt(self.agent_name, self.context)
-            messages.append({"role": "system", "content": system_prompt})
-        else:
-            messages.append({"role": "system", "content": f"You are {self.agent_name}, a helpful assistant."})
-        
-        # Add user message
-        messages.append({"role": "user", "content": user_message})
-        
-        # Get available tools
-        tools = [{"type": "function", "function": schema} 
-                 for schema in self.handler.get_schemas()]
-        
-        try:
-            # Call OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4",
-                messages=messages,
-                tools=tools,
-                tool_choice="auto"
-            )
-            
-            message = response.choices[0].message
-            
-            # Handle tool calls if any
-            if message.tool_calls:
-                # Add assistant message with tool calls
-                messages.append({
-                    "role": "assistant",
-                    "content": message.content,
-                    "tool_calls": [tc.model_dump() for tc in message.tool_calls]
-                })
-                
-                # Process each tool call
-                for tool_call in message.tool_calls:
-                    function_name = tool_call.function.name
-                    function_args = json.loads(tool_call.function.arguments)
-                    
-                    # Execute the tool call
-                    result = self.handler.handle_tool_call(function_name, **function_args)
-                    
-                    # Add tool result to messages
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": json.dumps(result)
-                    })
-                
-                # Get final response after tool calls
-                final_response = self.client.chat.completions.create(
-                    model="gpt-4",
-                    messages=messages
-                )
-                
-                final_message = final_response.choices[0].message.content
-            else:
-                final_message = message.content
-            
-            # Store conversation in context
-            self.handler.handle_tool_call("push_context",
-                key=f"conversation_{int(time.time())}",
-                value=json.dumps({
-                    "user_message": user_message,
-                    "assistant_response": final_message,
-                    "timestamp": time.time()
-                }),
-                topics=["conversations"],
-                ttl_hours=24
-            )
-            
-            return final_message
-            
-        except Exception as e:
-            return f"Error: {str(e)}"
-    
-    def add_user_context(self, key: str, value: any, ttl_hours: float = None):
-        """Add context about the user"""
-        self.handler.handle_tool_call("push_context",
-            key=key,
-            value=json.dumps(value) if not isinstance(value, str) else value,
-            topics=["user_data"],
-            ttl_hours=ttl_hours
-        )
-    
-    def close(self):
-        """Clean up resources"""
-        self.context.close()
+# Step 1: Your existing LangChain tools (unchanged)
+@tool
+def send_email(to: str, subject: str, body: str) -> str:
+    """Send an email to someone."""
+    return f"Email sent to {to} with subject '{subject}'"
 
-# Example usage
-def openai_example():
-    """Complete OpenAI integration example"""
+@tool  
+def search_web(query: str) -> str:
+    """Search the web for information."""
+    return f"Search results for: {query}"
+
+# Step 2: Create Syntha context management
+context = ContextMesh(user_id="langchain_user", enable_persistence=True)
+syntha_handler = ToolHandler(context, agent_name="LangChainAgent")
+
+# Step 3: Combine tools (automatic integration)
+existing_tools = [send_email, search_web]
+syntha_tools = syntha_handler.get_langchain_tools()  # Convert to LangChain format
+all_tools = existing_tools + syntha_tools
+
+print(f"LangChain Tools: {len(existing_tools)}")
+print(f"Syntha Tools: {len(syntha_tools)}")
+print(f"Combined Tools: {len(all_tools)}")
+
+# Step 4: Create LangChain agent with context awareness
+llm = ChatOpenAI(model="gpt-4", temperature=0)
+
+# Enhanced prompt that leverages context
+prompt = ChatPromptTemplate.from_messages([
+    ("system", """You are a helpful assistant with access to context management tools.
     
-    # Get API key from environment (never hardcode!)
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Please set OPENAI_API_KEY environment variable")
-        return
+    IMPORTANT: Before answering questions, use list_context to see what information is available,
+    then use get_context to retrieve relevant information. This makes your responses much more helpful.
     
-    print("=== OpenAI + Syntha Integration ===")
+    When you learn new information, use push_context to save it for future conversations.
+    Use subscribe_to_topics to organize information by topics like 'emails', 'research', 'tasks'.
+    """),
+    ("human", "{input}"),
+    ("placeholder", "{agent_scratchpad}"),
+])
+
+# Create the agent
+agent = create_openai_functions_agent(llm, all_tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=all_tools, verbose=True)
+
+# Step 5: Use the context-aware agent
+def run_langchain_example():
+    print("\n=== LangChain + Syntha Integration ===")
     
-    # Create agent
-    agent = SynthaOpenAIAgent(
-        user_id="demo_user",
-        agent_name="PersonalAssistant",
-        api_key=api_key
+    # Agent subscribes to topics
+    result1 = agent_executor.invoke({
+        "input": "Subscribe to topics 'emails' and 'research' so I can organize information."
+    })
+    print(f"Subscribe result: {result1['output']}")
+    
+    # Agent saves information with context
+    result2 = agent_executor.invoke({
+        "input": "I'm working on a project about AI in healthcare. Save this information and send an email to alice@company.com about our research progress."
+    })
+    print(f"Research + Email result: {result2['output']}")
+    
+    # Agent retrieves and uses context
+    result3 = agent_executor.invoke({
+        "input": "What information do I have about my current projects? Use the context tools to check."
+    })
+    print(f"Context retrieval result: {result3['output']}")
+    
+    # Agent builds on previous context
+    result4 = agent_executor.invoke({
+        "input": "Search for recent developments in AI healthcare applications and add the findings to my research context."
+    })
+    print(f"Research expansion result: {result4['output']}")
+
+# Run the example
+run_langchain_example()
+context.close()
+```
+
+**What's happening here:**
+
+1. **Non-destructive**: Your existing LangChain tools (`send_email`, `search_web`) work exactly as before
+2. **Automatic conversion**: `get_langchain_tools()` converts Syntha tools to LangChain format
+3. **Context-aware prompting**: The agent knows to use context tools for better responses
+4. **Persistent memory**: Information persists across conversations and tool calls
+
+### LangGraph Integration: Multi-Agent Workflows
+
+LangGraph excels at complex multi-agent workflows. Here's how to add shared context:
+
+```python
+from langgraph.graph import StateGraph, END
+from langgraph.prebuilt import ToolExecutor
+from langchain_openai import ChatOpenAI
+from langchain.tools import tool
+from syntha import ContextMesh, ToolHandler
+from typing import TypedDict, List
+import json
+
+# Step 1: Define workflow state
+class WorkflowState(TypedDict):
+    messages: List[str]
+    current_task: str
+    context_updates: List[dict]
+
+# Step 2: Your existing LangGraph tools
+@tool
+def analyze_data(data: str) -> str:
+    """Analyze data and return insights."""
+    return f"Analysis of {data}: Key insights found"
+
+@tool
+def generate_report(insights: str) -> str:  
+    """Generate a report from insights."""
+    return f"Report generated based on: {insights}"
+
+# Step 3: Set up Syntha for multi-agent context sharing
+context = ContextMesh(user_id="langgraph_workflow", enable_persistence=True)
+
+# Create handlers for different agents in the workflow
+researcher_handler = ToolHandler(context, agent_name="ResearcherAgent")
+analyst_handler = ToolHandler(context, agent_name="AnalystAgent") 
+reporter_handler = ToolHandler(context, agent_name="ReporterAgent")
+
+# Step 4: Create workflow nodes with context integration
+def researcher_node(state: WorkflowState):
+    """Research agent that gathers and shares information."""
+    print("🔍 Researcher Agent working...")
+    
+    # Subscribe to relevant topics
+    researcher_handler.handle_tool_call("subscribe_to_topics", 
+                                       topics=["research", "data", "findings"])
+    
+    # Simulate research work
+    research_data = "Market trends show 40% growth in AI adoption"
+    
+    # Share findings with other agents
+    result = researcher_handler.handle_tool_call("push_context",
+        key="market_research",
+        value=research_data,
+        topics=["research", "data"]
     )
     
-    # Add some user context
-    agent.add_user_context("user_profile", {
-        "name": "John Doe",
-        "role": "Software Engineer",
-        "interests": ["AI", "Python", "productivity"]
-    })
-    
-    agent.add_user_context("current_projects", [
-        "Building a chatbot",
-        "Learning about multi-agent systems",
-        "Optimizing database queries"
-    ])
-    
-    # Have a conversation
-    response1 = agent.chat("What are my current projects?")
-    print(f"Assistant: {response1}")
-    
-    response2 = agent.chat("Can you help me prioritize them based on my interests?")
-    print(f"Assistant: {response2}")
-    
-    # Add more context during conversation
-    agent.add_user_context("meeting_tomorrow", {
-        "title": "Project Review",
-        "time": "10:00 AM",
-        "attendees": ["Alice", "Bob", "Charlie"]
-    }, ttl_hours=24)
-    
-    response3 = agent.chat("What do I have scheduled for tomorrow?")
-    print(f"Assistant: {response3}")
-    
-    # Clean up
-    agent.close()
+    state["messages"].append(f"Researcher: {research_data}")
+    state["context_updates"].append(result)
+    return state
 
-# Run the example (uncomment if you have an API key)
-# openai_example()
-```
-
-### Multi-Agent OpenAI System
-
-```python
-import openai
-import json
-import os
-import time
-from syntha import ContextMesh, ToolHandler, create_role_based_handler
-
-class MultiAgentOpenAISystem:
-    """Multi-agent system with OpenAI integration"""
+def analyst_node(state: WorkflowState):
+    """Analyst agent that processes shared research data."""
+    print("📊 Analyst Agent working...")
     
-    def __init__(self, user_id: str, api_key: str):
-        self.client = openai.OpenAI(api_key=api_key)
-        self.context = ContextMesh(
-            user_id=user_id,
-            enable_persistence=True,
-            db_backend="sqlite",
-            db_path=f"multi_agent_{user_id}.db"
-        )
-        self.agents = {}
-        
-        # Create specialized agents
-        self._setup_agents()
+    # Subscribe to research topics
+    analyst_handler.handle_tool_call("subscribe_to_topics",
+                                    topics=["research", "data", "analysis"])
     
-    def _setup_agents(self):
-        """Set up different types of agents"""
-        
-        # Research agent - can read and write research data
-        research_handler = create_role_based_handler(
-            self.context, "ResearchAgent", "contributor"
-        )
-        research_handler.handle_tool_call("subscribe_to_topics", 
-                                          topics=["research", "data", "analysis"])
-        
-        # Writing agent - focuses on content creation
-        writing_handler = create_role_based_handler(
-            self.context, "WritingAgent", "contributor"
-        )
-        writing_handler.handle_tool_call("subscribe_to_topics",
-                                         topics=["writing", "content", "research"])
-        
-        # Review agent - can see everything but focused on quality
-        review_handler = create_role_based_handler(
-            self.context, "ReviewAgent", "contributor"
-        )
-        review_handler.handle_tool_call("subscribe_to_topics",
-                                        topics=["writing", "content", "review"])
-        
-        self.agents = {
-            "researcher": {
-                "handler": research_handler,
-                "system_prompt": "You are a research specialist. Your job is to gather and analyze information, then share your findings with the team using context tools."
-            },
-            "writer": {
-                "handler": writing_handler,
-                "system_prompt": "You are a content writer. You create high-quality content based on research data and share drafts for review."
-            },
-            "reviewer": {
-                "handler": review_handler,
-                "system_prompt": "You are a content reviewer. You review drafts and provide feedback to improve quality."
-            }
-        }
+    # Get research data from context
+    context_result = analyst_handler.handle_tool_call("get_context", 
+                                                     keys=["market_research"])
     
-    def agent_chat(self, agent_name: str, message: str) -> str:
-        """Have an agent process a message"""
-        
-        if agent_name not in self.agents:
-            return f"Unknown agent: {agent_name}"
-        
-        agent = self.agents[agent_name]
-        handler = agent["handler"]
-        
-        # Build messages with system prompt and context
-        messages = [
-            {"role": "system", "content": agent["system_prompt"]},
-            {"role": "user", "content": message}
-        ]
-        
-        # Get tools for this agent
-        tools = [{"type": "function", "function": schema} 
-                 for schema in handler.get_schemas()]
-        
-        try:
-            # Call OpenAI
-            response = self.client.chat.completions.create(
-                model="gpt-4",
-                messages=messages,
-                tools=tools,
-                tool_choice="auto"
-            )
-            
-            message_obj = response.choices[0].message
-            
-            # Handle tool calls
-            if message_obj.tool_calls:
-                # Process tool calls
-                for tool_call in message_obj.tool_calls:
-                    function_name = tool_call.function.name
-                    function_args = json.loads(tool_call.function.arguments)
-                    
-                    # Execute tool call
-                    result = handler.handle_tool_call(function_name, **function_args)
-                    print(f"  {agent_name} used {function_name}: {result.get('message', 'OK')}")
-            
-            return message_obj.content or "Task completed using tools."
-            
-        except Exception as e:
-            return f"Error: {str(e)}"
+    research_data = context_result.get("context", {}).get("market_research", "No data")
     
-    def collaborative_workflow(self, topic: str):
-        """Demonstrate collaborative workflow"""
-        
-        print(f"\n=== Collaborative Workflow: {topic} ===")
-        
-        # Step 1: Researcher gathers information
-        research_response = self.agent_chat("researcher", 
-            f"Research the topic '{topic}' and share your findings with the team using context tools."
-        )
-        print(f"Researcher: {research_response}")
-        
-        # Step 2: Writer creates content based on research
-        writing_response = self.agent_chat("writer",
-            f"Based on the research data available in context, write a brief article about '{topic}'. Share your draft for review."
-        )
-        print(f"Writer: {writing_response}")
-        
-        # Step 3: Reviewer provides feedback
-        review_response = self.agent_chat("reviewer",
-            f"Review the draft article about '{topic}' and provide feedback for improvement."
-        )
-        print(f"Reviewer: {review_response}")
-        
-        # Show final context state
-        print(f"\nFinal Context State:")
-        for agent_name, agent in self.agents.items():
-            result = agent["handler"].handle_tool_call("list_context")
-            print(f"  {agent_name} has access to: {result['keys']}")
+    # Analyze using existing tool
+    analysis = analyze_data(research_data)
     
-    def close(self):
-        """Clean up resources"""
-        self.context.close()
+    # Share analysis results
+    result = analyst_handler.handle_tool_call("push_context",
+        key="analysis_results", 
+        value=analysis,
+        topics=["analysis", "insights"]
+    )
+    
+    state["messages"].append(f"Analyst: {analysis}")
+    state["context_updates"].append(result)
+    return state
 
-# Example usage
-def multi_agent_example():
-    """Multi-agent OpenAI system example"""
+def reporter_node(state: WorkflowState):
+    """Reporter agent that creates final reports."""
+    print("📝 Reporter Agent working...")
     
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Please set OPENAI_API_KEY environment variable")
-        return
+    # Subscribe to analysis topics
+    reporter_handler.handle_tool_call("subscribe_to_topics",
+                                     topics=["analysis", "insights", "reports"])
     
-    system = MultiAgentOpenAISystem("multi_user", api_key)
+    # Get all available context
+    context_result = reporter_handler.handle_tool_call("list_context")
+    available_keys = context_result.get("keys", [])
     
-    # Run collaborative workflow
-    system.collaborative_workflow("Artificial Intelligence in Healthcare")
-    
-    system.close()
-
-# Run the example (uncomment if you have an API key)
-# multi_agent_example()
-```
-
-## Production Multi-User Application
-
-Here's a complete example of a production-ready multi-user application with proper isolation and error handling.
-
-```python
-from syntha import ContextMesh, ToolHandler, create_role_based_handler, SynthaError
-from typing import Dict, Optional, List
-import threading
-import logging
-import time
-import json
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-class UserSession:
-    """Represents a user session with context and agents"""
-    
-    def __init__(self, user_id: str, session_id: str, db_config: dict):
-        self.user_id = user_id
-        self.session_id = session_id
-        self.created_at = time.time()
-        self.last_activity = time.time()
+    if available_keys:
+        # Get the analysis results
+        analysis_context = reporter_handler.handle_tool_call("get_context", 
+                                                           keys=available_keys)
         
-        # Create user-isolated context
-        self.context = ContextMesh(
-            user_id=user_id,
-            enable_persistence=True,
-            **db_config
+        insights = analysis_context.get("context", {}).get("analysis_results", "No analysis")
+        
+        # Generate report using existing tool
+        report = generate_report(insights)
+        
+        # Save final report
+        result = reporter_handler.handle_tool_call("push_context",
+            key="final_report",
+            value=report,
+            topics=["reports", "final"]
         )
         
-        # Create user's agents
-        self.agents = self._setup_user_agents()
-        
-        logger.info(f"Created session {session_id} for user {user_id}")
+        state["messages"].append(f"Reporter: {report}")
+        state["context_updates"].append(result)
     
-    def _setup_user_agents(self) -> Dict[str, ToolHandler]:
-        """Set up agents for this user"""
-        
-        agents = {}
-        
-        # Personal assistant with full access
-        agents["assistant"] = create_role_based_handler(
-            self.context, "PersonalAssistant", "contributor"
-        )
-        agents["assistant"].handle_tool_call("subscribe_to_topics",
-                                             topics=["personal", "tasks", "notes"])
-        
-        # Task manager with focused access
-        agents["task_manager"] = create_role_based_handler(
-            self.context, "TaskManager", "contributor"
-        )
-        agents["task_manager"].handle_tool_call("subscribe_to_topics",
-                                                topics=["tasks", "projects"])
-        
-        # Note taker with limited access
-        agents["note_taker"] = create_role_based_handler(
-            self.context, "NoteTaker", "contributor"
-        )
-        agents["note_taker"].handle_tool_call("subscribe_to_topics",
-                                              topics=["notes", "ideas"])
-        
-        return agents
-    
-    def update_activity(self):
-        """Update last activity timestamp"""
-        self.last_activity = time.time()
-    
-    def is_expired(self, timeout: int = 3600) -> bool:
-        """Check if session has expired"""
-        return time.time() - self.last_activity > timeout
-    
-    def add_user_data(self, key: str, value: any, ttl_hours: Optional[float] = None):
-        """Add data to user's context"""
-        try:
-            self.agents["assistant"].handle_tool_call("push_context",
-                key=key,
-                value=json.dumps(value) if not isinstance(value, str) else value,
-                topics=["personal"],
-                ttl_hours=ttl_hours
-            )
-            self.update_activity()
-            return True
-        except Exception as e:
-            logger.error(f"Error adding user data for {self.user_id}: {e}")
-            return False
-    
-    def agent_action(self, agent_name: str, action: str, **kwargs) -> dict:
-        """Execute an agent action"""
-        if agent_name not in self.agents:
-            return {"success": False, "error": f"Unknown agent: {agent_name}"}
-        
-        try:
-            result = self.agents[agent_name].handle_tool_call(action, **kwargs)
-            self.update_activity()
-            return result
-        except Exception as e:
-            logger.error(f"Agent action error for {self.user_id}/{agent_name}: {e}")
-            return {"success": False, "error": str(e)}
-    
-    def get_user_context(self, agent_name: str = "assistant") -> dict:
-        """Get user's accessible context"""
-        if agent_name not in self.agents:
-            return {}
-        
-        try:
-            result = self.agents[agent_name].handle_tool_call("get_context")
-            self.update_activity()
-            return result.get("context", {})
-        except Exception as e:
-            logger.error(f"Error getting context for {self.user_id}: {e}")
-            return {}
-    
-    def close(self):
-        """Clean up session resources"""
-        try:
-            self.context.close()
-            logger.info(f"Closed session {self.session_id} for user {self.user_id}")
-        except Exception as e:
-            logger.error(f"Error closing session {self.session_id}: {e}")
+    return state
 
-class MultiUserApplication:
-    """Production multi-user application with Syntha"""
-    
-    def __init__(self, db_config: dict):
-        self.db_config = db_config
-        self.sessions: Dict[str, UserSession] = {}
-        self.user_sessions: Dict[str, List[str]] = {}  # user_id -> [session_ids]
-        self.lock = threading.Lock()
-        
-        # Start cleanup thread
-        self.cleanup_thread = threading.Thread(target=self._cleanup_loop, daemon=True)
-        self.cleanup_thread.start()
-        
-        logger.info("Multi-user application started")
-    
-    def create_session(self, user_id: str) -> str:
-        """Create a new session for a user"""
-        session_id = f"sess_{user_id}_{int(time.time())}"
-        
-        with self.lock:
-            try:
-                session = UserSession(user_id, session_id, self.db_config)
-                self.sessions[session_id] = session
-                
-                if user_id not in self.user_sessions:
-                    self.user_sessions[user_id] = []
-                self.user_sessions[user_id].append(session_id)
-                
-                return session_id
-            except Exception as e:
-                logger.error(f"Error creating session for {user_id}: {e}")
-                raise
-    
-    def get_session(self, session_id: str) -> Optional[UserSession]:
-        """Get a session by ID"""
-        with self.lock:
-            return self.sessions.get(session_id)
-    
-    def close_session(self, session_id: str) -> bool:
-        """Close a specific session"""
-        with self.lock:
-            session = self.sessions.get(session_id)
-            if not session:
-                return False
-            
-            try:
-                # Remove from tracking
-                user_id = session.user_id
-                if user_id in self.user_sessions:
-                    self.user_sessions[user_id].remove(session_id)
-                    if not self.user_sessions[user_id]:
-                        del self.user_sessions[user_id]
-                
-                # Close session
-                session.close()
-                del self.sessions[session_id]
-                
-                return True
-            except Exception as e:
-                logger.error(f"Error closing session {session_id}: {e}")
-                return False
-    
-    def user_action(self, session_id: str, agent_name: str, action: str, **kwargs) -> dict:
-        """Execute a user action through their agent"""
-        session = self.get_session(session_id)
-        if not session:
-            return {"success": False, "error": "Invalid session"}
-        
-        return session.agent_action(agent_name, action, **kwargs)
-    
-    def add_user_data(self, session_id: str, key: str, value: any, ttl_hours: Optional[float] = None) -> bool:
-        """Add data to user's context"""
-        session = self.get_session(session_id)
-        if not session:
-            return False
-        
-        return session.add_user_data(key, value, ttl_hours)
-    
-    def get_user_context(self, session_id: str, agent_name: str = "assistant") -> dict:
-        """Get user's context"""
-        session = self.get_session(session_id)
-        if not session:
-            return {}
-        
-        return session.get_user_context(agent_name)
-    
-    def get_stats(self) -> dict:
-        """Get application statistics"""
-        with self.lock:
-            return {
-                "total_sessions": len(self.sessions),
-                "total_users": len(self.user_sessions),
-                "sessions_per_user": {user_id: len(sessions) 
-                                      for user_id, sessions in self.user_sessions.items()}
-            }
-    
-    def _cleanup_loop(self):
-        """Background cleanup of expired sessions"""
-        while True:
-            try:
-                time.sleep(300)  # Check every 5 minutes
-                self._cleanup_expired_sessions()
-            except Exception as e:
-                logger.error(f"Error in cleanup loop: {e}")
-    
-    def _cleanup_expired_sessions(self):
-        """Remove expired sessions"""
-        expired_sessions = []
-        
-        with self.lock:
-            for session_id, session in self.sessions.items():
-                if session.is_expired():
-                    expired_sessions.append(session_id)
-        
-        for session_id in expired_sessions:
-            logger.info(f"Cleaning up expired session: {session_id}")
-            self.close_session(session_id)
-    
-    def shutdown(self):
-        """Gracefully shutdown the application"""
-        logger.info("Shutting down multi-user application")
-        
-        with self.lock:
-            session_ids = list(self.sessions.keys())
-        
-        for session_id in session_ids:
-            self.close_session(session_id)
-        
-        logger.info("Shutdown complete")
+# Step 5: Build the LangGraph workflow
+workflow = StateGraph(WorkflowState)
 
-# Example usage
-def production_app_example():
-    """Production multi-user application example"""
+# Add nodes
+workflow.add_node("researcher", researcher_node)
+workflow.add_node("analyst", analyst_node) 
+workflow.add_node("reporter", reporter_node)
+
+# Define the flow
+workflow.set_entry_point("researcher")
+workflow.add_edge("researcher", "analyst")
+workflow.add_edge("analyst", "reporter")
+workflow.add_edge("reporter", END)
+
+# Compile the workflow
+app = workflow.compile()
+
+# Step 6: Run the context-aware workflow
+def run_langgraph_example():
+    print("\n=== LangGraph + Syntha Multi-Agent Workflow ===")
     
-    print("=== Production Multi-User Application ===")
-    
-    # Database configuration (use PostgreSQL in production)
-    db_config = {
-        "db_backend": "sqlite",
-        "db_path": "production_app.db"
+    initial_state = {
+        "messages": [],
+        "current_task": "Market Research Analysis",
+        "context_updates": []
     }
     
-    # Create application
-    app = MultiUserApplication(db_config)
+    # Execute the workflow
+    result = app.invoke(initial_state)
     
-    try:
-        # Simulate multiple users
-        users = ["alice", "bob", "charlie"]
-        sessions = {}
-        
-        # Create sessions for users
-        for user in users:
-            session_id = app.create_session(user)
-            sessions[user] = session_id
-            print(f"Created session for {user}: {session_id}")
-        
-        # Users add their data
-        app.add_user_data(sessions["alice"], "profile", {
-            "name": "Alice Johnson",
-            "role": "Product Manager",
-            "team": "Growth"
-        })
-        
-        app.add_user_data(sessions["bob"], "profile", {
-            "name": "Bob Smith", 
-            "role": "Developer",
-            "team": "Engineering"
-        })
-        
-        # Users interact with their agents
-        alice_result = app.user_action(sessions["alice"], "task_manager", "push_context",
-            key="project_launch",
-            value=json.dumps({
-                "project": "New Feature Launch",
-                "deadline": "2024-02-15",
-                "status": "planning"
-            }),
-            topics=["projects"]
-        )
-        print(f"Alice task result: {alice_result['success']}")
-        
-        bob_result = app.user_action(sessions["bob"], "note_taker", "push_context",
-            key="meeting_notes",
-            value="Discussed API architecture and database schema",
-            topics=["notes"]
-        )
-        print(f"Bob note result: {bob_result['success']}")
-        
-        # Check user contexts (isolated)
-        alice_context = app.get_user_context(sessions["alice"])
-        bob_context = app.get_user_context(sessions["bob"])
-        
-        print(f"Alice sees: {list(alice_context.keys())}")
-        print(f"Bob sees: {list(bob_context.keys())}")
-        
-        # Application statistics
-        stats = app.get_stats()
-        print(f"App stats: {stats}")
-        
-    finally:
-        # Clean shutdown
-        app.shutdown()
-        
-        # Clean up test database
-        import os
-        if os.path.exists("production_app.db"):
-            os.remove("production_app.db")
+    print("\n📋 Workflow Results:")
+    for message in result["messages"]:
+        print(f"  {message}")
+    
+    print(f"\n🔄 Context Updates: {len(result['context_updates'])}")
+    
+    # Show final shared context state
+    final_context = reporter_handler.handle_tool_call("get_context")
+    print(f"\n💾 Final Shared Context:")
+    for key, value in final_context.get("context", {}).items():
+        print(f"  {key}: {value[:100]}...")
 
-production_app_example()
+# Run the example
+run_langgraph_example()
+context.close()
 ```
 
-## Microservices Integration
+**Key LangGraph Benefits:**
 
-Here's how to use Syntha across microservice boundaries:
+1. **Shared Context**: All agents in the workflow share the same context mesh
+2. **Topic-based Organization**: Agents subscribe to relevant information streams
+3. **Persistent State**: Context persists across workflow steps and reruns
+4. **Automatic Coordination**: Agents automatically discover what others have shared
+
+### Agno Integration: Flexible Agent Framework
+
+Agno provides a flexible agent framework. Here's seamless Syntha integration:
+
+```python
+# Note: This is a conceptual example - adjust imports based on Agno's actual API
+from agno import Agent, Tool, Workflow
+from syntha import ContextMesh, ToolHandler
+import asyncio
+
+# Step 1: Create Syntha context for the Agno workflow
+context = ContextMesh(user_id="agno_user", enable_persistence=True)
+
+# Step 2: Create a Syntha-enhanced Agno agent
+class SynthaAgnoAgent(Agent):
+    """Agno agent enhanced with Syntha context management."""
+    
+    def __init__(self, name: str, role: str, context_mesh: ContextMesh):
+        super().__init__(name=name, role=role)
+        
+        # Add Syntha context capabilities
+        self.syntha_handler = ToolHandler(context_mesh, agent_name=name)
+        self.syntha_handler.handle_tool_call("subscribe_to_topics", 
+                                           topics=[role, "shared", "coordination"])
+        
+        # Add Syntha tools to Agno agent
+        self._add_syntha_tools()
+    
+    def _add_syntha_tools(self):
+        """Convert Syntha tools to Agno format and add them."""
+        syntha_schemas = self.syntha_handler.get_schemas()
+        
+        for schema in syntha_schemas:
+            # Create Agno tool wrapper
+            def create_tool_wrapper(tool_name, tool_schema):
+                async def tool_wrapper(**kwargs):
+                    return self.syntha_handler.handle_tool_call(tool_name, **kwargs)
+                
+                return Tool(
+                    name=tool_name,
+                    description=tool_schema['description'],
+                    func=tool_wrapper
+                )
+            
+            agno_tool = create_tool_wrapper(schema['name'], schema)
+            self.add_tool(agno_tool)
+    
+    async def enhanced_think(self, task: str) -> str:
+        """Enhanced thinking that leverages context."""
+        
+        # First, check what context is available
+        context_list = await self.use_tool("list_context")
+        
+        if context_list.get("keys"):
+            # Get relevant context
+            relevant_context = await self.use_tool("get_context", 
+                                                  keys=context_list["keys"])
+            
+            # Use context in reasoning
+            context_info = relevant_context.get("context", {})
+            context_summary = f"Available context: {list(context_info.keys())}"
+        else:
+            context_summary = "No previous context available"
+        
+        # Enhanced reasoning with context
+        reasoning = await super().think(f"{task}\n\nContext: {context_summary}")
+        
+        # Save reasoning for other agents
+        await self.use_tool("push_context",
+            key=f"reasoning_{self.name}",
+            value=reasoning,
+            topics=["reasoning", self.role]
+        )
+        
+        return reasoning
+
+# Step 3: Create specialized Agno agents with Syntha
+async def create_agno_workflow():
+    """Create a multi-agent Agno workflow with shared Syntha context."""
+    
+    # Create context-aware agents
+    researcher = SynthaAgnoAgent("Dr. Research", "researcher", context)
+    strategist = SynthaAgnoAgent("Strategy Bot", "strategist", context) 
+    executor = SynthaAgnoAgent("Action Hero", "executor", context)
+    
+    # Add existing Agno tools to agents
+    @Tool(name="web_search", description="Search the web")
+    async def web_search(query: str) -> str:
+        return f"Web search results for: {query}"
+    
+    @Tool(name="create_plan", description="Create an action plan")
+    async def create_plan(objective: str) -> str:
+        return f"Action plan for: {objective}"
+    
+    @Tool(name="execute_action", description="Execute a planned action")
+    async def execute_action(action: str) -> str:
+        return f"Executed: {action}"
+    
+    # Add tools to appropriate agents
+    researcher.add_tool(web_search)
+    strategist.add_tool(create_plan)
+    executor.add_tool(execute_action)
+    
+    return researcher, strategist, executor
+
+# Step 4: Run coordinated workflow
+async def run_agno_example():
+    print("\n=== Agno + Syntha Integration ===")
+    
+    researcher, strategist, executor = await create_agno_workflow()
+    
+    # Coordinated workflow with shared context
+    
+    # Phase 1: Research
+    print("🔍 Phase 1: Research")
+    research_task = "Research current trends in sustainable technology"
+    research_result = await researcher.enhanced_think(research_task)
+    print(f"Researcher output: {research_result[:100]}...")
+    
+    # Phase 2: Strategy (leverages research context)
+    print("\n📋 Phase 2: Strategy")
+    strategy_task = "Create a strategy based on the research findings"
+    strategy_result = await strategist.enhanced_think(strategy_task)
+    print(f"Strategist output: {strategy_result[:100]}...")
+    
+    # Phase 3: Execution (leverages both previous contexts)
+    print("\n⚡ Phase 3: Execution")
+    execution_task = "Execute the strategic plan"
+    execution_result = await executor.enhanced_think(execution_task)
+    print(f"Executor output: {execution_result[:100]}...")
+    
+    # Show final shared context
+    final_context = researcher.syntha_handler.handle_tool_call("get_context")
+    print(f"\n💾 Shared Context Keys: {list(final_context.get('context', {}).keys())}")
+
+# Run the example
+asyncio.run(run_agno_example())
+context.close()
+```
+
+**Agno Integration Benefits:**
+
+1. **Seamless Enhancement**: Existing Agno agents get context superpowers
+2. **Automatic Tool Addition**: Syntha tools are automatically available to all agents
+3. **Cross-Agent Memory**: Agents build on each other's work through shared context
+4. **Flexible Integration**: Works with any Agno workflow pattern
+
+## Integration with Pre-Existing Tool Ecosystems
+
+### Pattern: Wrapping Existing APIs and Services
+
+You often have existing APIs, databases, and services that your agents need to use. Here's how to add Syntha context to them:
 
 ```python
 from syntha import ContextMesh, ToolHandler
 import requests
 import json
-from typing import Dict, Any
-import threading
-import time
+from typing import Dict, Any, List
+
+# Your existing API client (unchanged)
+class ExistingAPIClient:
+    """Your current API client - no changes needed."""
+    
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://api.yourservice.com"
+    
+    def search_documents(self, query: str) -> List[dict]:
+        """Search your document database."""
+        response = requests.get(f"{self.base_url}/search", 
+                               params={"q": query},
+                               headers={"Authorization": f"Bearer {self.api_key}"})
+        return response.json().get("results", [])
+    
+    def create_ticket(self, title: str, description: str) -> dict:
+        """Create a support ticket."""
+        data = {"title": title, "description": description}
+        response = requests.post(f"{self.base_url}/tickets", 
+                                json=data,
+                                headers={"Authorization": f"Bearer {self.api_key}"})
+        return response.json()
+    
+    def get_user_profile(self, user_id: str) -> dict:
+        """Get user profile information."""
+        response = requests.get(f"{self.base_url}/users/{user_id}",
+                               headers={"Authorization": f"Bearer {self.api_key}"})
+        return response.json()
+
+# Step 1: Create a context-aware wrapper
+class ContextAwareAPIWrapper:
+    """Wrapper that adds Syntha context to your existing API."""
+    
+    def __init__(self, api_client: ExistingAPIClient, context: ContextMesh, agent_name: str):
+        self.api_client = api_client  # Your existing client, unchanged
+        self.syntha_handler = ToolHandler(context, agent_name)
+        
+        # Subscribe to relevant topics
+        self.syntha_handler.handle_tool_call("subscribe_to_topics",
+                                           topics=["api_calls", "user_data", "search_results"])
+    
+    def context_aware_search(self, query: str, save_results: bool = True) -> List[dict]:
+        """Search with context awareness."""
+        
+        # Check if we have previous search results for this query
+        context_result = self.syntha_handler.handle_tool_call("get_context", 
+                                                            keys=[f"search_{query}"])
+        
+        if context_result.get("context", {}).get(f"search_{query}"):
+            print(f"🔍 Found cached search results for: {query}")
+            cached_results = json.loads(context_result["context"][f"search_{query}"])
+            return cached_results
+        
+        # Perform new search using existing API
+        print(f"🔍 Performing new search for: {query}")
+        results = self.api_client.search_documents(query)
+        
+        # Save results to context for future use
+        if save_results and results:
+            self.syntha_handler.handle_tool_call("push_context",
+                key=f"search_{query}",
+                value=json.dumps(results),
+                topics=["search_results"],
+                ttl_hours=24  # Cache for 24 hours
+            )
+        
+        return results
+    
+    def context_aware_ticket_creation(self, title: str, description: str) -> dict:
+        """Create ticket with context enrichment."""
+        
+        # Get user context to enrich the ticket
+        user_context = self.syntha_handler.handle_tool_call("get_context")
+        context_data = user_context.get("context", {})
+        
+        # Enrich description with relevant context
+        enriched_description = description
+        if context_data:
+            relevant_info = []
+            for key, value in context_data.items():
+                if any(keyword in key.lower() for keyword in ["user", "profile", "recent"]):
+                    relevant_info.append(f"{key}: {str(value)[:100]}")
+            
+            if relevant_info:
+                enriched_description += f"\n\nRelevant Context:\n" + "\n".join(relevant_info)
+        
+        # Create ticket using existing API
+        ticket = self.api_client.create_ticket(title, enriched_description)
+        
+        # Save ticket info to context
+        self.syntha_handler.handle_tool_call("push_context",
+            key=f"ticket_{ticket.get('id', 'unknown')}",
+            value=json.dumps({
+                "title": title,
+                "original_description": description,
+                "ticket_id": ticket.get("id"),
+                "status": ticket.get("status", "created"),
+                "created_at": ticket.get("created_at")
+            }),
+            topics=["tickets", "user_actions"]
+        )
+        
+        return ticket
+    
+    def get_enhanced_user_profile(self, user_id: str) -> dict:
+        """Get user profile enhanced with context."""
+        
+        # Get profile from existing API
+        profile = self.api_client.get_user_profile(user_id)
+        
+        # Enhance with context data
+        context_result = self.syntha_handler.handle_tool_call("get_context")
+        context_data = context_result.get("context", {})
+        
+        # Add context-based insights
+        profile["context_insights"] = {
+            "recent_searches": [key for key in context_data.keys() if key.startswith("search_")],
+            "recent_tickets": [key for key in context_data.keys() if key.startswith("ticket_")],
+            "total_context_items": len(context_data)
+        }
+        
+        return profile
+
+# Step 2: Use the context-aware wrapper
+def demonstrate_existing_api_integration():
+    """Show how to add context to existing APIs."""
+    
+    print("=== Existing API + Syntha Integration ===")
+    
+    # Your existing setup (unchanged)
+    api_client = ExistingAPIClient("your-api-key")
+    
+    # Add Syntha context capabilities
+    context = ContextMesh(user_id="api_user", enable_persistence=True)
+    wrapper = ContextAwareAPIWrapper(api_client, context, "APIAgent")
+    
+    # Now your API calls are context-aware
+    
+    # First search - hits the API
+    results1 = wrapper.context_aware_search("machine learning tutorials")
+    print(f"First search returned {len(results1)} results")
+    
+    # Second search with same query - uses cached results
+    results2 = wrapper.context_aware_search("machine learning tutorials") 
+    print(f"Second search returned {len(results2)} results (from cache)")
+    
+    # Create a ticket with context enrichment
+    ticket = wrapper.context_aware_ticket_creation(
+        "Need help with ML implementation",
+        "I'm having trouble implementing the machine learning model."
+    )
+    print(f"Created ticket: {ticket.get('id')}")
+    
+    # Get enhanced user profile
+    profile = wrapper.get_enhanced_user_profile("user123")
+    print(f"User profile with context insights: {profile.get('context_insights')}")
+    
+    context.close()
+
+# Run the example
+demonstrate_existing_api_integration()
+```
+
+### Pattern: Database Integration with Context
+
+Here's how to add context awareness to your existing database operations:
+
+```python
+import sqlite3
+from syntha import ContextMesh, ToolHandler
+import json
+from datetime import datetime
+
+# Your existing database class (unchanged)
+class ExistingDatabase:
+    """Your current database operations - no changes needed."""
+    
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        self._init_db()
+    
+    def _init_db(self):
+        """Initialize database tables."""
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS customers (
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                email TEXT,
+                created_at TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS orders (
+                id INTEGER PRIMARY KEY,
+                customer_id INTEGER,
+                product TEXT,
+                amount DECIMAL,
+                created_at TIMESTAMP,
+                FOREIGN KEY (customer_id) REFERENCES customers (id)
+            )
+        """)
+        conn.commit()
+        conn.close()
+    
+    def get_customer(self, customer_id: int) -> dict:
+        """Get customer by ID."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute("SELECT * FROM customers WHERE id = ?", (customer_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return {
+                "id": row[0],
+                "name": row[1], 
+                "email": row[2],
+                "created_at": row[3]
+            }
+        return {}
+    
+    def get_customer_orders(self, customer_id: int) -> List[dict]:
+        """Get all orders for a customer."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute("SELECT * FROM orders WHERE customer_id = ?", (customer_id,))
+        rows = cursor.fetchall()
+        conn.close()
+        
+        return [{
+            "id": row[0],
+            "customer_id": row[1],
+            "product": row[2],
+            "amount": row[3],
+            "created_at": row[4]
+        } for row in rows]
+
+# Context-aware database wrapper
+class ContextAwareDatabase:
+    """Database wrapper with Syntha context integration."""
+    
+    def __init__(self, database: ExistingDatabase, context: ContextMesh, agent_name: str):
+        self.db = database  # Your existing database, unchanged
+        self.syntha_handler = ToolHandler(context, agent_name)
+        
+        # Subscribe to relevant topics
+        self.syntha_handler.handle_tool_call("subscribe_to_topics",
+                                           topics=["customers", "orders", "analytics"])
+    
+    def get_customer_with_context(self, customer_id: int) -> dict:
+        """Get customer with context-enhanced information."""
+        
+        # Check if we have cached customer analysis
+        context_key = f"customer_analysis_{customer_id}"
+        context_result = self.syntha_handler.handle_tool_call("get_context", keys=[context_key])
+        
+        # Get customer from existing database
+        customer = self.db.get_customer(customer_id)
+        if not customer:
+            return {}
+        
+        # Get customer orders
+        orders = self.db.get_customer_orders(customer_id)
+        
+        # Add context-based analytics
+        if context_result.get("context", {}).get(context_key):
+            # Use cached analysis
+            cached_analysis = json.loads(context_result["context"][context_key])
+            customer["cached_analysis"] = cached_analysis
+        else:
+            # Generate new analysis
+            analysis = self._analyze_customer(customer, orders)
+            customer["analysis"] = analysis
+            
+            # Save analysis to context
+            self.syntha_handler.handle_tool_call("push_context",
+                key=context_key,
+                value=json.dumps(analysis),
+                topics=["customers", "analytics"],
+                ttl_hours=168  # Cache for 1 week
+            )
+        
+        # Track customer lookup
+        self.syntha_handler.handle_tool_call("push_context",
+            key=f"lookup_{customer_id}_{datetime.now().isoformat()}",
+            value=json.dumps({
+                "action": "customer_lookup",
+                "customer_id": customer_id,
+                "timestamp": datetime.now().isoformat()
+            }),
+            topics=["customer_activity"],
+            ttl_hours=24
+        )
+        
+        return customer
+    
+    def _analyze_customer(self, customer: dict, orders: List[dict]) -> dict:
+        """Analyze customer behavior."""
+        total_spent = sum(float(order["amount"]) for order in orders)
+        avg_order_value = total_spent / len(orders) if orders else 0
+        
+        return {
+            "total_orders": len(orders),
+            "total_spent": total_spent,
+            "average_order_value": avg_order_value,
+            "customer_tier": "VIP" if total_spent > 1000 else "Regular",
+            "analysis_date": datetime.now().isoformat()
+        }
+    
+    def get_customer_insights(self) -> dict:
+        """Get insights from customer context data."""
+        
+        # Get all customer-related context
+        context_result = self.syntha_handler.handle_tool_call("get_context")
+        context_data = context_result.get("context", {})
+        
+        # Analyze patterns
+        lookups = [key for key in context_data.keys() if key.startswith("lookup_")]
+        analyses = [key for key in context_data.keys() if key.startswith("customer_analysis_")]
+        
+        return {
+            "total_customer_lookups": len(lookups),
+            "customers_analyzed": len(analyses),
+            "most_recent_lookups": sorted(lookups)[-5:] if lookups else [],
+            "context_summary": f"{len(context_data)} total context items"
+        }
+
+# Example usage
+def demonstrate_database_integration():
+    """Show database integration with context."""
+    
+    print("=== Database + Syntha Integration ===")
+    
+    # Your existing database setup (unchanged)
+    db = ExistingDatabase("example.db")
+    
+    # Add some test data
+    conn = sqlite3.connect("example.db")
+    conn.execute("INSERT OR IGNORE INTO customers (id, name, email, created_at) VALUES (1, 'John Doe', 'john@example.com', ?)", 
+                 (datetime.now().isoformat(),))
+    conn.execute("INSERT OR IGNORE INTO orders (customer_id, product, amount, created_at) VALUES (1, 'Widget', 29.99, ?)",
+                 (datetime.now().isoformat(),))
+    conn.execute("INSERT OR IGNORE INTO orders (customer_id, product, amount, created_at) VALUES (1, 'Gadget', 49.99, ?)",
+                 (datetime.now().isoformat(),))
+    conn.commit()
+    conn.close()
+    
+    # Add Syntha context capabilities
+    context = ContextMesh(user_id="db_user", enable_persistence=True)
+    context_db = ContextAwareDatabase(db, context, "DatabaseAgent")
+    
+    # Now your database operations are context-aware
+    
+    # First lookup - generates analysis
+    customer1 = context_db.get_customer_with_context(1)
+    print(f"Customer analysis: {customer1.get('analysis', {})}")
+    
+    # Second lookup - uses cached analysis
+    customer2 = context_db.get_customer_with_context(1)
+    print(f"Cached analysis available: {'cached_analysis' in customer2}")
+    
+    # Get insights from context
+    insights = context_db.get_customer_insights()
+    print(f"Customer insights: {insights}")
+    
+    context.close()
+
+# Run the example
+demonstrate_database_integration()
+```
+
+### Pattern: Microservices with Shared Context
+
+Here's how to share context across different services:
+
+```python
+from syntha import ContextMesh, ToolHandler
+import requests
+import json
+from typing import Optional
+
+# Service A: User Management Service
+class UserService:
+    """Existing user management service."""
+    
+    def __init__(self, context: ContextMesh):
+        self.syntha_handler = ToolHandler(context, "UserService")
+        self.syntha_handler.handle_tool_call("subscribe_to_topics",
+                                           topics=["users", "authentication", "profiles"])
+    
+    def authenticate_user(self, username: str, password: str) -> Optional[dict]:
+        """Authenticate user and share context."""
+        
+        # Your existing authentication logic
+        if username == "demo" and password == "password":
+            user_data = {
+                "user_id": "user123",
+                "username": username,
+                "role": "admin",
+                "authenticated_at": "2024-01-15T10:00:00Z"
+            }
+            
+            # Share authentication context with other services
+            self.syntha_handler.handle_tool_call("push_context",
+                key=f"auth_{user_data['user_id']}",
+                value=json.dumps(user_data),
+                topics=["authentication", "users"],
+                ttl_hours=24
+            )
+            
+            return user_data
+        
+        return None
+
+# Service B: Order Service  
+class OrderService:
+    """Existing order processing service."""
+    
+    def __init__(self, context: ContextMesh):
+        self.syntha_handler = ToolHandler(context, "OrderService")
+        self.syntha_handler.handle_tool_call("subscribe_to_topics",
+                                           topics=["orders", "users", "authentication"])
+    
+    def create_order(self, user_id: str, product: str, amount: float) -> dict:
+        """Create order with user context awareness."""
+        
+        # Check user authentication status from shared context
+        auth_result = self.syntha_handler.handle_tool_call("get_context", 
+                                                         keys=[f"auth_{user_id}"])
+        
+        user_data = auth_result.get("context", {}).get(f"auth_{user_id}")
+        if not user_data:
+            return {"error": "User not authenticated"}
+        
+        user_info = json.loads(user_data)
+        
+        # Create order with user context
+        order = {
+            "order_id": "order456",
+            "user_id": user_id,
+            "username": user_info["username"],
+            "user_role": user_info["role"],
+            "product": product,
+            "amount": amount,
+            "created_at": "2024-01-15T10:30:00Z"
+        }
+        
+        # Share order context
+        self.syntha_handler.handle_tool_call("push_context",
+            key=f"order_{order['order_id']}",
+            value=json.dumps(order),
+            topics=["orders", "users"]
+        )
+        
+        return order
+
+# Service C: Notification Service
+class NotificationService:
+    """Existing notification service."""
+    
+    def __init__(self, context: ContextMesh):
+        self.syntha_handler = ToolHandler(context, "NotificationService")
+        self.syntha_handler.handle_tool_call("subscribe_to_topics",
+                                           topics=["orders", "users", "notifications"])
+    
+    def send_order_confirmation(self, order_id: str) -> dict:
+        """Send notification using shared context."""
+        
+        # Get order details from shared context
+        order_result = self.syntha_handler.handle_tool_call("get_context",
+                                                          keys=[f"order_{order_id}"])
+        
+        order_data = order_result.get("context", {}).get(f"order_{order_id}")
+        if not order_data:
+            return {"error": "Order not found in context"}
+        
+        order = json.loads(order_data)
+        
+        # Create personalized notification using context
+        notification = {
+            "notification_id": "notif789",
+            "user_id": order["user_id"],
+            "message": f"Hi {order['username']}, your order for {order['product']} (${order['amount']}) has been confirmed!",
+            "sent_at": "2024-01-15T10:35:00Z"
+        }
+        
+        # Save notification to context
+        self.syntha_handler.handle_tool_call("push_context",
+            key=f"notification_{notification['notification_id']}",
+            value=json.dumps(notification),
+            topics=["notifications"]
+        )
+        
+        return notification
+
+# Demonstrate microservices integration
+def demonstrate_microservices_integration():
+    """Show how services share context."""
+    
+    print("=== Microservices + Syntha Integration ===")
+    
+    # Shared context across all services
+    shared_context = ContextMesh(user_id="microservices_demo", enable_persistence=True)
+    
+    # Initialize services with shared context
+    user_service = UserService(shared_context)
+    order_service = OrderService(shared_context) 
+    notification_service = NotificationService(shared_context)
+    
+    # Service workflow with context sharing
+    
+    # Step 1: User authenticates (UserService)
+    auth_result = user_service.authenticate_user("demo", "password")
+    print(f"Authentication: {auth_result['username']} authenticated")
+    
+    # Step 2: User creates order (OrderService uses auth context)
+    order_result = order_service.create_order(auth_result["user_id"], "Premium Widget", 99.99)
+    print(f"Order created: {order_result['order_id']}")
+    
+    # Step 3: Send notification (NotificationService uses order context)
+    notification_result = notification_service.send_order_confirmation(order_result["order_id"])
+    print(f"Notification sent: {notification_result['message']}")
+    
+    # Show shared context state
+    final_context = user_service.syntha_handler.handle_tool_call("list_context")
+    print(f"Shared context keys: {final_context['keys']}")
+    
+    shared_context.close()
+
+# Run the example
+demonstrate_microservices_integration()
+```
+
+**Key Benefits of These Integration Patterns:**
+
+1. **Zero Disruption**: Your existing code works exactly as before
+2. **Gradual Enhancement**: Add context capabilities incrementally
+3. **Automatic Caching**: Reduce API calls and database queries
+4. **Cross-Service Intelligence**: Services become aware of each other's context
+5. **Rich Context**: Every operation becomes context-aware automatically
+
+## Next Steps: Start Integrating Today
+
+Ready to add context superpowers to your agents? Here's your roadmap:
+
+### 1. Choose Your Integration Pattern
+
+- **Framework Integration**: Using LangChain, LangGraph, or Agno? Use the examples above
+- **API/Database Wrapper**: Have existing services? Use the wrapper patterns
+- **Microservices**: Multiple services? Use shared context patterns
+
+### 2. Start Small, Scale Up
+
+```python
+# Start with this simple pattern
+from syntha import ContextMesh, ToolHandler
+
+context = ContextMesh(user_id="your_user", enable_persistence=True)
+handler = ToolHandler(context, "YourAgent")
+
+# Add to your existing tools
+your_tools = [...existing tools...]
+enhanced_tools = handler.get_schemas(merge_with=your_tools)
+
+# Your agent now has context superpowers!
+```
+
+### 3. Key Integration Principles
+
+1. **Non-Destructive**: Never modify existing code
+2. **Incremental**: Add context capabilities gradually
+3. **Topic-Based**: Organize context with meaningful topics
+4. **Cache-Aware**: Let context reduce redundant operations
+5. **User-Isolated**: Always use proper `user_id` separation
+
+### 4. Common Integration Patterns
+
+| Your Current Setup | Integration Approach | Key Benefits |
+|-------------------|---------------------|--------------|
+| **OpenAI Function Calling** | `handler.get_schemas(merge_with=existing)` | Persistent memory, context-aware responses |
+| **LangChain Agents** | `handler.get_langchain_tools()` | Shared context across tool calls |
+| **LangGraph Workflows** | Shared `ContextMesh` across nodes | Multi-agent coordination |
+| **Custom APIs** | Wrapper pattern with context enhancement | Automatic caching, enriched data |
+| **Database Operations** | Context-aware wrapper with analytics | Smart caching, behavioral insights |
+| **Microservices** | Shared context mesh | Cross-service intelligence |
+
+### 5. Production Checklist
+
+- ✅ Use persistent storage (`enable_persistence=True`)
+- ✅ Set up proper user isolation with unique `user_id`
+- ✅ Organize context with meaningful topics
+- ✅ Set appropriate TTL values for context data
+- ✅ Monitor context usage and performance
+- ✅ Test integration thoroughly before deployment
+
+## What You've Accomplished
+
+You now know how to:
+
+- ✅ **Integrate Seamlessly**: Add Syntha to any existing framework or tool
+- ✅ **Enhance Without Breaking**: Keep existing code working while adding context
+- ✅ **Scale Intelligently**: Build multi-agent systems with shared context
+- ✅ **Cache Effectively**: Reduce API calls and database queries automatically
+- ✅ **Coordinate Services**: Share context across microservices and APIs
+
+Your agents now have the memory and context awareness they need to provide truly intelligent, personalized experiences.
+
+**Ready to get started?** Pick the integration pattern that matches your setup and start building context-aware agents today!
 
 class ServiceContextBridge:
     """Bridge context between microservices"""

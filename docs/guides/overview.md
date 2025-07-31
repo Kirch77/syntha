@@ -2,6 +2,39 @@
 
 Welcome to Syntha! This guide will take you on a step-by-step journey to master context-based multi-agent systems. By the end, you'll understand how to build secure, scalable agent workflows that share information intelligently.
 
+## 🚀 Quick Start: Add Context to Any Agent in 60 Seconds
+
+Want to see Syntha in action right now? Here's how to add context superpowers to any existing agent:
+
+```python
+from syntha import ContextMesh, ToolHandler
+
+# Step 1: Create context (with user isolation!)
+context = ContextMesh(user_id="your_user_id", enable_persistence=True)
+
+# Step 2: Create a tool handler for your agent
+handler = ToolHandler(context, agent_name="YourAgent")
+
+# Step 3: Get tools to give your LLM
+tools = handler.get_schemas()
+
+# That's it! Your agent now has:
+# - Persistent memory across conversations
+# - Ability to share context with other agents  
+# - Smart caching and context discovery
+# - Complete user isolation for security
+
+print(f"Your agent now has {len(tools)} context management tools!")
+```
+
+**What just happened?**
+
+1. **Context Creation**: Created an isolated context space for your user
+2. **Tool Integration**: Generated context management tools for your agent
+3. **Instant Enhancement**: Your agent can now remember, share, and discover context
+
+**Next**: Add these tools to your existing LLM framework (OpenAI, LangChain, etc.) and watch your agent become context-aware!
+
 ## What You'll Learn
 
 These guides are designed as **tutorials**, not reference documentation. Each section builds on the previous one with working examples you can copy and run immediately. You'll learn:
