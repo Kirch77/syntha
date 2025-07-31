@@ -10,9 +10,17 @@ The heart of Syntha - manages shared context storage, routing, and persistence.
 ```python
 from syntha import ContextMesh
 
+# Create context mesh with user isolation
 context = ContextMesh(user_id="user123")
-context.push("data", {"context": "value is in json"})
-result = context.get("data", "agent_name")
+
+# Share context globally
+context.push("system_status", "operational")
+
+# Share with specific topics
+context.push("customer_data", {"name": "Acme"}, topics=["sales", "support"])
+
+# Retrieve context
+result = context.get("system_status", "agent_name")
 ```
 
 ### [ToolHandler](tools.md)
@@ -21,8 +29,14 @@ Provides LLM-compatible function calling interface for agents to interact with c
 ```python
 from syntha import ToolHandler
 
+# Create handler for an agent
 handler = ToolHandler(context, "MyAgent")
-result = handler.handle_tool_call("get_context", keys=["data"])
+
+# Get available tool schemas for your LLM
+schemas = handler.get_schemas()
+
+# Handle function calls from LLM
+result = handler.handle_tool_call("get_context", keys=["customer_data"])
 ```
 
 ### [Prompt Builders](prompts.md)
@@ -31,7 +45,15 @@ Utilities for injecting context directly into agent prompts.
 ```python
 from syntha import build_system_prompt
 
+# Build system prompt with relevant context
 prompt = build_system_prompt("MyAgent", context)
+
+# Or inject context into existing prompts
+enhanced_prompt = inject_context_into_prompt(
+    "You are a sales assistant", 
+    context, 
+    "SalesAgent"
+)
 ```
 
 ### [Persistence](persistence.md)
@@ -40,7 +62,12 @@ Database backends for persistent context storage.
 ```python
 from syntha import create_database_backend
 
-backend = create_database_backend("postgresql", host="localhost")
+# SQLite for development
+backend = create_database_backend("sqlite", path="./data.db")
+
+# PostgreSQL for production
+backend = create_database_backend("postgresql", 
+    host="localhost", database="syntha", user="user", password="pass")
 ```
 
 ## Quick Reference
@@ -137,8 +164,7 @@ def setup_context(user_id: str) -> ContextMesh:
 
 ## Next Steps
 
-- **New to Syntha?** Start with the [ContextMesh reference](context-mesh.md)
-- **Building agents?** Check out the [Tools reference](tools.md)  
-- **Need prompt integration?** See [Prompt Builders](prompts.md)
-- **Going to production?** Review [Persistence options](persistence.md)
-- **Want all schemas?** Browse [Tool Schemas](schemas.md)
+- **New to Syntha?** Start with [ContextMesh](context-mesh.md)
+- **Building agents?** See [Tools](tools.md) and [Tool Schemas](schemas.md)
+- **Need prompt integration?** Check [Prompt Builders](prompts.md)
+- **Going to production?** Review [Persistence](persistence.md)
