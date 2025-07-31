@@ -88,6 +88,46 @@ class TestContextMesh:
         # Agent2 cannot access
         assert self.mesh.get("private_key", "agent2") is None
 
+    def test_combined_routing(self):
+        """Test combined routing with both topics and subscribers."""
+        # Setup topic subscriptions
+        self.mesh.register_agent_topics("topic_agent", ["sales"])
+        self.mesh.register_agent_topics("another_topic_agent", ["sales"])
+        
+        # Push with both topics and subscribers
+        self.mesh.push("combined_key", "combined_value", 
+                      topics=["sales"], subscribers=["direct_agent"])
+
+        # Topic subscribers should have access
+        assert self.mesh.get("combined_key", "topic_agent") == "combined_value"
+        assert self.mesh.get("combined_key", "another_topic_agent") == "combined_value"
+        
+        # Direct subscribers should have access
+        assert self.mesh.get("combined_key", "direct_agent") == "combined_value"
+        
+        # Other agents should not have access
+        assert self.mesh.get("combined_key", "other_agent") is None
+
+    def test_combined_routing_no_overlap(self):
+        """Test combined routing when there's no overlap between topics and subscribers."""
+        # Setup topic subscriptions
+        self.mesh.register_agent_topics("topic_agent", ["sales"])
+        
+        # Push with both topics and subscribers (no overlap)
+        self.mesh.push("combined_key", "combined_value", 
+                      topics=["sales"], subscribers=["direct_agent"])
+
+        # Both should have access
+        assert self.mesh.get("combined_key", "topic_agent") == "combined_value"
+        assert self.mesh.get("combined_key", "direct_agent") == "combined_value"
+        
+        # Verify in get_all_for_agent
+        topic_context = self.mesh.get_all_for_agent("topic_agent")
+        direct_context = self.mesh.get_all_for_agent("direct_agent")
+        
+        assert "combined_key" in topic_context
+        assert "combined_key" in direct_context
+
     def test_global_context(self):
         """Test global context access."""
         self.mesh.push("global_key", "global_value", subscribers=[])

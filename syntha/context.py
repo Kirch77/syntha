@@ -194,7 +194,7 @@ class ContextMesh:
         """
         Add or update context in the mesh with unified routing.
 
-        ROUTING OPTIONS (use exactly one):
+        ROUTING OPTIONS:
 
         1. **Topic-based routing** (RECOMMENDED for agent tools):
            - Use `topics=["sales", "analytics"]`
@@ -206,7 +206,12 @@ class ContextMesh:
            - Routes to specific named agents only
            - Best for: private messages, specific coordination
 
-        3. **Global context** (default):
+        3. **Combined routing** (NEW):
+           - Use both `subscribers` and `topics`
+           - Routes to direct subscribers PLUS agents subscribed to topics
+           - Best for: "notify sales team AND the manager"
+
+        4. **Global context** (default):
            - Use neither topics nor subscribers (both None)
            - Accessible by all agents in the system
            - Best for: shared configuration, system-wide state
@@ -214,27 +219,34 @@ class ContextMesh:
         Args:
             key: Unique identifier for the context (use descriptive names)
             value: The context data (can be any serializable type)
-            subscribers: List of agent names for direct targeting.
-                        Cannot be used with topics.
-            topics: List of topics for broadcast routing.
-                   Cannot be used with subscribers.
-            ttl: Time-to-live in seconds. None means no expiration.
-
-        Raises:
-            ValueError: If both topics and subscribers are specified
+            subscribers: List of agent names for direct targeting
+            topics: List of topics for broadcast routing
+            ttl: Time-to-live in seconds. None means no expiration
         """
-        if topics is not None and subscribers is not None:
-            raise ValueError(
-                "Cannot specify both 'topics' and 'subscribers'. Use one routing method."
-            )
 
         with self._lock:
-            if topics is not None:
-                # Topic-based routing
-                self._push_to_topics_internal(key, value, topics, ttl)
-            else:
-                # Direct subscriber routing (existing behavior)
-                self._push_internal(key, value, subscribers, ttl)
+            # Collect all target agents
+            target_agents = set()
+            
+            # Add direct subscribers
+            if subscribers:
+                target_agents.update(subscribers)
+            
+            # Add topic subscribers
+            if topics:
+                for topic in topics:
+                    if topic in self._topic_subscribers:
+                        target_agents.update(self._topic_subscribers[topic])
+            
+            # Use the combined list
+            final_subscribers = list(target_agents) if target_agents else None
+            
+            # Push with combined subscribers
+            self._push_internal(key, value, final_subscribers, ttl)
+            
+            # Track topics if specified (for topic-based queries)
+            if topics:
+                self._key_topics[key] = topics.copy()
 
     def _push_internal(
         self,

@@ -161,15 +161,29 @@ Share context with other agents through topic-based routing.
 
 - `key` (str): Context identifier
 - `value` (str): Context data (JSON string for complex data)
-- `topics` (List[str]): Topics to broadcast to
+- `topics` (Optional[List[str]]): Topics to broadcast to
+- `subscribers` (Optional[List[str]]): Specific agents to target directly
 - `ttl_hours` (Optional[float]): Time-to-live in hours (default: 24.0)
 
 **Example:**
 ```python
+# Topic-based broadcasting
 result = handler.handle_tool_call("push_context",
     key="customer_update",
     value='{"name": "Acme Corp", "status": "active"}',
     topics=["sales", "support"])
+
+# Direct agent targeting
+result = handler.handle_tool_call("push_context",
+    key="private_message",
+    value="Confidential information",
+    subscribers=["AdminAgent", "ManagerAgent"])
+
+# Combined routing
+result = handler.handle_tool_call("push_context",
+    key="urgent_update",
+    value="System maintenance required",
+    topics=["support"], subscribers=["ManagerAgent"])
 ```
 
 ### list_context

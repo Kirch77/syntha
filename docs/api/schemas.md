@@ -57,7 +57,7 @@ Share context with other agents through topic-based routing.
 ```json
 {
   "name": "push_context",
-  "description": "Share context with other agents by pushing to specific topics.\n        \n        💡 TIP: Use 'discover_topics' first to see what topics exist and have subscribers!\n        \n        Choose topics based on:\n        - Content relevance (e.g., 'sales' for pricing data, 'support' for customer issues)\n        - Subscriber count (more subscribers = broader reach)\n        - Common patterns: sales, marketing, support, product, analytics, customer_data\n        \n        For keys, use descriptive names like: 'q4_pricing', 'customer_feedback_summary', 'product_roadmap'\n        \n        You don't need to specify your agent name - the system knows who you are.",
+  "description": "Share context with other agents through flexible routing options.\n        \n        🎯 ROUTING OPTIONS (choose one or combine):\n        \n        1. **Topic Broadcasting** (RECOMMENDED):\n           - Use 'topics' parameter: [\"sales\", \"support\"]\n           - Routes to agents subscribed to those topics\n           - Best for: workflows, broadcasts, team coordination\n        \n        2. **Direct Agent Targeting**:\n           - Use 'subscribers' parameter: [\"Agent1\", \"Agent2\"]\n           - Routes only to those specific agents\n           - Best for: private messages, specific coordination\n        \n        3. **Combined Routing** (NEW):\n           - Use both 'topics' and 'subscribers'\n           - Routes to topic subscribers PLUS direct subscribers\n           - Best for: \"notify sales team AND the manager\"\n        \n        💡 TIP: Use 'discover_topics' first to see what topics exist and have subscribers!\n        \n        You don't need to specify your agent name - the system knows who you are.",
   "parameters": {
     "type": "object",
     "properties": {
@@ -76,7 +76,13 @@ Share context with other agents through topic-based routing.
         },
         "description": "Topics to broadcast to (e.g., ['sales', 'marketing', 'support'])"
       },
-
+      "subscribers": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Specific agent names to send this context to (e.g., ['ManagerAgent', 'AdminAgent'])"
+      },
       "ttl_hours": {
         "type": "number",
         "description": "How long context should remain available (hours). Default: 24 hours"
@@ -108,6 +114,12 @@ result = handler.handle_tool_call("push_context",
     key="system_status",
     value="operational"
 )
+
+# Combined routing
+result = handler.handle_tool_call("push_context",
+    key="urgent_update",
+    value="System maintenance required",
+    topics=["support"], subscribers=["ManagerAgent"])
 
 # With expiration
 result = handler.handle_tool_call("push_context",

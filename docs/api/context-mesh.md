@@ -72,11 +72,12 @@ def push(
 
 #### Routing Options
 
-You can use exactly one routing method:
+You can use one or combine multiple routing methods:
 
 1. **Global context** (default): `push("key", value)`
 2. **Direct targeting**: `push("key", value, subscribers=["Agent1", "Agent2"])`
 3. **Topic broadcasting**: `push("key", value, topics=["sales", "support"])`
+4. **Combined routing**: `push("key", value, topics=["sales"], subscribers=["ManagerAgent"])`
 
 #### Examples
 
@@ -89,6 +90,10 @@ context.push("secret", "password123", subscribers=["AdminAgent"])
 
 # Topic-based broadcasting
 context.push("customer_data", {"name": "Acme"}, topics=["sales", "support"])
+
+# Combined routing (topics + specific agents)
+context.push("urgent_update", "System maintenance", 
+            topics=["support"], subscribers=["ManagerAgent"])
 
 # With expiration (1 hour)
 context.push("session_token", "abc123", ttl=3600)

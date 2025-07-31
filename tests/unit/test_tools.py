@@ -115,6 +115,55 @@ class TestBuiltInTools:
 
         mesh.close()
 
+    def test_push_context_with_subscribers(self):
+        """Test push_context tool with direct subscribers."""
+        mesh = ContextMesh(enable_persistence=False)
+        handler = ToolHandler(context_mesh=mesh, agent_name="test_agent")
+
+        result = handler.handle_tool_call(
+            "push_context", 
+            key="private_key", 
+            value="private_value", 
+            subscribers=["agent1", "agent2"]
+        )
+
+        assert result["success"] is True
+        assert "subscribers: agent1, agent2" in result["message"]
+
+        mesh.close()
+
+    def test_push_context_combined_routing(self):
+        """Test push_context tool with both topics and subscribers."""
+        mesh = ContextMesh(enable_persistence=False)
+        handler = ToolHandler(context_mesh=mesh, agent_name="test_agent")
+
+        # Setup topic subscriptions
+        mesh.register_agent_topics("topic_agent", ["sales"])
+        mesh.register_agent_topics("another_agent", ["sales"])
+
+        result = handler.handle_tool_call(
+            "push_context", 
+            key="combined_key", 
+            value="combined_value", 
+            topics=["sales"], 
+            subscribers=["direct_agent"]
+        )
+
+        assert result["success"] is True
+        assert "topics: sales" in result["message"]
+        assert "subscribers: direct_agent" in result["message"]
+
+        # Verify the context is accessible to both topic subscribers and direct subscribers
+        topic_agent_context = mesh.get_all_for_agent("topic_agent")
+        direct_agent_context = mesh.get_all_for_agent("direct_agent")
+        another_agent_context = mesh.get_all_for_agent("another_agent")
+
+        assert "combined_key" in topic_agent_context
+        assert "combined_key" in direct_agent_context
+        assert "combined_key" in another_agent_context
+
+        mesh.close()
+
     def test_get_context_tool(self):
         """Test get_context tool."""
         mesh = ContextMesh(enable_persistence=False)

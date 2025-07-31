@@ -119,16 +119,26 @@ def get_push_context_tool_schema() -> Dict[str, Any]:
     """
     return {
         "name": "push_context",
-        "description": """Share context with other agents by pushing to specific topics.
+        "description": """Share context with other agents through flexible routing options.
+        
+        🎯 ROUTING OPTIONS (choose one or combine):
+        
+        1. **Topic Broadcasting** (RECOMMENDED):
+           - Use 'topics' parameter: ["sales", "support"]
+           - Routes to agents subscribed to those topics
+           - Best for: workflows, broadcasts, team coordination
+        
+        2. **Direct Agent Targeting**:
+           - Use 'subscribers' parameter: ["Agent1", "Agent2"]
+           - Routes only to those specific agents
+           - Best for: private messages, specific coordination
+        
+        3. **Combined Routing** (NEW):
+           - Use both 'topics' and 'subscribers'
+           - Routes to topic subscribers PLUS direct subscribers
+           - Best for: "notify sales team AND the manager"
         
         💡 TIP: Use 'discover_topics' first to see what topics exist and have subscribers!
-        
-        Choose topics based on:
-        - Content relevance (e.g., 'sales' for pricing data, 'support' for customer issues)
-        - Subscriber count (more subscribers = broader reach)
-        - Common patterns: sales, marketing, support, product, analytics, customer_data
-        
-        For keys, use descriptive names like: 'q4_pricing', 'customer_feedback_summary', 'product_roadmap'
         
         You don't need to specify your agent name - the system knows who you are.""",
         "parameters": {
@@ -144,12 +154,17 @@ def get_push_context_tool_schema() -> Dict[str, Any]:
                     "items": {"type": "string"},
                     "description": "Topics to broadcast to (e.g., ['sales', 'marketing', 'support'])",
                 },
+                "subscribers": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Specific agent names to send this context to (e.g., ['ManagerAgent', 'AdminAgent'])",
+                },
                 "ttl_hours": {
                     "type": "number",
                     "description": "How long context should remain available (hours). Default: 24 hours",
                 },
             },
-            "required": ["key", "value", "topics"],
+            "required": ["key", "value"],
         },
     }
 
@@ -158,18 +173,20 @@ def handle_push_context_call(
     context_mesh: ContextMesh,
     key: str,
     value: str,
-    topics: List[str],
+    topics: Optional[List[str]] = None,
+    subscribers: Optional[List[str]] = None,
     ttl_hours: float = 24.0,
     sender_agent: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Handle a push_context_to_topics function call from an agent.
+    Handle a push_context function call from an agent.
 
     Args:
         context_mesh: The ContextMesh instance to update
         key: Context key to set
         value: Context value (will attempt JSON parsing)
-        topics: List of topics to broadcast to
+        topics: List of topics to broadcast to (optional)
+        subscribers: List of specific agents to target (optional)
         ttl_hours: Time-to-live in hours
         sender_agent: Agent sending the context (auto-injected by ToolHandler)
 
@@ -185,21 +202,31 @@ def handle_push_context_call(
 
         ttl_seconds = ttl_hours * 3600 if ttl_hours > 0 else None
 
-        # Use the unified push API with topics
-        context_mesh.push(key=key, value=parsed_value, topics=topics, ttl=ttl_seconds)
+        # Use the unified push API with both topics and subscribers
+        context_mesh.push(key=key, value=parsed_value, topics=topics, subscribers=subscribers, ttl=ttl_seconds)
+
+        # Build response message
+        message_parts = []
+        if topics:
+            message_parts.append(f"topics: {', '.join(topics)}")
+        if subscribers:
+            message_parts.append(f"subscribers: {', '.join(subscribers)}")
+        
+        message = f"Context '{key}' shared with " + " and ".join(message_parts)
 
         return {
             "success": True,
-            "message": f"Context '{key}' shared with agents subscribed to topics: {', '.join(topics)}",
+            "message": message,
             "key": key,
             "value": parsed_value,
             "topics": topics,
+            "subscribers": subscribers,
             "ttl_hours": ttl_hours,
             "sender_agent": sender_agent,
         }
 
     except Exception as e:
-        return {"success": False, "error": str(e), "key": key, "topics": topics}
+        return {"success": False, "error": str(e), "key": key, "topics": topics, "subscribers": subscribers}
 
 
 def get_list_context_tool_schema() -> Dict[str, Any]:
