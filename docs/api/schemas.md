@@ -1,18 +1,12 @@
 # Tool Schemas Reference
 
-This page provides the complete OpenAI-compatible function schemas for all Syntha tools. These schemas can be used directly with any LLM that supports function calling.
-
-## Getting All Schemas
+OpenAI-compatible function schemas for all Syntha tools.
 
 ```python
-from syntha import get_all_tool_schemas, ToolHandler
+from syntha import ToolHandler
 
-# Get all available tool schemas
-all_schemas = get_all_tool_schemas()
-
-# Or get schemas from a specific handler
 handler = ToolHandler(context, "MyAgent")
-handler_schemas = handler.get_schemas()
+schemas = handler.get_schemas()
 ```
 
 ## Core Tool Schemas
@@ -420,9 +414,9 @@ All tools return responses in a consistent format:
 }
 ```
 
-## Using Schemas with Different LLM Frameworks
+## LLM Integration
 
-### OpenAI Function Calling
+### OpenAI
 
 ```python
 import openai
@@ -430,7 +424,7 @@ from syntha import ToolHandler
 
 handler = ToolHandler(context, "MyAgent")
 tools = [{"type": "function", "function": schema} 
-         for schema in handler.get_tool_schemas()]
+         for schema in handler.get_schemas()]
 
 response = openai.chat.completions.create(
     model="gpt-4",
@@ -439,28 +433,24 @@ response = openai.chat.completions.create(
 )
 
 # Handle function calls
-if response.choices[0].message.tool_calls:
-    for tool_call in response.choices[0].message.tool_calls:
-        result = handler.handle_tool_call(
-            tool_call.function.name,
-            **json.loads(tool_call.function.arguments)
-        )
+for tool_call in response.choices[0].message.tool_calls:
+    result = handler.handle_tool_call(
+        tool_call.function.name,
+        **json.loads(tool_call.function.arguments)
+    )
 ```
 
-### Anthropic Claude
+### Anthropic
 
 ```python
 import anthropic
 from syntha import ToolHandler
 
 handler = ToolHandler(context, "MyAgent")
-tools = handler.get_tool_schemas()
-
-client = anthropic.Anthropic()
 response = client.messages.create(
     model="claude-3-sonnet-20240229",
     messages=[{"role": "user", "content": "Help me manage context"}],
-    tools=tools
+    tools=handler.get_schemas()
 )
 
 # Handle tool calls
@@ -469,90 +459,36 @@ for content in response.content:
         result = handler.handle_tool_call(content.name, **content.input)
 ```
 
-### Custom LLM Integration
+## Access Control
 
 ```python
 from syntha import ToolHandler
 
-# Get schemas in standard format
-handler = ToolHandler(context, "MyAgent")
-schemas = handler.get_tool_schemas()
-
-# Convert to your LLM's format if needed
-def convert_schema_format(schema):
-    """Convert OpenAI format to your LLM's format."""
-    return {
-        "function_name": schema["name"],
-        "description": schema["description"],
-        "parameters": schema["parameters"]
-    }
-
-custom_schemas = [convert_schema_format(s) for s in schemas]
-
-# Use with your LLM...
-# response = your_llm.generate(messages, tools=custom_schemas)
-
-# Handle the response
-# result = handler.handle_tool_call(function_name, **parameters)
-```
-
-## Access Control and Schema Filtering
-
-Tool schemas are automatically filtered based on agent permissions:
-
-```python
-from syntha import ToolHandler
-
-# Admin agent sees all tools
-admin_handler = ToolHandler(context, "AdminAgent", denied_tools=[])
-admin_schemas = admin_handler.get_tool_schemas()
-print(f"Admin tools: {[s['name'] for s in admin_schemas]}")
-
-# Readonly agent sees limited tools
+# Restrict to read-only tools
 readonly_handler = ToolHandler(context, "ReadonlyAgent", 
                               allowed_tools=["get_context", "list_context"])
-readonly_schemas = readonly_handler.get_tool_schemas()
-print(f"Readonly tools: {[s['name'] for s in readonly_schemas]}")
 
-# Safe agent sees all except dangerous tools
-safe_handler = ToolHandler(context, "SafeAgent", denied_tools=["delete_topic"])
-safe_schemas = safe_handler.get_tool_schemas()
-print(f"Safe tools: {[s['name'] for s in safe_schemas]}")
+# Block dangerous tools
+safe_handler = ToolHandler(context, "SafeAgent", 
+                          denied_tools=["delete_topic"])
 ```
 
-## Validation and Error Handling
+## Error Handling
 
-The schemas include validation that helps catch common errors:
+All tools return a consistent response format:
 
 ```python
-# This will succeed
-result = handler.handle_tool_call("push_context",
-    key="valid_key",
-    value="valid_value",
-    topics=["sales"]
-)
+# Success
+{
+  "success": true,
+  "message": "Operation completed",
+  // ... tool-specific data
+}
 
-# This will succeed - you CAN use both topics and subscribers (combined routing)
-result = handler.handle_tool_call("push_context",
-    key="combined_routing", 
-    value="urgent update",
-    topics=["sales"],
-    subscribers=["ManagerAgent"]  # This is allowed and will notify both
-)
-
-# Response will be:
-# {
-#   "success": true,
-#   "message": "Context 'combined_routing' shared with topics: sales and subscribers: ManagerAgent",
-#   "key": "combined_routing",
-#   "value": "urgent update",
-#   "topics": ["sales"],
-#   "subscribers": ["ManagerAgent"],
-#   "ttl_hours": 24.0,
-#   "sender_agent": "MyAgent"
-# }
+# Error
+{
+  "success": false,
+  "error": "Description of what went wrong",
+  // ... error context
+}
 ```
-
----
-
-This completes the comprehensive tool schemas reference. All schemas are directly derived from the actual Syntha codebase and are ready to use with any LLM framework supporting function calling.

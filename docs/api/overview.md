@@ -2,19 +2,9 @@
 
 Syntha SDK provides a clean, Python-native API for building multi-agent context systems. All APIs are designed to be framework-agnostic and production-ready.
 
-## 🚀 Quick Start Path
-
-New to Syntha? Follow this recommended learning path:
-
-1. **[ContextMesh](context-mesh.md)** - Start here to understand the core context sharing system
-2. **[Tools](tools.md)** - Learn how agents interact with context through LLM-compatible tools
-3. **[Tool Schemas](schemas.md)** - Reference for all available tools and their exact formats
-4. **[Prompts](prompts.md)** - Advanced: Inject context directly into prompts
-5. **[Persistence](persistence.md)** - Production: Set up database backends
-
 ## Core Components
 
-### 🧠 [ContextMesh](context-mesh.md) - The Foundation
+### [ContextMesh](context-mesh.md)
 The heart of Syntha - manages shared context storage, routing, and persistence.
 
 ```python
@@ -33,13 +23,7 @@ context.push("customer_data", {"name": "Acme"}, topics=["sales", "support"])
 result = context.get("system_status", "agent_name")
 ```
 
-**Key Features:**
-- Topic-based routing
-- User isolation for security
-- Automatic cleanup of expired data
-- Database persistence
-
-### 🛠️ [ToolHandler](tools.md) - LLM Integration
+### [ToolHandler](tools.md)
 Provides LLM-compatible function calling interface for agents to interact with context.
 
 ```python
@@ -55,13 +39,7 @@ schemas = handler.get_schemas()
 result = handler.handle_tool_call("get_context", keys=["customer_data"])
 ```
 
-**Key Features:**
-- OpenAI-compatible function schemas
-- Automatic agent identification
-- Access control and permissions
-- Error handling with suggestions
-
-### 📝 [Prompt Builders](prompts.md) - Direct Integration
+### [Prompt Builders](prompts.md)
 Utilities for injecting context directly into agent prompts.
 
 ```python
@@ -78,7 +56,7 @@ enhanced_prompt = inject_context_into_prompt(
 )
 ```
 
-### 💾 [Persistence](persistence.md) - Production Ready
+### [Persistence](persistence.md)
 Database backends for persistent context storage.
 
 ```python
@@ -186,16 +164,7 @@ def setup_context(user_id: str) -> ContextMesh:
 
 ## Next Steps
 
-Choose your path based on your needs:
-
-### 🎯 I'm new to Syntha
-Start with [ContextMesh](context-mesh.md) to understand the fundamentals, then move to [Tools](tools.md) for agent integration.
-
-### 🤖 I'm building LLM agents
-Jump to [Tools](tools.md) for the agent interface, then reference [Tool Schemas](schemas.md) for exact function definitions.
-
-### 🔧 I need custom integration
-Check out [Prompt Builders](prompts.md) for direct prompt injection or [Persistence](persistence.md) for custom backends.
-
-### 📚 I want the complete reference
-Browse [Tool Schemas](schemas.md) for all available functions and their exact OpenAI-compatible schemas.
+- **New to Syntha?** Start with [ContextMesh](context-mesh.md)
+- **Building agents?** See [Tools](tools.md) and [Tool Schemas](schemas.md)
+- **Need prompt integration?** Check [Prompt Builders](prompts.md)
+- **Going to production?** Review [Persistence](persistence.md)
