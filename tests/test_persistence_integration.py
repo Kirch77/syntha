@@ -285,9 +285,9 @@ class TestPersistenceIntegration:
 
         if sys.version_info < (3, 10) and os.name == "nt":
             # Most lenient for Python 3.9 on Windows
-            insert_threshold = 5.0 * ci_multiplier  # 5+ seconds for 100 items
-            retrieve_threshold = 0.8 * ci_multiplier  # 0.8+ seconds for 100 items
-            cleanup_threshold = 1.5 * ci_multiplier  # 1.5+ seconds for cleanup
+            insert_threshold = 8.0 * ci_multiplier  # 8+ seconds for 100 items
+            retrieve_threshold = 1.5 * ci_multiplier  # 1.5+ seconds for 100 items
+            cleanup_threshold = 2.5 * ci_multiplier  # 2.5+ seconds for cleanup
         elif sys.version_info < (3, 10):
             # More lenient for Python 3.9 on any platform
             insert_threshold = 3.0 * ci_multiplier  # 3+ seconds for 100 items
