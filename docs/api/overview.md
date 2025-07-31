@@ -110,6 +110,10 @@ prefs = context.get("user_preferences", "agent_name")
 
 #### Topic-Based Routing
 ```python
+from syntha import ContextMesh
+
+context = ContextMesh(user_id="user123")
+
 # Agent subscribes to topics
 context.register_agent_topics("SalesAgent", ["sales", "customers"])
 

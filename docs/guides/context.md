@@ -410,6 +410,10 @@ context = ContextMesh(
 
 ### 3. Organize Topics by Domain
 ```python
+from syntha import ContextMesh
+
+context = ContextMesh(user_id="user123")
+
 # ✅ GOOD - Clear domain separation
 context.register_agent_topics("SalesAgent", ["sales", "customers", "leads"])
 context.register_agent_topics("SupportAgent", ["support", "customers", "issues"])

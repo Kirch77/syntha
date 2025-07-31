@@ -34,6 +34,9 @@ Syntha provides three ways to route context between agents:
 Context accessible by all agents in the system.
 
 ```python
+from syntha import ContextMesh
+
+context = ContextMesh(user_id="user123")
 # Available to all agents
 context.push("api_status", "healthy")
 ```
@@ -44,6 +47,9 @@ context.push("api_status", "healthy")
 Context targeted to specific named agents.
 
 ```python
+from syntha import ContextMesh
+
+context = ContextMesh(user_id="user123")
 # Only accessible by "Agent1" and "Agent2"  
 context.push("private_data", {"key": "value"}, subscribers=["Agent1", "Agent2"])
 ```
@@ -54,6 +60,9 @@ context.push("private_data", {"key": "value"}, subscribers=["Agent1", "Agent2"])
 Context broadcast to agents subscribed to specific topics.
 
 ```python
+from syntha import ContextMesh
+
+context = ContextMesh(user_id="user123")
 # Available to agents subscribed to "sales" or "analytics" topics
 context.push("revenue_data", {"q4": 150000}, topics=["sales", "analytics"])
 ```
@@ -65,6 +74,8 @@ context.push("revenue_data", {"q4": 150000}, topics=["sales", "analytics"])
 One of Syntha's most important features is complete user isolation. Each user gets their own context space that's invisible to other users.
 
 ```python
+from syntha import ContextMesh
+
 # User A's context
 context_a = ContextMesh(user_id="user_a")
 context_a.push("secret", "user_a_data")
@@ -92,6 +103,9 @@ context_b.push("secret", "user_b_data")
 Context items can automatically expire after a specified duration:
 
 ```python
+from syntha import ContextMesh
+
+context = ContextMesh(user_id="user123")
 # Expires after 1 hour (3600 seconds)
 context.push("temporary_token", "abc123", ttl=3600)
 ```
@@ -125,11 +139,14 @@ context = ContextMesh(
 Expired items are automatically cleaned up to prevent memory bloat:
 
 ```python
+from syntha import ContextMesh
+
+context = ContextMesh(user_id="user123")
 # Manual cleanup
 context.cleanup_expired()
 
 # Automatic cleanup (default: every 5 minutes)
-context = ContextMesh(auto_cleanup=True)
+context = ContextMesh(user_id="user123", auto_cleanup=True)
 ```
 
 ## Agent Integration Patterns
@@ -166,8 +183,10 @@ system_prompt = build_system_prompt("SalesAgent", context)
 Syntha maintains indexes for fast context lookups:
 
 ```python
+from syntha import ContextMesh
+
 # Enable indexing for better performance (default)
-context = ContextMesh(enable_indexing=True)
+context = ContextMesh(user_id="user123", enable_indexing=True)
 ```
 
 ### Database Backends
@@ -180,7 +199,10 @@ Choose the right backend for your scale:
 Control memory usage with cleanup settings:
 
 ```python
+from syntha import ContextMesh
+
 context = ContextMesh(
+    user_id="user123",
     auto_cleanup=True,        # Automatic cleanup
     cleanup_interval=300      # Every 5 minutes
 )
