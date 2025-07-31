@@ -77,95 +77,84 @@ def main():
         f"📄 Analytics agent has access to {len(mesh.get_all_for_agent('Analytics'))} context items"
     )
 
-    # 4. Agent Communication - Direct Messaging
+    # 4. Agent Communication - Context Sharing
     print("\n4️⃣ Agent-to-agent communication...")
 
-    # DevLead sends task to Backend
+    # DevLead shares task with Backend via context
     result1 = handler.handle_tool_call(
-        "send_message_to_agent",
-        from_agent="DevLead",
-        to_agent="Backend",
-        message="Please implement user authentication endpoint with JWT tokens",
-        message_type="request",
-        priority="high",
-        requires_confirmation=True,
-        thread_id="auth_implementation",
+        "push_context",
+        key="auth_task",
+        value="Please implement user authentication endpoint with JWT tokens",
+        subscribers=["Backend"],
     )
-    print(f"📤 DevLead → Backend: {result1['message']}")
+    print(f"📤 DevLead → Backend: Task shared via context")
 
-    # Backend responds with confirmation
-    result2 = handler.handle_tool_call(
-        "send_message_to_agent",
-        from_agent="Backend",
-        to_agent="DevLead",
-        message="Authentication endpoint implemented. Added JWT middleware and user validation.",
-        message_type="result",
-        priority="high",
-        thread_id="auth_implementation",
+    # Backend responds with implementation status
+    backend_handler = ToolHandler(mesh, agent_name="Backend")
+    result2 = backend_handler.handle_tool_call(
+        "push_context",
+        key="auth_status",
+        value="Authentication endpoint implemented. Added JWT middleware and user validation.",
+        subscribers=["DevLead"],
     )
-    print(f"📤 Backend → DevLead: {result2['message']}")
+    print(f"📤 Backend → DevLead: Status shared via context")
 
-    # 5. Bulk Operations - Broadcast
-    print("\n5️⃣ Bulk messaging and operations...")
+    # 5. Bulk Operations - Topic Broadcasting
+    print("\n5️⃣ Bulk operations and topic broadcasting...")
 
-    # Broadcast to entire team
-    broadcast_result = handler.handle_tool_call(
-        "broadcast_message_to_agents",
-        from_agent="Product",
-        to_agents=["DevLead", "Backend", "Frontend", "Analytics", "Marketing"],
-        message="🎉 New feature ready for testing: User authentication system",
-        message_type="announcement",
-        priority="normal",
-        create_thread=True,
-        exclude_sender=True,  # Product won't receive their own message
-    )
-    print(f"📢 Broadcast sent to {broadcast_result['successful_sends']} agents")
+    # Subscribe all agents to a development topic
+    agents = ["DevLead", "Backend", "Frontend", "Analytics", "Marketing"]
+    for agent in agents:
+        agent_handler = ToolHandler(mesh, agent_name=agent)
+        agent_handler.handle_tool_call("subscribe_to_topics", topics=["development"])
 
-    # Batch context operations
-    batch_result = handler.handle_tool_call(
-        "batch_context_operation",
-        agent_name="Analytics",
-        operations=[
-            {"type": "push", "key": "feature_flag_auth", "value": True},
-            {
-                "type": "push",
-                "key": "test_users",
-                "value": ["test@example.com"],
-                "subscribers": ["Backend", "Frontend"],
-            },
-            {"type": "get", "key": "user_metrics"},
-        ],
-        atomic=True,
-        continue_on_error=False,
+    # Broadcast announcement via topic
+    product_handler = ToolHandler(mesh, agent_name="Product")
+    broadcast_result = product_handler.handle_tool_call(
+        "push_context",
+        key="feature_announcement",
+        value="🎉 New feature ready for testing: User authentication system",
+        topics=["development"]
     )
-    print(
-        f"⚡ Batch operation: {batch_result['successful_operations']}/{batch_result['total_operations']} succeeded"
-    )
+    print(f"📢 Broadcast sent via development topic")
 
-    # 6. Message Retrieval with Advanced Filtering
-    print("\n6️⃣ Advanced message retrieval...")
+    # Batch context operations (simulated)
+    analytics_handler = ToolHandler(mesh, agent_name="Analytics")
+    
+    # Push multiple context items
+    analytics_handler.handle_tool_call(
+        "push_context",
+        key="feature_flag_auth",
+        value="true",
+        subscribers=["Backend", "Frontend"]
+    )
+    
+    analytics_handler.handle_tool_call(
+        "push_context",
+        key="test_users",
+        value='["test@example.com"]',
+        subscribers=["Backend", "Frontend"]
+    )
+    
+    print(f"⚡ Batch context operations completed")
 
-    # DevLead checks all messages
-    dev_messages = handler.handle_tool_call(
-        "get_messages_from_agents",
-        agent_name="DevLead",
-        unread_only=False,
-        sort_by_priority=True,
-        limit=10,
-    )
-    print(f"📥 DevLead has {dev_messages['count']} messages")
+    # 6. Context Retrieval and Discovery
+    print("\n6️⃣ Context retrieval and discovery...")
 
-    # Backend checks only high priority messages
-    backend_urgent = handler.handle_tool_call(
-        "get_messages_from_agents",
-        agent_name="Backend",
-        priority="high",
-        thread_id="auth_implementation",
-        include_confirmations=True,
-    )
-    print(
-        f"🔥 Backend has {backend_urgent['count']} high priority messages in auth thread"
-    )
+    # DevLead checks all available context
+    dev_context = handler.handle_tool_call("get_context")
+    dev_context_count = len(dev_context.get('context', {}))
+    print(f"📥 DevLead has access to {dev_context_count} context items")
+
+    # Backend checks specific context items
+    backend_context = backend_handler.handle_tool_call("get_context", keys=["auth_task", "feature_flag_auth"])
+    backend_found = len(backend_context.get('context', {}))
+    print(f"🔥 Backend found {backend_found} requested context items")
+
+    # Discover available topics
+    topics = handler.handle_tool_call("discover_topics")
+    topic_names = list(topics['topics'].keys()) if topics['success'] else []
+    print(f"📋 Available topics: {topic_names}")
 
     # 7. Performance Demonstration
     print("\n7️⃣ Performance features...")

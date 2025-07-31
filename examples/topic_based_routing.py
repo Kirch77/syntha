@@ -22,50 +22,49 @@ def main():
 
     print("=== Topic-Based Multi-Agent System Demo ===\n")
 
-    # Step 1: Agents register for topics they care about
-    print("📋 Step 1: Agents register for topics")
+    # Step 1: Agents subscribe to topics they care about
+    print("📋 Step 1: Agents subscribe to topics")
 
     marketing_result = marketing_handler.handle_tool_call(
-        "register_for_topics",
+        "subscribe_to_topics",
         topics=["campaigns", "customer_insights", "product_launches"],
     )
-    print(f"MarketingBot: {marketing_result['message']}")
+    print(f"MarketingBot: Subscribed to {len(marketing_result.get('subscribed_topics', []))} topics")
 
     sales_result = sales_handler.handle_tool_call(
-        "register_for_topics", topics=["leads", "customer_insights", "pricing"]
+        "subscribe_to_topics", topics=["leads", "customer_insights", "pricing"]
     )
-    print(f"SalesBot: {sales_result['message']}")
+    print(f"SalesBot: Subscribed to {len(sales_result.get('subscribed_topics', []))} topics")
 
     support_result = support_handler.handle_tool_call(
-        "register_for_topics",
+        "subscribe_to_topics",
         topics=["customer_issues", "product_updates", "customer_insights"],
     )
-    print(f"SupportBot: {support_result['message']}\n")
+    print(f"SupportBot: Subscribed to {len(support_result.get('subscribed_topics', []))} topics\n")
 
     # Step 2: Marketing agent shares campaign information
     print("📢 Step 2: MarketingBot shares campaign data")
 
     campaign_result = marketing_handler.handle_tool_call(
-        "push_context_to_topics",
+        "push_context",
         key="q4_campaign",
         value="Holiday promotion targeting small businesses. 25% discount on annual plans. Focus on cost savings and productivity.",
         topics=["campaigns", "customer_insights"],
         ttl_hours=48,
     )
-    print(f"MarketingBot: {campaign_result['message']}\n")
+    print(f"MarketingBot: Campaign data shared successfully\n")
 
     # Step 3: Sales agent discovers available context
     print("🔍 Step 3: SalesBot discovers available context")
 
-    sales_keys_result = sales_handler.handle_tool_call("list_context_keys")
-    if sales_keys_result["success"]:
-        print(f"SalesBot found context organized by topics:")
-        for topic, keys in sales_keys_result["keys_by_topic"].items():
-            if keys:  # Only show topics that have keys
-                print(f"  📁 {topic}: {keys}")
-        print(
-            f"  Total accessible keys: {len(sales_keys_result['all_accessible_keys'])}\n"
-        )
+    sales_context_result = sales_handler.handle_tool_call("get_context")
+    if sales_context_result["success"]:
+        context_items = sales_context_result.get('context', {})
+        print(f"SalesBot found context:")
+        print(f"  📊 Total accessible context items: {len(context_items)}")
+        for key, value in context_items.items():
+            print(f"  🔑 {key}: {str(value)[:50]}...")
+        print()
 
     # Step 4: Sales agent retrieves specific context
     print("📥 Step 4: SalesBot retrieves campaign context")
@@ -79,12 +78,13 @@ def main():
     # Step 5: Support agent also gets access to customer insights
     print("📥 Step 5: SupportBot checks for customer insights")
 
-    support_keys_result = support_handler.handle_tool_call("list_context_keys")
-    if support_keys_result["success"]:
-        print(f"SupportBot found context organized by topics:")
-        for topic, keys in support_keys_result["keys_by_topic"].items():
-            if keys:
-                print(f"  📁 {topic}: {keys}")
+    support_context_result = support_handler.handle_tool_call("get_context")
+    if support_context_result["success"]:
+        support_items = support_context_result.get('context', {})
+        print(f"SupportBot found context:")
+        print(f"  📊 Total accessible context items: {len(support_items)}")
+        for key, value in support_items.items():
+            print(f"  🔑 {key}: {str(value)[:50]}...")
         print()
 
     # Step 6: Multiple agents can push to the same topic
@@ -92,38 +92,37 @@ def main():
 
     # Sales adds customer feedback
     sales_insight_result = sales_handler.handle_tool_call(
-        "push_context_to_topics",
+        "push_context",
         key="customer_feedback_q4",
         value="Customers are asking for mobile app improvements and better API documentation.",
         topics=["customer_insights", "product_updates"],
     )
-    print(f"SalesBot: {sales_insight_result['message']}")
+    print(f"SalesBot: Customer feedback shared successfully")
 
     # Support adds technical insights
     support_insight_result = support_handler.handle_tool_call(
-        "push_context_to_topics",
+        "push_context",
         key="support_trends_q4",
         value="Top support issues: API rate limiting (40%), mobile sync problems (25%), onboarding confusion (20%).",
         topics=["customer_insights", "customer_issues"],
     )
-    print(f"SupportBot: {support_insight_result['message']}\n")
+    print(f"SupportBot: Support trends shared successfully\n")
 
     # Step 7: Marketing sees all customer insights
     print("📊 Step 7: MarketingBot discovers all customer insights")
 
-    marketing_keys_result = marketing_handler.handle_tool_call("list_context_keys")
-    if marketing_keys_result["success"]:
-        customer_insights_keys = marketing_keys_result["keys_by_topic"].get(
-            "customer_insights", []
-        )
-        if customer_insights_keys:
-            print(
-                f"MarketingBot found {len(customer_insights_keys)} customer insight keys: {customer_insights_keys}"
-            )
+    # Get all context available to MarketingBot
+    marketing_context_result = marketing_handler.handle_tool_call("get_context")
+    if marketing_context_result["success"]:
+        marketing_items = marketing_context_result.get('context', {})
+        customer_insight_keys = [key for key in marketing_items.keys() if 'customer' in key.lower() or 'insight' in key.lower()]
+        
+        if customer_insight_keys:
+            print(f"MarketingBot found {len(customer_insight_keys)} customer insight keys: {customer_insight_keys}")
 
             # Retrieve all customer insights
             marketing_insights_result = marketing_handler.handle_tool_call(
-                "get_context", keys=customer_insights_keys
+                "get_context", keys=customer_insight_keys
             )
             if marketing_insights_result["success"]:
                 print("MarketingBot retrieved customer insights:")

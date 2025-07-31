@@ -22,62 +22,61 @@ def main():
     sales_handler = ToolHandler(mesh, agent_name="SalesBot")
     support_handler = ToolHandler(mesh, agent_name="SupportBot")
 
-    # Step 1: Agents register for topics they care about
-    print("📋 Step 1: Agents register for topics\n")
+    # Step 1: Agents subscribe to topics they care about
+    print("📋 Step 1: Agents subscribe to topics\n")
 
     marketing_result = marketing_handler.handle_tool_call(
-        "register_for_topics",
+        "subscribe_to_topics",
         topics=["campaigns", "customer_insights", "product_launches"],
     )
-    print(f"MarketingBot: {marketing_result['message']}")
+    print(f"MarketingBot: Subscribed to {len(marketing_result.get('subscribed_topics', []))} topics")
 
     sales_result = sales_handler.handle_tool_call(
-        "register_for_topics", topics=["leads", "customer_insights", "pricing"]
+        "subscribe_to_topics", topics=["leads", "customer_insights", "pricing"]
     )
-    print(f"SalesBot: {sales_result['message']}")
+    print(f"SalesBot: Subscribed to {len(sales_result.get('subscribed_topics', []))} topics")
 
     support_result = support_handler.handle_tool_call(
-        "register_for_topics",
+        "subscribe_to_topics",
         topics=["customer_issues", "product_updates", "customer_insights"],
     )
-    print(f"SupportBot: {support_result['message']}\n")
+    print(f"SupportBot: Subscribed to {len(support_result.get('subscribed_topics', []))} topics\n")
 
     # Step 2: Marketing agent shares campaign information
     print("📢 Step 2: MarketingBot shares campaign data\n")
 
     campaign_result = marketing_handler.handle_tool_call(
-        "push_context_to_topics",
+        "push_context",
         key="q4_campaign",
         value="Holiday promotion targeting small businesses. 25% discount on annual plans. Focus on cost savings and productivity.",
         topics=["campaigns", "customer_insights"],
         ttl_hours=48,
     )
-    print(f"MarketingBot: {campaign_result['message']}")
+    print(f"MarketingBot: Campaign data shared successfully")
 
     # Marketing also shares customer research
     research_result = marketing_handler.handle_tool_call(
-        "push_context_to_topics",
+        "push_context",
         key="customer_research",
         value="Survey shows 78% of SMBs struggle with team productivity. Top pain points: communication, project tracking, time management.",
         topics=["customer_insights"],
         ttl_hours=72,
     )
-    print(f"MarketingBot: {research_result['message']}\n")
+    print(f"MarketingBot: Customer research shared successfully\n")
 
-    # Step 3: Sales agent discovers available context (the key improvement!)
+    # Step 3: Sales agent discovers available context
     print("🔍 Step 3: SalesBot discovers available context\n")
 
-    keys_result = sales_handler.handle_tool_call("list_context_keys")
-    print(f"SalesBot discovered context organized by topics:")
+    # Get all context available to SalesBot
+    context_result = sales_handler.handle_tool_call("get_context")
+    print(f"SalesBot discovered context:")
 
-    if keys_result["success"]:
-        keys_by_topic = keys_result["keys_by_topic"]
-        for topic, keys in keys_by_topic.items():
-            if keys:  # Only show topics with keys
-                print(f"  📂 {topic}: {keys}")
-
-        print(f"  📊 Total accessible keys: {len(keys_result['all_accessible_keys'])}")
-        print(f"  🏷️  Topics subscribed to: {keys_result['topics_subscribed']}\n")
+    if context_result["success"]:
+        context_items = context_result.get('context', {})
+        print(f"  📊 Total accessible context items: {len(context_items)}")
+        for key, value in context_items.items():
+            print(f"  🔑 {key}: {str(value)[:50]}...")
+        print()
 
     # Step 4: Sales agent retrieves relevant context
     print("📥 Step 4: SalesBot retrieves relevant context\n")
@@ -99,27 +98,27 @@ def main():
     # Step 5: Support agent also discovers their context
     print("🔍 Step 5: SupportBot checks their available context\n")
 
-    support_keys_result = support_handler.handle_tool_call("list_context_keys")
+    support_context_result = support_handler.handle_tool_call("get_context")
 
-    if support_keys_result["success"]:
-        keys_by_topic = support_keys_result["keys_by_topic"]
-        print(f"SupportBot's available context by topic:")
-        for topic, keys in keys_by_topic.items():
-            if keys:  # Only show topics with keys
-                print(f"  📂 {topic}: {keys}")
+    if support_context_result["success"]:
+        support_context_items = support_context_result.get('context', {})
+        print(f"SupportBot's available context:")
+        print(f"  📊 Total accessible context items: {len(support_context_items)}")
+        for key, value in support_context_items.items():
+            print(f"  🔑 {key}: {str(value)[:50]}...")
         print()
 
     # Step 6: Support shares product update
     print("📢 Step 6: SupportBot shares product update\n")
 
     update_result = support_handler.handle_tool_call(
-        "push_context_to_topics",
+        "push_context",
         key="feature_release",
         value="New team collaboration features released: real-time document editing, video calling integration, task automation.",
         topics=["product_updates"],
         ttl_hours=24,
     )
-    print(f"SupportBot: {update_result['message']}\n")
+    print(f"SupportBot: Product update shared successfully\n")
 
     # Step 7: Show final system state
     print("📊 Step 7: Final system statistics\n")

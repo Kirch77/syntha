@@ -12,6 +12,10 @@ Syntha's persistence layer automatically handles:
 - User isolation at the database level
 - Automatic schema creation and migration
 
+
+!!! info "Recommendation"
+    It is not recommended to use database backends directly as it is safer and more practical to handle context through the context mesh.
+
 ## Database Backends
 
 ### create_database_backend()
