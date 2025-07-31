@@ -121,10 +121,10 @@ class TestBuiltInTools:
         handler = ToolHandler(context_mesh=mesh, agent_name="test_agent")
 
         result = handler.handle_tool_call(
-            "push_context", 
-            key="private_key", 
-            value="private_value", 
-            subscribers=["agent1", "agent2"]
+            "push_context",
+            key="private_key",
+            value="private_value",
+            subscribers=["agent1", "agent2"],
         )
 
         assert result["success"] is True
@@ -142,11 +142,11 @@ class TestBuiltInTools:
         mesh.register_agent_topics("another_agent", ["sales"])
 
         result = handler.handle_tool_call(
-            "push_context", 
-            key="combined_key", 
-            value="combined_value", 
-            topics=["sales"], 
-            subscribers=["direct_agent"]
+            "push_context",
+            key="combined_key",
+            value="combined_value",
+            topics=["sales"],
+            subscribers=["direct_agent"],
         )
 
         assert result["success"] is True

@@ -203,7 +203,13 @@ def handle_push_context_call(
         ttl_seconds = ttl_hours * 3600 if ttl_hours > 0 else None
 
         # Use the unified push API with both topics and subscribers
-        context_mesh.push(key=key, value=parsed_value, topics=topics, subscribers=subscribers, ttl=ttl_seconds)
+        context_mesh.push(
+            key=key,
+            value=parsed_value,
+            topics=topics,
+            subscribers=subscribers,
+            ttl=ttl_seconds,
+        )
 
         # Build response message
         message_parts = []
@@ -211,7 +217,7 @@ def handle_push_context_call(
             message_parts.append(f"topics: {', '.join(topics)}")
         if subscribers:
             message_parts.append(f"subscribers: {', '.join(subscribers)}")
-        
+
         message = f"Context '{key}' shared with " + " and ".join(message_parts)
 
         return {
@@ -226,7 +232,13 @@ def handle_push_context_call(
         }
 
     except Exception as e:
-        return {"success": False, "error": str(e), "key": key, "topics": topics, "subscribers": subscribers}
+        return {
+            "success": False,
+            "error": str(e),
+            "key": key,
+            "topics": topics,
+            "subscribers": subscribers,
+        }
 
 
 def get_list_context_tool_schema() -> Dict[str, Any]:

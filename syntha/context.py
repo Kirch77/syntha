@@ -227,23 +227,23 @@ class ContextMesh:
         with self._lock:
             # Collect all target agents
             target_agents = set()
-            
+
             # Add direct subscribers
             if subscribers:
                 target_agents.update(subscribers)
-            
+
             # Add topic subscribers
             if topics:
                 for topic in topics:
                     if topic in self._topic_subscribers:
                         target_agents.update(self._topic_subscribers[topic])
-            
+
             # Use the combined list
             final_subscribers = list(target_agents) if target_agents else None
-            
+
             # Push with combined subscribers
             self._push_internal(key, value, final_subscribers, ttl)
-            
+
             # Track topics if specified (for topic-based queries)
             if topics:
                 self._key_topics[key] = topics.copy()
