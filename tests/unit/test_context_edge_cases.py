@@ -213,16 +213,25 @@ class TestTopicSystemEdgeCases:
 class TestErrorHandling:
     """Test error handling and resilience."""
 
-    def test_invalid_routing_combination(self):
-        """Test error when both topics and subscribers are provided."""
+    def test_combined_routing_works(self):
+        """Test that both topics and subscribers can be used together."""
         mesh = ContextMesh(enable_persistence=False)
 
-        with pytest.raises(
-            ValueError, match="Cannot specify both 'topics' and 'subscribers'"
-        ):
-            mesh.push(
-                "test_key", "test_value", subscribers=["agent1"], topics=["topic1"]
-            )
+        # Register agents to topics
+        mesh.register_agent_topics("topic_agent", ["topic1"])
+        
+        # Push with both topics and subscribers
+        mesh.push(
+            "test_key", "test_value", subscribers=["direct_agent"], topics=["topic1"]
+        )
+        
+        # Both agents should have access
+        assert mesh.get("test_key", "direct_agent") == "test_value"
+        assert mesh.get("test_key", "topic_agent") == "test_value"
+        
+        # Other agents should not have access
+        assert mesh.get("test_key", "other_agent") is None
+        
         mesh.close()
 
     def test_database_connection_failure_graceful_degradation(self):

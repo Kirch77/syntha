@@ -239,7 +239,12 @@ class ContextMesh:
                         target_agents.update(self._topic_subscribers[topic])
 
             # Use the combined list
-            final_subscribers = list(target_agents) if target_agents else None
+            if target_agents:
+                final_subscribers = list(target_agents)
+            else:
+                # If we have topics but no subscribers, use the special marker
+                # This ensures topic-based context with no subscribers is not accessible
+                final_subscribers = ["__NO_SUBSCRIBERS__"] if topics else None
 
             # Push with combined subscribers
             self._push_internal(key, value, final_subscribers, ttl)
