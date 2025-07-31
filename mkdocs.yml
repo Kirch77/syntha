@@ -63,11 +63,14 @@ nav:
   - Installation: installation.md
   - API Reference:
     - Overview: api/overview.md
-    - ContextMesh: api/context-mesh.md
-    - Tools: api/tools.md
-    - Prompts: api/prompts.md
-    - Persistence: api/persistence.md
-    - Tool Schemas: api/schemas.md
+    - Getting Started:
+      - ContextMesh: api/context-mesh.md
+      - Tools: api/tools.md
+    - Advanced Features:
+      - Prompts: api/prompts.md
+      - Persistence: api/persistence.md
+    - Reference:
+      - Tool Schemas: api/schemas.md
   - Guides:
     - Getting Started: guides/overview.md
     - Basics: guides/basics.md

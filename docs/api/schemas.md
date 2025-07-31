@@ -131,20 +131,15 @@ result = handler.handle_tool_call("push_context",
 
 ### list_context
 
-Discover available context keys and their metadata.
+Discover available context keys organized by topic.
 
 ```json
 {
   "name": "list_context",
-  "description": "Discover available context keys and their metadata.\n        \n        💡 TIP: Use this to explore what context is available before calling get_context!\n        \n        Returns keys you have access to, along with helpful metadata.",
+  "description": "List all context keys you have access to, organized by topic. \n        \n        ⚠️ IMPORTANT: Use this tool FIRST before trying to retrieve context!\n        This shows you what context is available so you can decide which keys to retrieve.\n        \n        You don't need to specify your agent name - the system knows who you are.",
   "parameters": {
     "type": "object",
-    "properties": {
-      "pattern": {
-        "type": "string",
-        "description": "Optional filter pattern for context keys (e.g., 'user_*' to find all user-related context)"
-      }
-    },
+    "properties": {},
     "required": []
   }
 }
@@ -154,9 +149,6 @@ Discover available context keys and their metadata.
 ```python
 # List all accessible context
 result = handler.handle_tool_call("list_context")
-
-# Filter by pattern
-result = handler.handle_tool_call("list_context", pattern="user_*")
 ```
 
 ### subscribe_to_topics
@@ -198,13 +190,13 @@ Find available topics and their subscriber counts.
 ```json
 {
   "name": "discover_topics",
-  "description": "Find available topics and their subscriber counts.\n        \n        🔍 Use this to explore what topics exist in the system!\n        \n        Great for understanding the communication landscape and finding relevant topics to subscribe to.\n        \n        💡 TIP: Look for topics with active subscribers - they're likely to have interesting context!",
+  "description": "Discover available topics in the system and see subscriber counts.\n        \n        🎯 Use this BEFORE pushing context to understand:\n        - What topics exist in the system\n        - How many agents are subscribed to each topic\n        - Popular topics vs niche ones\n        \n        This helps you choose the right topics for your context.",
   "parameters": {
     "type": "object",
     "properties": {
-      "pattern": {
-        "type": "string",
-        "description": "Optional filter pattern for topic names (e.g., 'sales*' to find sales-related topics)"
+      "include_subscriber_names": {
+        "type": "boolean",
+        "description": "Whether to include names of subscribers for each topic (default: false)"
       }
     },
     "required": []
@@ -214,11 +206,11 @@ Find available topics and their subscriber counts.
 
 **Usage Example:**
 ```python
-# Discover all topics
+# Discover all topics with subscriber counts
 result = handler.handle_tool_call("discover_topics")
 
-# Find topics matching a pattern
-result = handler.handle_tool_call("discover_topics", pattern="sales*")
+# Include subscriber names
+result = handler.handle_tool_call("discover_topics", include_subscriber_names=True)
 ```
 
 ### unsubscribe_from_topics
@@ -337,11 +329,13 @@ All tools return responses in a consistent format:
 ```json
 {
   "success": true,
+  "message": "Context 'customer_update' shared with topics: sales, support",
   "key": "customer_update",
+  "value": {"name": "Acme Corp", "status": "active"},
   "topics": ["sales", "support"],
-  "subscribers_notified": ["SalesAgent", "SupportAgent"],
-  "message": "Context pushed to 2 topics, notified 2 subscribers",
-  "agent_name": "MyAgent"
+  "subscribers": null,
+  "ttl_hours": 24.0,
+  "sender_agent": "MyAgent"
 }
 ```
 
@@ -350,24 +344,16 @@ All tools return responses in a consistent format:
 ```json
 {
   "success": true,
-  "context_keys": [
-    {
-      "key": "user_preferences",
-      "accessible": true,
-      "has_ttl": false,
-      "source": "global"
-    },
-    {
-      "key": "session_data", 
-      "accessible": true,
-      "has_ttl": true,
-      "ttl_remaining": 3542,
-      "source": "topic:user_sessions"
-    }
-  ],
-  "total_keys": 2,
+  "keys_by_topic": {
+    "sales": ["customer_data", "lead_info"],
+    "support": ["ticket_status", "user_issues"],
+    "global": ["system_status", "api_config"]
+  },
+  "all_accessible_keys": ["customer_data", "lead_info", "ticket_status", "user_issues", "system_status", "api_config"],
+  "topics_subscribed": ["sales", "support"],
+  "message": "Use these keys with get_context tool. Keys are organized by topics you're subscribed to.",
   "agent_name": "MyAgent",
-  "message": "Found 2 accessible context keys"
+  "total_keys": 6
 }
 ```
 
@@ -376,12 +362,9 @@ All tools return responses in a consistent format:
 ```json
 {
   "success": true,
-  "topics_subscribed": ["sales", "customers", "leads"],
-  "new_subscriptions": ["leads"],
-  "existing_subscriptions": ["sales", "customers"],
-  "total_subscriptions": 3,
-  "agent_name": "MyAgent",
-  "message": "Successfully subscribed to 3 topics (1 new, 2 existing)"
+  "agent": "MyAgent",
+  "topics": ["sales", "customers", "leads"],
+  "message": "Successfully registered for topics: sales, customers, leads. You'll now receive context shared to these topics."
 }
 ```
 
@@ -390,23 +373,25 @@ All tools return responses in a consistent format:
 ```json
 {
   "success": true,
-  "topics": [
-    {
-      "name": "sales",
+  "topics": {
+    "sales": {
       "subscriber_count": 3,
-      "subscribers": ["SalesAgent", "ManagerAgent", "AnalyticsAgent"],
-      "recent_activity": true
+      "is_active": true,
+      "subscribers": ["SalesAgent", "ManagerAgent", "AnalyticsAgent"]
     },
-    {
-      "name": "support",
+    "support": {
       "subscriber_count": 2,
-      "subscribers": ["SupportAgent", "ManagerAgent"],
-      "recent_activity": false
+      "is_active": true,
+      "subscribers": ["SupportAgent", "ManagerAgent"]
     }
-  ],
+  },
   "total_topics": 2,
-  "agent_name": "MyAgent",
-  "message": "Found 2 available topics"
+  "popular_topics": ["sales", "support"],
+  "suggestions": {
+    "for_broad_reach": ["sales", "support"],
+    "common_patterns": ["sales", "marketing", "support", "product", "analytics", "customer_data"]
+  },
+  "message": "Found 2 topics. Popular topics (2+ subscribers): sales, support"
 }
 ```
 
@@ -415,10 +400,10 @@ All tools return responses in a consistent format:
 ```json
 {
   "success": true,
+  "agent": "MyAgent",
   "topics_unsubscribed": ["old_topic"],
-  "topics_not_found": ["nonexistent_topic"],
-  "remaining_subscriptions": ["sales", "support"],
-  "agent_name": "MyAgent",
+  "topics_not_subscribed": ["nonexistent_topic"],
+  "remaining_topics": ["sales", "support"],
   "message": "Successfully unsubscribed from: old_topic. Remaining subscriptions: sales, support"
 }
 ```
@@ -547,19 +532,24 @@ result = handler.handle_tool_call("push_context",
     topics=["sales"]
 )
 
-# This will fail - can't use both topics and subscribers
+# This will succeed - you CAN use both topics and subscribers (combined routing)
 result = handler.handle_tool_call("push_context",
-    key="invalid_key", 
-    value="value",
+    key="combined_routing", 
+    value="urgent update",
     topics=["sales"],
-    subscribers=["Agent1"]  # Error: can't use both
+    subscribers=["ManagerAgent"]  # This is allowed and will notify both
 )
 
 # Response will be:
 # {
-#   "success": false,
-#   "error": "Cannot specify both 'topics' and 'subscribers'",
-#   "suggestion": "Use either topics for broadcasting or subscribers for direct targeting"
+#   "success": true,
+#   "message": "Context 'combined_routing' shared with topics: sales and subscribers: ManagerAgent",
+#   "key": "combined_routing",
+#   "value": "urgent update",
+#   "topics": ["sales"],
+#   "subscribers": ["ManagerAgent"],
+#   "ttl_hours": 24.0,
+#   "sender_agent": "MyAgent"
 # }
 ```
 
