@@ -33,6 +33,8 @@ Syntha solves these problems with a **Context Mesh** - a shared knowledge layer 
 **🔐 Critical Security Principle**: Every production deployment MUST use user isolation.
 
 ```python
+from syntha import ContextMesh
+
 # ✅ CORRECT - Each user gets their own isolated context
 user1_context = ContextMesh(user_id="user_123")
 user2_context = ContextMesh(user_id="user_456")
@@ -56,11 +58,15 @@ Syntha provides two powerful routing mechanisms:
 Agents subscribe to topics they care about, and context automatically routes to interested parties.
 
 ```python
+from syntha import ContextMesh
+
+context = ContextMesh(user_id="user123")
 # Agents declare their interests
 context.register_agent_topics("SalesAgent", ["sales", "customers"])
 context.register_agent_topics("SupportAgent", ["support", "customers"])
 
 # Push context to topics - all subscribers automatically receive it
+customer_data = {"name": "Acme Corp", "value": 50000}
 context.push("new_customer", customer_data, topics=["customers"])
 ```
 
@@ -70,7 +76,11 @@ context.push("new_customer", customer_data, topics=["customers"])
 Context goes directly to specific named agents.
 
 ```python
+from syntha import ContextMesh
+
+context = ContextMesh(user_id="user123")
 # Private communication between specific agents
+secret_data = {"api_key": "sk-abc123", "endpoint": "https://api.example.com"}
 context.push("api_credentials", secret_data, subscribers=["AuthAgent", "AdminAgent"])
 ```
 
@@ -82,6 +92,9 @@ context.push("api_credentials", secret_data, subscribers=["AuthAgent", "AdminAge
 Agents actively manage context through function calls:
 
 ```python
+from syntha import ContextMesh, ToolHandler
+
+context = ContextMesh(user_id="user123")
 handler = ToolHandler(context, "MyAgent")
 result = handler.handle_tool_call("subscribe_to_topics", topics=["sales"])
 result = handler.handle_tool_call("push_context", key="data", value="info", topics=["sales"])
@@ -98,6 +111,9 @@ result = handler.handle_tool_call("push_context", key="data", value="info", topi
 Context automatically appears in agent prompts:
 
 ```python
+from syntha import ContextMesh, build_system_prompt
+
+context = ContextMesh(user_id="user123")
 system_prompt = build_system_prompt("MyAgent", context)
 # Prompt now includes all accessible context
 ```
@@ -130,6 +146,8 @@ When you give tools to agents, here's what each one is for:
 **Simple Rule**: Use Context Mesh persistence instead of separate databases.
 
 ```python
+from syntha import ContextMesh
+
 # ✅ RECOMMENDED - Context Mesh handles persistence
 context = ContextMesh(
     user_id="user123",

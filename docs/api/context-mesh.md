@@ -82,6 +82,10 @@ You can use one or combine multiple routing methods:
 #### Examples
 
 ```python
+from syntha import ContextMesh
+
+context = ContextMesh(user_id="user123")
+
 # Global context (available to all agents)
 context.push("api_status", "healthy")
 
