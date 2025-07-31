@@ -68,17 +68,14 @@ backend = create_database_backend(
     password="secure_password"
 )
 
-# PostgreSQL with connection pooling
+# PostgreSQL with SSL configuration
 backend = create_database_backend(
     "postgresql",
     host="db.company.com",
     database="syntha_prod",
     user="syntha_app",
     password="prod_password",
-    pool_size=20,
-    max_overflow=30,
-    pool_timeout=30,
-    pool_recycle=3600
+    sslmode="prefer"
 )
 
 # PostgreSQL with SSL
@@ -318,13 +315,13 @@ SQLite implementation of the DatabaseBackend interface.
 backend = create_database_backend(
     "sqlite",
     db_path="syntha.db",           # Database file path (":memory:" for in-memory)
-    timeout=30.0,                  # Connection timeout in seconds
-    check_same_thread=False,       # Allow connections from different threads
-    isolation_level=None,          # Transaction isolation level
-    detect_types=0,                # Type detection options
-    cached_statements=100,         # Number of statements to cache
 )
 ```
+
+**Note**: SQLite backend uses optimized settings internally including:
+- 30-second connection timeout
+- Thread-safe connections (`check_same_thread=False`)
+- Optimized PRAGMA settings for performance and concurrency
 
 ### Example Usage
 
@@ -370,22 +367,20 @@ backend = create_database_backend(
     user="syntha_user",
     password="password",
     
-    # Connection pooling
-    pool_size=10,                  # Number of connections to maintain
-    max_overflow=20,               # Additional connections allowed
-    pool_timeout=30,               # Seconds to wait for connection
-    pool_recycle=3600,             # Seconds before recreating connection
-    
-    # SSL configuration
+    # SSL configuration (optional)
     sslmode="prefer",              # SSL mode (disable, allow, prefer, require)
     sslcert="/path/to/cert.pem",   # Client certificate
     sslkey="/path/to/key.pem",     # Client key
     sslrootcert="/path/to/ca.pem", # CA certificate
-    
-    # Advanced options
-    connect_timeout=10,            # Connection timeout
-    command_timeout=60,            # Command timeout
-    application_name="syntha",     # Application name for monitoring
+)
+```
+
+**Alternative**: You can also provide a complete connection string:
+
+```python
+backend = create_database_backend(
+    "postgresql",
+    connection_string="postgresql://user:password@host:port/database?sslmode=require"
 )
 ```
 
@@ -402,8 +397,7 @@ backend = create_database_backend(
     database=os.getenv("DB_NAME", "syntha"),
     user=os.getenv("DB_USER", "syntha"),
     password=os.getenv("DB_PASSWORD"),
-    pool_size=20,
-    max_overflow=30
+    sslmode="require"
 )
 
 try:
@@ -497,22 +491,19 @@ except SynthaPersistenceError as e:
 
 ## Performance Considerations
 
-### Connection Pooling
+### Connection Management
 
-For production deployments, use connection pooling to handle concurrent access:
+The PostgreSQL backend uses direct connections via psycopg2. For production deployments requiring connection pooling, consider using external connection pooling solutions like PgBouncer or implementing a custom backend with SQLAlchemy.
 
 ```python
-# High-concurrency setup
+# Production setup with SSL
 backend = create_database_backend(
     "postgresql",
     host="db.company.com",
     database="syntha_prod", 
     user="syntha_app",
     password="prod_password",
-    pool_size=50,        # Base pool size
-    max_overflow=100,    # Additional connections
-    pool_timeout=30,     # Wait time for connection
-    pool_recycle=1800    # Recycle connections every 30 minutes
+    sslmode="require"
 )
 ```
 

@@ -63,7 +63,7 @@ Database backends for persistent context storage.
 from syntha import create_database_backend
 
 # SQLite for development
-backend = create_database_backend("sqlite", path="./data.db")
+backend = create_database_backend("sqlite", db_path="./data.db")
 
 # PostgreSQL for production
 backend = create_database_backend("postgresql", 
