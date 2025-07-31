@@ -111,7 +111,7 @@ class TestBuiltInTools:
         )
 
         assert result["success"] is True
-        assert "shared with agents" in result["message"]
+        assert "shared with topics: test_topic" in result["message"]
 
         mesh.close()
 
