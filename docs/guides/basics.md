@@ -24,6 +24,7 @@ context.close()
 ```
 
 **What just happened:**
+
 1. We created a context mesh with a user ID for security
 2. We pushed context with the key "greeting" 
 3. We retrieved it for an agent named "demo_agent"
@@ -72,6 +73,7 @@ context.close()
 ```
 
 **Key concepts:**
+
 - Any agent can push context for others to use
 - Context values can be strings, numbers, lists, or dictionaries
 - `get_all_for_agent()` retrieves all accessible context for an agent
@@ -111,6 +113,7 @@ context.close()
 ```
 
 **Why topic-based routing is powerful:**
+
 - **Scalable**: Add new agents without changing existing code
 - **Organized**: Clear separation by domain (sales, support, etc.)
 - **Efficient**: Agents only get relevant information
@@ -149,6 +152,7 @@ context.close()
 ```
 
 **What's different with tools:**
+
 - Agents interact through standardized function calls
 - Results include success/failure status and helpful messages
 - This pattern works with any LLM that supports function calling
@@ -197,6 +201,7 @@ Preferences: {
 ```
 
 **When to use prompt injection:**
+
 - Simple scenarios where context doesn't change often
 - When working with LLMs that don't support function calling
 - For background information that should always be available
@@ -230,6 +235,7 @@ context.close()
 ```
 
 **When to use private context:**
+
 - Sensitive information (API keys, passwords)
 - Private communication between specific agents
 - Information that should only be available to certain roles
@@ -260,6 +266,7 @@ context.close()
 ```
 
 **Common TTL patterns:**
+
 - **5-60 seconds**: Real-time status updates, temporary tokens
 - **5-30 minutes**: Session-specific data, current tasks
 - **1-24 hours**: Daily context that should reset
@@ -306,6 +313,7 @@ context.close()
 ```
 
 **Storage options:**
+
 - **SQLite**: Perfect for development and single-node deployments
 - **PostgreSQL**: Recommended for production with multiple servers
 - **In-memory**: Fast but temporary (default)
@@ -339,6 +347,7 @@ finally:
 ```
 
 **Best practices:**
+
 - Always use try/except blocks in production
 - Syntha errors include helpful suggestions for fixing issues
 - Always close your context mesh in a finally block

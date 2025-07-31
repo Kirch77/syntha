@@ -11,6 +11,7 @@ Syntha offers two powerful ways to route context between agents. Understanding w
 **How it works**: Agents subscribe to topics they care about. When you push context to topics, all subscribed agents automatically receive it.
 
 **Perfect for**:
+
 - Agent-to-agent communication
 - Broadcast scenarios (one-to-many)
 - Scalable workflows where agents join/leave dynamically
@@ -21,6 +22,7 @@ Syntha offers two powerful ways to route context between agents. Understanding w
 **How it works**: You specify exactly which agents should receive the context by name.
 
 **Perfect for**:
+
 - Private communication between specific agents
 - Sensitive data that only certain agents should see
 - Direct coordination scenarios
@@ -66,6 +68,7 @@ context.close()
 ```
 
 **Why this is powerful**:
+
 - Add new agents without changing existing code
 - Clear separation by business domain
 - Agents automatically get relevant information
@@ -176,6 +179,7 @@ context.close()
 ```
 
 **When to use subscription-based routing**:
+
 - Sensitive information (API keys, passwords, financial data)
 - Private conversations between specific agents
 - Escalation workflows with specific participants
@@ -229,6 +233,7 @@ context.close()
 ```
 
 **Best practices for combining approaches**:
+
 - Use topics for general, domain-specific communication
 - Use subscribers for sensitive or private information
 - Don't duplicate the same information in both - choose the most appropriate method
@@ -330,6 +335,7 @@ context.close()
 ```
 
 **TTL strategy guidelines**:
+
 - **No TTL**: User preferences, system configuration, permanent knowledge
 - **Hours/Days**: Session data, user state, cached results
 - **Minutes**: Task status, temporary tokens, workflow state

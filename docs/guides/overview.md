@@ -15,12 +15,14 @@ These guides are designed as **tutorials**, not reference documentation. Each se
 ## The Big Picture: Why Syntha Exists
 
 Traditional multi-agent systems struggle with:
+
 - **Information Silos**: Agents can't share knowledge effectively
 - **Security Risks**: No isolation between different users
 - **Complex Coordination**: Manual agent-to-agent communication
 - **Inconsistent State**: No single source of truth
 
 Syntha solves these problems with a **Context Mesh** - a shared knowledge layer where:
+
 - Agents push and pull context automatically
 - Users are completely isolated from each other
 - Information routes intelligently based on topics or direct targeting
@@ -40,6 +42,7 @@ shared_context = ContextMesh()  # No user_id!
 ```
 
 **Why this matters:**
+
 - **Privacy**: Users can't see each other's data
 - **Security**: Prevents accidental data leaks
 - **Compliance**: Meets GDPR, CCPA, and other data protection requirements
@@ -85,6 +88,7 @@ result = handler.handle_tool_call("push_context", key="data", value="info", topi
 ```
 
 **Advantages:**
+
 - Agents have full control
 - Dynamic topic management  
 - Works with any LLM supporting function calling
@@ -99,6 +103,7 @@ system_prompt = build_system_prompt("MyAgent", context)
 ```
 
 **Advantages:**
+
 - Simple integration
 - Works with any LLM (even without function calling)
 - Transparent to agents
@@ -135,6 +140,7 @@ context = ContextMesh(
 ```
 
 **Why**: Context Mesh already handles:
+
 - User isolation
 - TTL (time-to-live) expiration
 - Topic-based routing
@@ -147,12 +153,15 @@ Adding a separate database creates complexity without benefits.
 **Simple Answer**: Most applications don't need complex permissions.
 
 **Use roles when**:
+
 - Different agents should have different capabilities
 - You want to prevent agents from deleting topics
 - You need audit trails of who did what
 - You have untrusted or experimental agents
+- You want to save tokens/agent complexity (less tools means less bloated)
 
 **Available roles**:
+
 - `readonly`: Can only view context and discover topics
 - `contributor`: Can read, write, and manage subscriptions  
 - `moderator`: Contributor + can manage others' subscriptions
@@ -177,6 +186,7 @@ Ready to start building? Our guides follow this progression:
 5. **[Real-World Examples](examples.md)** - Complete integrations with OpenAI and more
 
 Each guide includes:
+
 - ✅ **Working code** you can copy and run immediately
 - 🎯 **Clear explanations** of when and why to use each pattern
 - ⚠️ **Common pitfalls** and how to avoid them

@@ -81,6 +81,7 @@ context.close()
 ```
 
 **Key Benefits:**
+
 - **Scalable communication** via topics for general information
 - **Private coordination** via subscriptions for sensitive data
 - **Flexible access control** - different information for different roles

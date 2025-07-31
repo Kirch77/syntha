@@ -9,12 +9,14 @@ When you give tools to agents, you're giving them the ability to actively manage
 ### Tools vs Direct API: When to Use Each
 
 **Use Tools When:**
+
 - Agents need to actively discover and manage context
 - You want agents to coordinate with each other
 - Working with LLMs that support function calling
 - Building dynamic, multi-agent workflows
 
 **Use Direct API When:**
+
 - You're building system infrastructure
 - Setting up initial configurations
 - Managing agents from your application code
@@ -119,6 +121,7 @@ context.close()
 ```
 
 **Why this matters:**
+
 - Saves tokens (and money) by not retrieving unnecessary context
 - Helps agents focus on relevant information
 - Scales better as context grows
@@ -131,6 +134,7 @@ context.close()
 ### When to Use Permissions
 
 **Use permissions when:**
+
 - Different agents should have different capabilities
 - You want to prevent agents from deleting topics
 - You have untrusted or experimental agents
@@ -138,6 +142,7 @@ context.close()
 - Some agents are more privileged than others
 
 **Skip permissions when:**
+
 - All your agents are trusted
 - You want simplicity
 - You're in development/prototyping phase
