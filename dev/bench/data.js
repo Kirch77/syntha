@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753996235168,
+  "lastUpdate": 1754346598080,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -4888,6 +4888,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000026059994836769586",
             "extra": "mean: 867.284048759551 usec\nrounds: 1169"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "129435653+Kirch77@users.noreply.github.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0ed2b237267d24f51a5c3fb108f837a2f7b61cfe",
+          "message": "Automate syntha framework tool integration (#12)\n\n* Add framework integration with automatic tool generation\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Add comprehensive testing suite for Syntha framework integration\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Refactor example scripts for improved readability and consistency\n\n- Standardized string formatting for path insertions and function calls across multiple example files.\n- Enhanced clarity in comments and print statements to better illustrate the functionality of the Syntha framework.\n- Improved formatting of context data pushes and tool retrievals for better visual structure and understanding.\n\nThese changes aim to enhance the usability and maintainability of the example scripts in the Syntha SDK.\n\n* Refactor import statements for consistency and clarity\n\n- Rearranged import statements across multiple files to follow a consistent order, enhancing readability.\n- Added blank lines for better separation of import groups, improving overall code structure.\n\nThese changes aim to standardize the codebase and improve maintainability within the Syntha SDK.\n\n* Update import statements in LangChainAdapter for type checking compatibility\n\n- Added type: ignore comments to import statements for `langchain.tools` and `pydantic` to suppress type checking errors.\n- This change enhances compatibility with type checkers while maintaining existing functionality in the Syntha SDK.\n\n* Update mypy configuration for type checking\n\n- Upgraded Python version from 3.8 to 3.9 to align with project requirements.\n- Adjusted type checking settings by disabling warnings for return types, unused configurations, and untyped definitions to reduce strictness and improve compatibility with existing code.\n- These changes aim to enhance the flexibility of type checking within the Syntha SDK.\n\n* Refactor SQLiteBackend connection handling and improve type checking\n\n- Updated mypy configuration to disable warnings for unused ignores, enhancing compatibility with existing code.\n- Refactored connection handling in SQLiteBackend to ensure operations only proceed if a connection is established, improving robustness.\n- Cleaned up import statements in LangChainAdapter by removing unnecessary type: ignore comments, streamlining the code.\n\nThese changes aim to enhance the stability and maintainability of the Syntha SDK.\n\n* Update mypy configuration and refactor type annotations\n\n- Added configuration to ignore attr-defined errors in the persistence module to improve type checking flexibility.\n- Updated type annotations in the ContextMesh class for better clarity and type safety.\n- Introduced a HybridHandler class to encapsulate utility methods and improve the structure of the tool handler.\n\nThese changes aim to enhance type checking and code organization within the Syntha SDK.\n\n* Refactor print statements and formatting in test scripts for consistency\n\n- Standardized print statements and added spacing for improved readability in `simple_test.py` and `test_basic.py`.\n- Ensured consistent formatting of function calls and import statements across the files.\n- These changes aim to enhance the clarity and maintainability of the test scripts in the Syntha SDK.\n\n* Enhance error handling and improve framework validation in Syntha\n\n- Added additional context to error messages in `FrameworkAdapter` and `ToolFactory` to provide clearer feedback on failures, including framework and tool names.\n- Implemented checks for tool execution errors, returning structured error responses.\n- Updated tests to mock error scenarios for LangChain, ensuring comprehensive coverage of error handling and validation logic.\n\nThese changes aim to improve the robustness and clarity of error handling within the Syntha SDK.\n\n* Refactor test scripts to improve compatibility and performance measurement\n\n- Updated import in `test_framework_adapters.py` to use `pydantic.Field` for better compatibility with Pydantic.\n- Enhanced memory measurement logic in `test_performance_benchmarks.py` to handle cases where `psutil` is not available, ensuring tests can run without failure.\n- Improved assertions in performance tests to account for very fast operations, allowing for more flexible performance expectations.\n\nThese changes aim to enhance the robustness and reliability of the testing framework within the Syntha SDK.\n\n* Improve performance benchmark tests with enhanced readability and memory handling\n\n- Added a blank line for better separation in the `test_performance_benchmarks.py` file.\n- Improved assertion formatting for clarity in performance tests, ensuring better readability of conditions.\n- Maintained compatibility with scenarios where `psutil` is not available, reinforcing the robustness of memory measurement logic.\n\nThese changes aim to enhance the clarity and reliability of performance testing within the Syntha SDK.\n\n* Enhance performance benchmark assertions for flexibility\n\n- Updated assertions in `test_performance_benchmarks.py` to accommodate very fast operations, allowing for a more tolerant evaluation of performance metrics.\n- Introduced conditional checks to ensure that performance expectations are met without failing tests for high-speed scenarios.\n\nThese changes aim to improve the robustness and adaptability of performance testing within the Syntha SDK.\n\n* test\n\n* Potential fix for code scanning alert no. 140: Unused import\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 97: Except block handles 'BaseException'\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 102: Except block handles 'BaseException'\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 96: Commented-out code\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 115: Unused import\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 127: Unused import\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 141: Unused import\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 142: Empty except\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 130: Unused import\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 137: Unused import\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 136: Unused import\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 101: Unused local variable\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Add missing import for unittest.mock.patch in test files\n\nThis update includes the addition of the 'patch' import from 'unittest.mock' in both test_tool_factory.py and test_tool_handler_integration.py to facilitate mocking in the tests.\n\n* Refactor tests to handle error cases for missing LangChain and Pydantic\n\nUpdated test_create_tool_with_langchain_available and test_pydantic_fields_creation to check for errors when LangChain and Pydantic are not installed, respectively. Removed unnecessary mocking and improved assertions for error handling.\n\n---------\n\nCo-authored-by: Cursor Agent <cursoragent@cursor.com>\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>",
+          "timestamp": "2025-08-04T18:29:24-04:00",
+          "tree_id": "c8bc573707dd718d2bb86c0c6536216bd64b17ed",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/0ed2b237267d24f51a5c3fb108f837a2f7b61cfe"
+        },
+        "date": 1754346597026,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 295091.65279363823,
+            "unit": "iter/sec",
+            "range": "stddev: 5.854058413589492e-7",
+            "extra": "mean: 3.3887776578326805 usec\nrounds: 25933"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 470701.8792618293,
+            "unit": "iter/sec",
+            "range": "stddev: 5.239556534443498e-7",
+            "extra": "mean: 2.1244869503564208 usec\nrounds: 135981"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2194.437713386799,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000009069414819002514",
+            "extra": "mean: 455.6976003008278 usec\nrounds: 1994"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4830.661555227476,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000007014649697108215",
+            "extra": "mean: 207.01098360282663 usec\nrounds: 4574"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 698.223656011429,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00010831801012694",
+            "extra": "mean: 1.4322058431999496 msec\nrounds: 625"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1838.4137364152657,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000009149963852548845",
+            "extra": "mean: 543.9471976258762 usec\nrounds: 3117"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 538222.1848429603,
+            "unit": "iter/sec",
+            "range": "stddev: 7.983383419882042e-7",
+            "extra": "mean: 1.857968750009394 usec\nrounds: 1536"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 19.207498783136277,
+            "unit": "iter/sec",
+            "range": "stddev: 0.005419390339899537",
+            "extra": "mean: 52.06299952380973 msec\nrounds: 21"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 100978.20912781454,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000001464784614258797",
+            "extra": "mean: 9.903126710578086 usec\nrounds: 21703"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1154.3286608792453,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001614186206248281",
+            "extra": "mean: 866.3044017622381 usec\nrounds: 1135"
           }
         ]
       }
