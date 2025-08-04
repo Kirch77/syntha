@@ -12,7 +12,6 @@ Tests the framework adapter system including:
 
 import json
 import sys
-from typing import Any, Dict, List
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
