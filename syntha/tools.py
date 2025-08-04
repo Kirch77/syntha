@@ -993,6 +993,249 @@ class ToolHandler:
 
         return hybrid_handler
 
+    def get_langchain_tools(self) -> List[Any]:
+        """
+        Get LangChain-compatible tools for all available Syntha tools.
+
+        This is a convenience method that creates a tool factory and generates
+        LangChain tools in a single call.
+
+        Returns:
+            List of LangChain BaseTool instances
+
+        Raises:
+            SynthaFrameworkError: If LangChain is not installed or tool creation fails
+
+        Examples:
+            from syntha import ContextMesh, ToolHandler
+
+            mesh = ContextMesh()
+            handler = ToolHandler(mesh, "MyAgent")
+
+            # Get LangChain tools - just one line!
+            langchain_tools = handler.get_langchain_tools()
+
+            # Use with LangChain agent
+            from langchain.agents import initialize_agent
+            agent = initialize_agent(langchain_tools, llm, agent="zero-shot-react-description")
+        """
+        from .tool_factory import create_tool_factory
+
+        factory = create_tool_factory(self)
+        return factory.create_tools("langchain")
+
+    def get_langgraph_tools(self) -> List[Dict[str, Any]]:
+        """
+        Get LangGraph-compatible tools for all available Syntha tools.
+
+        Returns:
+            List of LangGraph tool dictionaries
+
+        Raises:
+            SynthaFrameworkError: If tool creation fails
+
+        Examples:
+            from syntha import ContextMesh, ToolHandler
+
+            mesh = ContextMesh()
+            handler = ToolHandler(mesh, "MyAgent")
+
+            # Get LangGraph tools
+            langgraph_tools = handler.get_langgraph_tools()
+        """
+        from .tool_factory import create_tool_factory
+
+        factory = create_tool_factory(self)
+        return factory.create_tools("langgraph")
+
+    def get_openai_functions(self) -> List[Dict[str, Any]]:
+        """
+        Get OpenAI function calling definitions for all available Syntha tools.
+
+        Returns:
+            List of OpenAI function definitions
+
+        Examples:
+            from syntha import ContextMesh, ToolHandler
+
+            mesh = ContextMesh()
+            handler = ToolHandler(mesh, "MyAgent")
+
+            # Get OpenAI functions
+            openai_functions = handler.get_openai_functions()
+
+            # Use with OpenAI API
+            response = openai.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": "Get context for key1"}],
+                functions=[func["function"] for func in openai_functions]
+            )
+        """
+        from .tool_factory import create_tool_factory
+
+        factory = create_tool_factory(self)
+        return factory.create_tools("openai")
+
+    def get_anthropic_tools(self) -> List[Dict[str, Any]]:
+        """
+        Get Anthropic Claude tool definitions for all available Syntha tools.
+
+        Returns:
+            List of Anthropic tool definitions
+
+        Examples:
+            from syntha import ContextMesh, ToolHandler
+
+            mesh = ContextMesh()
+            handler = ToolHandler(mesh, "MyAgent")
+
+            # Get Anthropic tools
+            anthropic_tools = handler.get_anthropic_tools()
+        """
+        from .tool_factory import create_tool_factory
+
+        factory = create_tool_factory(self)
+        return factory.create_tools("anthropic")
+
+    def get_tools_for_framework(self, framework_name: str) -> List[Any]:
+        """
+        Get framework-specific tools for any supported framework.
+
+        Args:
+            framework_name: Name of the target framework (langchain, langgraph, openai, anthropic)
+
+        Returns:
+            List of framework-specific tool instances
+
+        Raises:
+            SynthaFrameworkError: If framework is not supported or tool creation fails
+
+        Examples:
+            from syntha import ContextMesh, ToolHandler
+
+            mesh = ContextMesh()
+            handler = ToolHandler(mesh, "MyAgent")
+
+            # Get tools for any framework
+            langchain_tools = handler.get_tools_for_framework("langchain")
+            openai_functions = handler.get_tools_for_framework("openai")
+            anthropic_tools = handler.get_tools_for_framework("anthropic")
+        """
+        from .tool_factory import create_tool_factory
+
+        factory = create_tool_factory(self)
+        return factory.create_tools(framework_name)
+
+    def get_framework_handler(self, framework_name: str) -> Optional[Any]:
+        """
+        Get a framework-specific function handler for processing tool calls.
+
+        Args:
+            framework_name: Name of the target framework
+
+        Returns:
+            Framework-specific function handler or None if not supported
+
+        Examples:
+            from syntha import ContextMesh, ToolHandler
+
+            mesh = ContextMesh()
+            handler = ToolHandler(mesh, "MyAgent")
+
+            # Get OpenAI function handler
+            openai_handler = handler.get_framework_handler("openai")
+            result = openai_handler("get_context", '{"keys": ["key1"]}')
+
+            # Get Anthropic tool handler
+            anthropic_handler = handler.get_framework_handler("anthropic")
+            result = anthropic_handler("push_context", {"data": {"key": "value"}})
+        """
+        from .tool_factory import create_tool_factory
+
+        factory = create_tool_factory(self)
+        return factory.create_function_handler(framework_name)
+
+    def create_framework_integration(
+        self, framework_name: str, existing_tools: Optional[List[Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Create a complete framework integration with both tools and handlers.
+
+        Args:
+            framework_name: Name of the target framework
+            existing_tools: Optional list of existing framework tools to combine
+
+        Returns:
+            Dictionary containing tools, handlers, and integration metadata
+
+        Examples:
+            from syntha import ContextMesh, ToolHandler
+
+            mesh = ContextMesh()
+            handler = ToolHandler(mesh, "MyAgent")
+
+            # Create complete LangChain integration
+            integration = handler.create_framework_integration("langchain", existing_tools)
+
+            tools = integration["tools"]  # All tools (existing + Syntha)
+            syntha_tools = integration["syntha_tools"]  # Just Syntha tools
+            handler_func = integration["handler"]  # Function handler if available
+        """
+        from .tool_factory import create_tool_factory
+
+        factory = create_tool_factory(self)
+        return factory.create_hybrid_integration(framework_name, existing_tools)
+
+    def get_supported_frameworks(self) -> List[str]:
+        """
+        Get list of supported framework names.
+
+        Returns:
+            List of supported framework names
+
+        Examples:
+            from syntha import ContextMesh, ToolHandler
+
+            mesh = ContextMesh()
+            handler = ToolHandler(mesh, "MyAgent")
+
+            frameworks = handler.get_supported_frameworks()
+            print(f"Supported frameworks: {frameworks}")
+        """
+        from .tool_factory import create_tool_factory
+
+        factory = create_tool_factory(self)
+        return factory.get_supported_frameworks()
+
+    def validate_framework(self, framework_name: str) -> Dict[str, Any]:
+        """
+        Validate that a framework is properly set up and ready to use.
+
+        Args:
+            framework_name: Name of the framework to validate
+
+        Returns:
+            Validation result dictionary with status and details
+
+        Examples:
+            from syntha import ContextMesh, ToolHandler
+
+            mesh = ContextMesh()
+            handler = ToolHandler(mesh, "MyAgent")
+
+            # Check if LangChain is ready
+            result = handler.validate_framework("langchain")
+            if result["valid"]:
+                print("LangChain integration ready!")
+            else:
+                print(f"Issue: {result['error']}")
+                print(f"Suggestion: {result['suggestion']}")
+        """
+        from .tool_factory import create_tool_factory
+
+        factory = create_tool_factory(self)
+        return factory.validate_framework_requirements(framework_name)
+
 
 # Integration utility functions for existing systems
 def merge_tool_schemas(
@@ -1062,11 +1305,17 @@ def create_hybrid_tool_handler(context_mesh, agent_name: str, user_tool_handler=
 
         return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
-    # Add utility methods
-    hybrid_handler.get_syntha_schemas = syntha_handler.get_syntha_schemas_only
-    hybrid_handler.handle_syntha_tool = syntha_handler.handle_tool_call
+    # Create a wrapper object that includes the function and utility methods
+    class HybridHandler:
+        def __init__(self, handler_func, syntha_handler):
+            self.handler_func = handler_func
+            self.get_syntha_schemas = syntha_handler.get_syntha_schemas_only
+            self.handle_syntha_tool = syntha_handler.handle_tool_call
 
-    return hybrid_handler
+        def __call__(self, tool_name: str, **kwargs):
+            return self.handler_func(tool_name, **kwargs)
+
+    return HybridHandler(hybrid_handler, syntha_handler)
 
 
 # Add these at the end of the file, before the existing convenience functions

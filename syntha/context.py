@@ -782,7 +782,7 @@ class ContextMesh:
         """
         with self._lock:
             agent_topics = self._agent_topics.get(agent_name, [])
-            result = {}
+            result: Dict[str, List[str]] = {}
 
             # Initialize all subscribed topics
             for topic in agent_topics:

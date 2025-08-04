@@ -254,15 +254,20 @@ class SQLiteBackend(DatabaseBackend):
                 self.db_path, check_same_thread=False, timeout=30.0  # Increased timeout
             )
             # Use DELETE mode instead of WAL to avoid Windows file locking issues
-            self.connection.execute("PRAGMA journal_mode=DELETE")
-            self.connection.execute("PRAGMA synchronous=NORMAL")  # Better performance
-            self.connection.execute("PRAGMA foreign_keys=ON")  # Enable foreign keys
-            self.connection.execute("PRAGMA busy_timeout=30000")  # 30 second timeout
-            # Additional settings for better concurrency
-            self.connection.execute("PRAGMA cache_size=10000")  # Larger cache
-            self.connection.execute(
-                "PRAGMA temp_store=MEMORY"
-            )  # Use memory for temp storage
+            if self.connection:
+                self.connection.execute("PRAGMA journal_mode=DELETE")
+                self.connection.execute(
+                    "PRAGMA synchronous=NORMAL"
+                )  # Better performance
+                self.connection.execute("PRAGMA foreign_keys=ON")  # Enable foreign keys
+                self.connection.execute(
+                    "PRAGMA busy_timeout=30000"
+                )  # 30 second timeout
+                # Additional settings for better concurrency
+                self.connection.execute("PRAGMA cache_size=10000")  # Larger cache
+                self.connection.execute(
+                    "PRAGMA temp_store=MEMORY"
+                )  # Use memory for temp storage
             self.initialize_schema()
 
             # Set secure file permissions on POSIX systems
@@ -310,17 +315,20 @@ class SQLiteBackend(DatabaseBackend):
                         check_same_thread=False,
                         timeout=30.0,  # Increased timeout
                     )
-                    self.connection.execute("PRAGMA journal_mode=DELETE")
-                    self.connection.execute("PRAGMA synchronous=NORMAL")
-                    self.connection.execute("PRAGMA foreign_keys=ON")
-                    self.connection.execute(
-                        "PRAGMA busy_timeout=30000"
-                    )  # 30 second timeout
-                    # Additional settings for better concurrency
-                    self.connection.execute("PRAGMA cache_size=10000")  # Larger cache
-                    self.connection.execute(
-                        "PRAGMA temp_store=MEMORY"
-                    )  # Use memory for temp storage
+                    if self.connection:
+                        self.connection.execute("PRAGMA journal_mode=DELETE")
+                        self.connection.execute("PRAGMA synchronous=NORMAL")
+                        self.connection.execute("PRAGMA foreign_keys=ON")
+                        self.connection.execute(
+                            "PRAGMA busy_timeout=30000"
+                        )  # 30 second timeout
+                        # Additional settings for better concurrency
+                        self.connection.execute(
+                            "PRAGMA cache_size=10000"
+                        )  # Larger cache
+                        self.connection.execute(
+                            "PRAGMA temp_store=MEMORY"
+                        )  # Use memory for temp storage
                     self.initialize_schema()
 
                     # Set secure file permissions on POSIX systems
@@ -669,6 +677,11 @@ class SQLiteBackend(DatabaseBackend):
             if self.connection is None:
                 raise RuntimeError("Failed to re-establish database connection")
 
+    def _ensure_connection_for_operation(self) -> None:
+        """Ensure connection exists for database operations."""
+        if not self.connection:
+            raise RuntimeError("Database connection not established")
+
     # User isolation implementations for SQLite
     def save_context_item_for_user(
         self,
@@ -681,6 +694,7 @@ class SQLiteBackend(DatabaseBackend):
     ) -> None:
         """Save a context item for a specific user in SQLite."""
         with self._lock:
+            self._ensure_connection_for_operation()
             cursor = self.connection.cursor()
             cursor.execute(
                 """
