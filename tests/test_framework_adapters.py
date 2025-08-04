@@ -314,7 +314,7 @@ class TestLangChainAdapter:
         # This should raise an error since LangChain is not installed
         with pytest.raises(SynthaFrameworkError) as exc_info:
             self.adapter.create_tool("test_tool", tool_schema)
-        
+
         assert "LangChain not installed" in str(exc_info.value)
         assert exc_info.value.framework == "langchain"
 
@@ -357,7 +357,7 @@ class TestLangChainAdapter:
         # This should raise an error since pydantic is not installed
         with pytest.raises(SynthaFrameworkError) as exc_info:
             self.adapter._create_pydantic_fields(parameters)
-        
+
         assert "LangChain not installed" in str(exc_info.value)
         assert exc_info.value.framework == "langchain"
 
