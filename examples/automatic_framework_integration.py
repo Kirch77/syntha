@@ -306,8 +306,8 @@ def demonstrate_performance_comparison():
 
     try:
         langchain_tools = handler.get_langchain_tools()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error getting LangChain tools: {e}", file=sys.stderr)
 
     openai_tools = handler.get_openai_functions()
     anthropic_tools = handler.get_anthropic_tools()
