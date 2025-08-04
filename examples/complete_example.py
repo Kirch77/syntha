@@ -114,28 +114,28 @@ def main():
         "push_context",
         key="feature_announcement",
         value="🎉 New feature ready for testing: User authentication system",
-        topics=["development"]
+        topics=["development"],
     )
     print(f"📢 Broadcast sent via development topic")
 
     # Batch context operations (simulated)
     analytics_handler = ToolHandler(mesh, agent_name="Analytics")
-    
+
     # Push multiple context items
     analytics_handler.handle_tool_call(
         "push_context",
         key="feature_flag_auth",
         value="true",
-        subscribers=["Backend", "Frontend"]
+        subscribers=["Backend", "Frontend"],
     )
-    
+
     analytics_handler.handle_tool_call(
         "push_context",
         key="test_users",
         value='["test@example.com"]',
-        subscribers=["Backend", "Frontend"]
+        subscribers=["Backend", "Frontend"],
     )
-    
+
     print(f"⚡ Batch context operations completed")
 
     # 6. Context Retrieval and Discovery
@@ -143,17 +143,19 @@ def main():
 
     # DevLead checks all available context
     dev_context = handler.handle_tool_call("get_context")
-    dev_context_count = len(dev_context.get('context', {}))
+    dev_context_count = len(dev_context.get("context", {}))
     print(f"📥 DevLead has access to {dev_context_count} context items")
 
     # Backend checks specific context items
-    backend_context = backend_handler.handle_tool_call("get_context", keys=["auth_task", "feature_flag_auth"])
-    backend_found = len(backend_context.get('context', {}))
+    backend_context = backend_handler.handle_tool_call(
+        "get_context", keys=["auth_task", "feature_flag_auth"]
+    )
+    backend_found = len(backend_context.get("context", {}))
     print(f"🔥 Backend found {backend_found} requested context items")
 
     # Discover available topics
     topics = handler.handle_tool_call("discover_topics")
-    topic_names = list(topics['topics'].keys()) if topics['success'] else []
+    topic_names = list(topics["topics"].keys()) if topics["success"] else []
     print(f"📋 Available topics: {topic_names}")
 
     # 7. Performance Demonstration

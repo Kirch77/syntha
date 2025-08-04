@@ -428,7 +428,7 @@ class SynthaFrameworkError(SynthaError):
             self.context["framework"] = framework
         if tool_name:
             self.context["tool_name"] = tool_name
-            
+
         # Add framework-specific suggestions
         if framework:
             self.suggestions.extend(

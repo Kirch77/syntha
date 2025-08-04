@@ -38,7 +38,7 @@ def main():
     frontend_prompt = build_system_prompt("FrontendDev", mesh)
 
     print("✅ Generated prompts with context injection")
-    backend_context = mesh.get_all_for_agent('BackendDev')
+    backend_context = mesh.get_all_for_agent("BackendDev")
     print(f"Backend has access to: {list(backend_context.keys())}")
 
     # 4. Agent communication using context sharing
@@ -54,25 +54,25 @@ def main():
     # Create a handler for FrontendDev to check context
     frontend_handler = ToolHandler(mesh, agent_name="FrontendDev")
     context = frontend_handler.handle_tool_call("get_context")
-    frontend_context_keys = list(context['context'].keys())
+    frontend_context_keys = list(context["context"].keys())
     print(f"📥 FrontendDev has access to: {frontend_context_keys}")
 
     # 5. Topic-based communication
     # Subscribe both agents to a development topic
     handler.handle_tool_call("subscribe_to_topics", topics=["development"])
     frontend_handler.handle_tool_call("subscribe_to_topics", topics=["development"])
-    
+
     # Share development updates via topics
     handler.handle_tool_call(
         "push_context",
         key="dev_update",
         value="Database schema updated",
-        topics=["development"]
+        topics=["development"],
     )
-    
+
     # Check what topics are available
     topics = handler.handle_tool_call("discover_topics")
-    topic_names = list(topics['topics'].keys()) if topics['success'] else []
+    topic_names = list(topics["topics"].keys()) if topics["success"] else []
     print(f"📋 Available topics: {topic_names}")
 
     # 6. Use with LLM (example pattern)

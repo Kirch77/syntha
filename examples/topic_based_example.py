@@ -29,18 +29,24 @@ def main():
         "subscribe_to_topics",
         topics=["campaigns", "customer_insights", "product_launches"],
     )
-    print(f"MarketingBot: Subscribed to {len(marketing_result.get('subscribed_topics', []))} topics")
+    print(
+        f"MarketingBot: Subscribed to {len(marketing_result.get('subscribed_topics', []))} topics"
+    )
 
     sales_result = sales_handler.handle_tool_call(
         "subscribe_to_topics", topics=["leads", "customer_insights", "pricing"]
     )
-    print(f"SalesBot: Subscribed to {len(sales_result.get('subscribed_topics', []))} topics")
+    print(
+        f"SalesBot: Subscribed to {len(sales_result.get('subscribed_topics', []))} topics"
+    )
 
     support_result = support_handler.handle_tool_call(
         "subscribe_to_topics",
         topics=["customer_issues", "product_updates", "customer_insights"],
     )
-    print(f"SupportBot: Subscribed to {len(support_result.get('subscribed_topics', []))} topics\n")
+    print(
+        f"SupportBot: Subscribed to {len(support_result.get('subscribed_topics', []))} topics\n"
+    )
 
     # Step 2: Marketing agent shares campaign information
     print("📢 Step 2: MarketingBot shares campaign data\n")
@@ -72,7 +78,7 @@ def main():
     print(f"SalesBot discovered context:")
 
     if context_result["success"]:
-        context_items = context_result.get('context', {})
+        context_items = context_result.get("context", {})
         print(f"  📊 Total accessible context items: {len(context_items)}")
         for key, value in context_items.items():
             print(f"  🔑 {key}: {str(value)[:50]}...")
@@ -101,7 +107,7 @@ def main():
     support_context_result = support_handler.handle_tool_call("get_context")
 
     if support_context_result["success"]:
-        support_context_items = support_context_result.get('context', {})
+        support_context_items = support_context_result.get("context", {})
         print(f"SupportBot's available context:")
         print(f"  📊 Total accessible context items: {len(support_context_items)}")
         for key, value in support_context_items.items():

@@ -30,7 +30,7 @@ from .framework_adapters import (
     create_framework_adapter,
     get_supported_frameworks,
     FrameworkAdapter,
-    FRAMEWORK_ADAPTERS
+    FRAMEWORK_ADAPTERS,
 )
 from .exceptions import SynthaFrameworkError
 
@@ -38,7 +38,7 @@ from .exceptions import SynthaFrameworkError
 class SynthaToolFactory:
     """
     Factory class for creating framework-specific tools from Syntha capabilities.
-    
+
     This class provides a unified interface for generating tools compatible with
     various LLM frameworks like LangChain, LangGraph, OpenAI, etc.
     """
@@ -68,7 +68,7 @@ class SynthaToolFactory:
         """
         # Normalize framework name
         framework_name = framework_name.lower().strip()
-        
+
         # Check cache first
         if framework_name in self._adapter_cache:
             return self._adapter_cache[framework_name]
@@ -91,7 +91,7 @@ class SynthaToolFactory:
         Examples:
             # Create LangChain tools
             langchain_tools = factory.create_tools("langchain")
-            
+
             # Create OpenAI function definitions
             openai_functions = factory.create_tools("openai")
         """
@@ -153,7 +153,9 @@ class SynthaToolFactory:
         """
         return framework_name.lower().strip() in FRAMEWORK_ADAPTERS
 
-    def get_framework_info(self, framework_name: Optional[str] = None) -> Dict[str, Any]:
+    def get_framework_info(
+        self, framework_name: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Get information about supported frameworks.
 
@@ -167,19 +169,19 @@ class SynthaToolFactory:
             framework_name = framework_name.lower().strip()
             if not self.is_framework_supported(framework_name):
                 raise SynthaFrameworkError(f"Unsupported framework: {framework_name}")
-            
+
             adapter = self.get_adapter(framework_name)
             available_tools = self.tool_handler.get_available_tools()
-            
+
             return {
                 "framework": framework_name,
                 "adapter_class": adapter.__class__.__name__,
                 "available_tools": available_tools,
                 "tool_count": len(available_tools),
                 "agent_name": self.tool_handler.agent_name,
-                "agent_role": getattr(self.tool_handler, 'agent_role', None)
+                "agent_role": getattr(self.tool_handler, "agent_role", None),
             }
-        
+
         # Return info for all frameworks
         supported_frameworks = self.get_supported_frameworks()
         return {
@@ -187,7 +189,7 @@ class SynthaToolFactory:
             "total_frameworks": len(supported_frameworks),
             "available_tools": self.tool_handler.get_available_tools(),
             "agent_name": self.tool_handler.agent_name,
-            "agent_role": getattr(self.tool_handler, 'agent_role', None)
+            "agent_role": getattr(self.tool_handler, "agent_role", None),
         }
 
     def create_function_handler(self, framework_name: str) -> Optional[Callable]:
@@ -204,25 +206,25 @@ class SynthaToolFactory:
             # For OpenAI function calling
             openai_handler = factory.create_function_handler("openai")
             result = openai_handler("get_context", '{"keys": ["key1", "key2"]}')
-            
+
             # For Anthropic tool use
             anthropic_handler = factory.create_function_handler("anthropic")
             result = anthropic_handler("push_context", {"data": {"key": "value"}})
         """
         adapter = self.get_adapter(framework_name)
-        
+
         # Check if adapter has a function handler method
-        if hasattr(adapter, 'create_function_handler'):
+        if hasattr(adapter, "create_function_handler"):
             return adapter.create_function_handler()
-        elif hasattr(adapter, 'create_tool_handler'):
+        elif hasattr(adapter, "create_tool_handler"):
             return adapter.create_tool_handler()
-        
+
         return None
 
     def clear_cache(self):
         """
         Clear the adapter cache.
-        
+
         This can be useful if the tool handler configuration changes
         and you want to force recreation of adapters.
         """
@@ -238,7 +240,7 @@ class SynthaToolFactory:
         return {
             "cached_frameworks": list(self._adapter_cache.keys()),
             "cache_size": len(self._adapter_cache),
-            "supported_frameworks": self.get_supported_frameworks()
+            "supported_frameworks": self.get_supported_frameworks(),
         }
 
     def validate_framework_requirements(self, framework_name: str) -> Dict[str, Any]:
@@ -252,43 +254,42 @@ class SynthaToolFactory:
             Validation result dictionary
         """
         framework_name = framework_name.lower().strip()
-        
+
         if not self.is_framework_supported(framework_name):
             return {
                 "valid": False,
                 "error": f"Unsupported framework: {framework_name}",
-                "supported_frameworks": self.get_supported_frameworks()
+                "supported_frameworks": self.get_supported_frameworks(),
             }
 
         try:
             # Try to create an adapter (this will check for required imports)
             adapter = self.get_adapter(framework_name)
-            
+
             # Try to create a sample tool to validate everything works
             available_tools = self.tool_handler.get_available_tools()
             if available_tools:
                 sample_tool_name = available_tools[0]
                 schemas = self.tool_handler.get_syntha_schemas_only()
                 sample_schema = next(
-                    (s for s in schemas if s.get("name") == sample_tool_name), 
-                    None
+                    (s for s in schemas if s.get("name") == sample_tool_name), None
                 )
                 if sample_schema:
                     adapter.create_tool(sample_tool_name, sample_schema)
-            
+
             return {
                 "valid": True,
                 "framework": framework_name,
                 "adapter_class": adapter.__class__.__name__,
-                "available_tools": available_tools
+                "available_tools": available_tools,
             }
-            
+
         except Exception as e:
             return {
                 "valid": False,
                 "framework": framework_name,
                 "error": str(e),
-                "suggestion": self._get_installation_suggestion(framework_name)
+                "suggestion": self._get_installation_suggestion(framework_name),
             }
 
     def _get_installation_suggestion(self, framework_name: str) -> str:
@@ -305,14 +306,16 @@ class SynthaToolFactory:
             "langchain": "pip install langchain",
             "langgraph": "pip install langgraph",
             "openai": "pip install openai",
-            "anthropic": "pip install anthropic"
+            "anthropic": "pip install anthropic",
         }
-        
-        return suggestions.get(framework_name, f"Install required packages for {framework_name}")
 
-    def create_hybrid_integration(self, 
-                                framework_name: str, 
-                                existing_tools: Optional[List[Any]] = None) -> Dict[str, Any]:
+        return suggestions.get(
+            framework_name, f"Install required packages for {framework_name}"
+        )
+
+    def create_hybrid_integration(
+        self, framework_name: str, existing_tools: Optional[List[Any]] = None
+    ) -> Dict[str, Any]:
         """
         Create a hybrid integration that combines Syntha tools with existing tools.
 
@@ -326,22 +329,22 @@ class SynthaToolFactory:
         Examples:
             # Combine with existing LangChain tools
             integration = factory.create_hybrid_integration(
-                "langchain", 
+                "langchain",
                 existing_tools=[existing_weather_tool, existing_email_tool]
             )
             all_tools = integration["tools"]
             handler = integration["handler"]
         """
         syntha_tools = self.create_tools(framework_name)
-        
+
         combined_tools = []
         if existing_tools:
             combined_tools.extend(existing_tools)
         combined_tools.extend(syntha_tools)
-        
+
         # Create function handler if available
         function_handler = self.create_function_handler(framework_name)
-        
+
         return {
             "framework": framework_name,
             "tools": combined_tools,
@@ -351,7 +354,7 @@ class SynthaToolFactory:
             "syntha_tool_count": len(syntha_tools),
             "existing_tool_count": len(existing_tools) if existing_tools else 0,
             "handler": function_handler,
-            "tool_handler": self.tool_handler
+            "tool_handler": self.tool_handler,
         }
 
 
@@ -372,7 +375,7 @@ def create_tool_factory(tool_handler) -> SynthaToolFactory:
         mesh = ContextMesh()
         handler = ToolHandler(mesh, "MyAgent")
         factory = create_tool_factory(handler)
-        
+
         # Get LangChain tools
         langchain_tools = factory.create_tools("langchain")
     """

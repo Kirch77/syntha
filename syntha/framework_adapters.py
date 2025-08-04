@@ -84,12 +84,12 @@ class FrameworkAdapter(ABC):
         """
         tools = []
         schemas = self.tool_handler.get_syntha_schemas_only()
-        
+
         for schema in schemas:
             tool_name = schema.get("name")
             if not tool_name:
                 continue
-                
+
             # Only create tools the agent has access to
             if self.tool_handler.has_tool_access(tool_name):
                 try:
@@ -100,7 +100,7 @@ class FrameworkAdapter(ABC):
                     raise SynthaFrameworkError(
                         f"Failed to create {self.framework_name} tool '{tool_name}': {str(e)}"
                     )
-        
+
         return tools
 
     def _create_tool_function(self, tool_name: str) -> Callable:
@@ -113,58 +113,63 @@ class FrameworkAdapter(ABC):
         Returns:
             Callable function for the tool
         """
+
         def tool_function(**kwargs):
             try:
                 # Convert parameters if needed
                 converted_kwargs = self._convert_input_parameters(tool_name, kwargs)
-                
+
                 # Call the Syntha tool handler
-                result = self.tool_handler.handle_tool_call(tool_name, **converted_kwargs)
-                
+                result = self.tool_handler.handle_tool_call(
+                    tool_name, **converted_kwargs
+                )
+
                 # Convert result if needed
                 return self._convert_output_result(tool_name, result)
-                
+
             except Exception as e:
                 return {
                     "success": False,
                     "error": f"Tool execution error: {str(e)}",
                     "tool_name": tool_name,
-                    "framework": self.framework_name
+                    "framework": self.framework_name,
                 }
-        
+
         return tool_function
 
-    def _convert_input_parameters(self, tool_name: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_input_parameters(
+        self, tool_name: str, kwargs: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Convert input parameters for framework-specific requirements.
-        
+
         Args:
             tool_name: Name of the tool
             kwargs: Input parameters
-            
+
         Returns:
             Converted parameters
         """
         # Handle common parameter conversions
         converted = kwargs.copy()
-        
+
         # Convert comma-separated strings to lists for array parameters
         for key, value in kwargs.items():
             if isinstance(value, str) and "," in value:
                 # Check if this parameter should be a list
                 if self._should_convert_to_list(tool_name, key):
                     converted[key] = [item.strip() for item in value.split(",")]
-        
+
         return converted
 
     def _convert_output_result(self, tool_name: str, result: Dict[str, Any]) -> Any:
         """
         Convert output result for framework-specific requirements.
-        
+
         Args:
             tool_name: Name of the tool
             result: Tool result
-            
+
         Returns:
             Converted result
         """
@@ -174,11 +179,11 @@ class FrameworkAdapter(ABC):
     def _should_convert_to_list(self, tool_name: str, param_name: str) -> bool:
         """
         Check if a parameter should be converted from string to list.
-        
+
         Args:
             tool_name: Name of the tool
             param_name: Name of the parameter
-            
+
         Returns:
             True if parameter should be converted to list
         """
@@ -188,7 +193,7 @@ class FrameworkAdapter(ABC):
             "subscribe_to_topics": ["topics"],
             "unsubscribe_from_topics": ["topics"],
         }
-        
+
         return param_name in list_params.get(tool_name, [])
 
 
@@ -216,13 +221,12 @@ class LangChainAdapter(FrameworkAdapter):
             )
 
         # Convert Syntha schema to Pydantic model
-        pydantic_fields = self._create_pydantic_fields(tool_schema.get("parameters", {}))
-        
-        # Create dynamic Pydantic model for input
-        input_model = create_model(
-            f"{tool_name.title()}Input",
-            **pydantic_fields
+        pydantic_fields = self._create_pydantic_fields(
+            tool_schema.get("parameters", {})
         )
+
+        # Create dynamic Pydantic model for input
+        input_model = create_model(f"{tool_name.title()}Input", **pydantic_fields)
 
         # Create the tool function
         tool_function = self._create_tool_function(tool_name)
@@ -230,7 +234,9 @@ class LangChainAdapter(FrameworkAdapter):
         # Create LangChain tool class
         class SynthaTool(BaseTool):
             name: str = tool_name
-            description: str = tool_schema.get("description", f"Syntha {tool_name} tool")
+            description: str = tool_schema.get(
+                "description", f"Syntha {tool_name} tool"
+            )
             args_schema: Type[BaseModel] = input_model
 
             def _run(self, **kwargs) -> str:
@@ -251,7 +257,7 @@ class LangChainAdapter(FrameworkAdapter):
         Convert Syntha parameters to Pydantic field definitions.
         """
         from pydantic import Field
-        
+
         fields = {}
         properties = parameters.get("properties", {})
         required = set(parameters.get("required", []))
@@ -259,7 +265,7 @@ class LangChainAdapter(FrameworkAdapter):
         for param_name, param_def in properties.items():
             param_type = param_def.get("type", "string")
             description = param_def.get("description", "")
-            
+
             # Map JSON schema types to Python types
             if param_type == "array":
                 field_type = List[str]
@@ -276,7 +282,10 @@ class LangChainAdapter(FrameworkAdapter):
             if param_name in required:
                 fields[param_name] = (field_type, Field(description=description))
             else:
-                fields[param_name] = (Optional[field_type], Field(default=None, description=description))
+                fields[param_name] = (
+                    Optional[field_type],
+                    Field(default=None, description=description),
+                )
 
         return fields
 
@@ -297,19 +306,21 @@ class LangGraphAdapter(FrameworkAdapter):
     def __init__(self, tool_handler):
         super().__init__(tool_handler, "langgraph")
 
-    def create_tool(self, tool_name: str, tool_schema: Dict[str, Any]) -> Dict[str, Any]:
+    def create_tool(
+        self, tool_name: str, tool_schema: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Create a LangGraph tool from a Syntha tool schema.
         """
         # Create the tool function
         tool_function = self._create_tool_function(tool_name)
-        
+
         # LangGraph tools are typically just dictionaries with function and schema
         return {
             "name": tool_name,
             "description": tool_schema.get("description", f"Syntha {tool_name} tool"),
             "parameters": self.convert_parameters(tool_schema.get("parameters", {})),
-            "function": tool_function
+            "function": tool_function,
         }
 
     def convert_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
@@ -338,7 +349,9 @@ class OpenAIAdapter(FrameworkAdapter):
     def __init__(self, tool_handler):
         super().__init__(tool_handler, "openai")
 
-    def create_tool(self, tool_name: str, tool_schema: Dict[str, Any]) -> Dict[str, Any]:
+    def create_tool(
+        self, tool_name: str, tool_schema: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Create an OpenAI function calling tool from a Syntha tool schema.
         """
@@ -346,9 +359,13 @@ class OpenAIAdapter(FrameworkAdapter):
             "type": "function",
             "function": {
                 "name": tool_name,
-                "description": tool_schema.get("description", f"Syntha {tool_name} tool"),
-                "parameters": self.convert_parameters(tool_schema.get("parameters", {}))
-            }
+                "description": tool_schema.get(
+                    "description", f"Syntha {tool_name} tool"
+                ),
+                "parameters": self.convert_parameters(
+                    tool_schema.get("parameters", {})
+                ),
+            },
         }
 
     def convert_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
@@ -361,18 +378,21 @@ class OpenAIAdapter(FrameworkAdapter):
     def create_function_handler(self) -> Callable:
         """
         Create a function handler for OpenAI function calls.
-        
+
         Returns:
             Function that can handle OpenAI function call format
         """
-        def handle_function_call(function_name: str, arguments: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+
+        def handle_function_call(
+            function_name: str, arguments: Union[str, Dict[str, Any]]
+        ) -> Dict[str, Any]:
             """
             Handle an OpenAI function call.
-            
+
             Args:
                 function_name: Name of the function to call
                 arguments: Function arguments (JSON string or dict)
-                
+
             Returns:
                 Function result
             """
@@ -382,18 +402,20 @@ class OpenAIAdapter(FrameworkAdapter):
                     kwargs = json.loads(arguments)
                 else:
                     kwargs = arguments or {}
-                
+
                 # Convert parameters and call tool
                 converted_kwargs = self._convert_input_parameters(function_name, kwargs)
-                return self.tool_handler.handle_tool_call(function_name, **converted_kwargs)
-                
+                return self.tool_handler.handle_tool_call(
+                    function_name, **converted_kwargs
+                )
+
             except Exception as e:
                 return {
                     "success": False,
                     "error": f"Function call error: {str(e)}",
-                    "function_name": function_name
+                    "function_name": function_name,
                 }
-        
+
         return handle_function_call
 
 
@@ -406,14 +428,16 @@ class AnthropicAdapter(FrameworkAdapter):
     def __init__(self, tool_handler):
         super().__init__(tool_handler, "anthropic")
 
-    def create_tool(self, tool_name: str, tool_schema: Dict[str, Any]) -> Dict[str, Any]:
+    def create_tool(
+        self, tool_name: str, tool_schema: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Create an Anthropic tool from a Syntha tool schema.
         """
         return {
             "name": tool_name,
             "description": tool_schema.get("description", f"Syntha {tool_name} tool"),
-            "input_schema": self.convert_parameters(tool_schema.get("parameters", {}))
+            "input_schema": self.convert_parameters(tool_schema.get("parameters", {})),
         }
 
     def convert_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
@@ -426,18 +450,21 @@ class AnthropicAdapter(FrameworkAdapter):
     def create_tool_handler(self) -> Callable:
         """
         Create a tool handler for Anthropic tool use.
-        
+
         Returns:
             Function that can handle Anthropic tool use format
         """
-        def handle_tool_use(tool_name: str, tool_input: Dict[str, Any]) -> Dict[str, Any]:
+
+        def handle_tool_use(
+            tool_name: str, tool_input: Dict[str, Any]
+        ) -> Dict[str, Any]:
             """
             Handle an Anthropic tool use call.
-            
+
             Args:
                 tool_name: Name of the tool to use
                 tool_input: Tool input parameters
-                
+
             Returns:
                 Tool result
             """
@@ -445,14 +472,14 @@ class AnthropicAdapter(FrameworkAdapter):
                 # Convert parameters and call tool
                 converted_input = self._convert_input_parameters(tool_name, tool_input)
                 return self.tool_handler.handle_tool_call(tool_name, **converted_input)
-                
+
             except Exception as e:
                 return {
                     "success": False,
                     "error": f"Tool use error: {str(e)}",
-                    "tool_name": tool_name
+                    "tool_name": tool_name,
                 }
-        
+
         return handle_tool_use
 
 
@@ -468,7 +495,7 @@ FRAMEWORK_ADAPTERS = {
 def get_supported_frameworks() -> List[str]:
     """
     Get list of supported framework names.
-    
+
     Returns:
         List of supported framework names
     """
@@ -478,14 +505,14 @@ def get_supported_frameworks() -> List[str]:
 def create_framework_adapter(framework_name: str, tool_handler) -> FrameworkAdapter:
     """
     Create a framework adapter for the specified framework.
-    
+
     Args:
         framework_name: Name of the framework
         tool_handler: Syntha ToolHandler instance
-        
+
     Returns:
         Framework adapter instance
-        
+
     Raises:
         SynthaFrameworkError: If framework is not supported
     """
@@ -494,6 +521,6 @@ def create_framework_adapter(framework_name: str, tool_handler) -> FrameworkAdap
         raise SynthaFrameworkError(
             f"Unsupported framework '{framework_name}'. Supported frameworks: {supported}"
         )
-    
+
     adapter_class = FRAMEWORK_ADAPTERS[framework_name]
     return adapter_class(tool_handler)
