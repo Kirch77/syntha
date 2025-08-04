@@ -46,7 +46,7 @@ langchain_tools = handler.get_langchain_tools()
 - **LangGraph** - Tool dictionaries with callable functions  
 - **OpenAI** - Function calling definitions
 - **Anthropic** - Claude tool use definitions
-
+update
 ## Quick Start
 
 ### 1. Basic Setup
