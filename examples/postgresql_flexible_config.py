@@ -8,6 +8,7 @@ This example demonstrates both ways to configure PostgreSQL:
 """
 
 import os
+
 from syntha import ContextMesh
 
 
