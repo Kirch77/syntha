@@ -11,24 +11,25 @@ Tests the framework adapter system including:
 """
 
 import json
-import pytest
 import sys
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 # Add the project root to path for imports
 sys.path.insert(0, "..")
 
-from syntha import ContextMesh, ToolHandler, SynthaFrameworkError
+from syntha import ContextMesh, SynthaFrameworkError, ToolHandler
 from syntha.framework_adapters import (
+    FRAMEWORK_ADAPTERS,
+    AnthropicAdapter,
     FrameworkAdapter,
     LangChainAdapter,
     LangGraphAdapter,
     OpenAIAdapter,
-    AnthropicAdapter,
     create_framework_adapter,
     get_supported_frameworks,
-    FRAMEWORK_ADAPTERS,
 )
 
 

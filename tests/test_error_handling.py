@@ -10,20 +10,21 @@ Tests various error scenarios including:
 - Integration failures
 """
 
-import pytest
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 # Add the project root to path for imports
 sys.path.insert(0, "..")
 
-from syntha import ContextMesh, ToolHandler, SynthaFrameworkError
+from syntha import ContextMesh, SynthaFrameworkError, ToolHandler
 from syntha.framework_adapters import (
-    create_framework_adapter,
-    LangChainAdapter,
-    OpenAIAdapter,
     AnthropicAdapter,
+    LangChainAdapter,
     LangGraphAdapter,
+    OpenAIAdapter,
+    create_framework_adapter,
 )
 from syntha.tool_factory import SynthaToolFactory
 

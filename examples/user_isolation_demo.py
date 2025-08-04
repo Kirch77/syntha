@@ -6,8 +6,9 @@ This demo shows how user contexts are properly isolated in both SQLite and Postg
 Each user's data is completely separate, even when using the same keys and agent names.
 """
 
-import tempfile
 import os
+import tempfile
+
 from syntha import ContextMesh
 
 

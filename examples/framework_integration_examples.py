@@ -16,7 +16,8 @@ Key integration patterns:
 """
 
 import json
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from syntha import ContextMesh, ToolHandler, build_system_prompt
 
 # ============================================================================

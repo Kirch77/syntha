@@ -27,7 +27,8 @@ Key Features:
 
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Callable, Union
+from typing import Any, Callable, Dict, List, Optional, Union
+
 from .exceptions import SynthaFrameworkError
 
 
@@ -212,9 +213,10 @@ class LangChainAdapter(FrameworkAdapter):
         """
         try:
             # Try to import LangChain
+            from typing import Type
+
             from langchain.tools import BaseTool
             from pydantic import BaseModel, Field, create_model
-            from typing import Type
         except ImportError:
             raise SynthaFrameworkError(
                 "LangChain not installed. Install with: pip install langchain"
@@ -268,7 +270,7 @@ class LangChainAdapter(FrameworkAdapter):
 
             # Map JSON schema types to Python types
             if param_type == "array":
-                field_type = List[str]
+                field_type: Any = List[str]
             elif param_type == "boolean":
                 field_type = bool
             elif param_type == "integer":

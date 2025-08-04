@@ -6,16 +6,17 @@ Tests the factory pattern implementation, caching, validation,
 and hybrid integration capabilities.
 """
 
-import pytest
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 # Add the project root to path for imports
 sys.path.insert(0, "..")
 
-from syntha import ContextMesh, ToolHandler, SynthaFrameworkError
-from syntha.tool_factory import SynthaToolFactory, create_tool_factory
+from syntha import ContextMesh, SynthaFrameworkError, ToolHandler
 from syntha.framework_adapters import get_supported_frameworks
+from syntha.tool_factory import SynthaToolFactory, create_tool_factory
 
 
 class TestSynthaToolFactory:

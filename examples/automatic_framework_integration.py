@@ -21,7 +21,7 @@ Before/After Comparison:
 
 import json
 import sys
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 # Add the parent directory to the path so we can import syntha
 sys.path.insert(0, "..")

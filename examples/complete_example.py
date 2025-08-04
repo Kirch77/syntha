@@ -12,6 +12,7 @@ This example demonstrates all key Syntha features:
 
 import json
 import time
+
 from syntha import ContextMesh, ToolHandler, build_system_prompt
 
 

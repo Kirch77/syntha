@@ -6,20 +6,21 @@ Tests the performance of the new automatic framework integration system
 including tool creation speed, caching efficiency, and memory usage.
 """
 
-import time
-import pytest
-import sys
-import psutil
 import os
-from typing import Dict, List, Any
+import sys
+import time
+from typing import Any, Dict, List
 from unittest.mock import patch
+
+import psutil
+import pytest
 
 # Add the project root to path for imports
 sys.path.insert(0, "..")
 
 from syntha import ContextMesh, ToolHandler
-from syntha.tool_factory import SynthaToolFactory
 from syntha.framework_adapters import get_supported_frameworks
+from syntha.tool_factory import SynthaToolFactory
 
 
 class PerformanceBenchmark:
