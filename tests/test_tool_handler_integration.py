@@ -8,7 +8,6 @@ including the new convenience methods and hybrid integration features.
 
 import json
 import sys
-from unittest.mock import MagicMock, patch
 
 import pytest
 
