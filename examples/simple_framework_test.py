@@ -8,7 +8,6 @@ of Syntha without requiring external dependencies.
 
 import json
 import sys
-from typing import Any, Dict
 
 # Add parent directory to path for imports
 sys.path.insert(0, "..")
