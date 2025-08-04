@@ -10,7 +10,6 @@ import os
 import sys
 import time
 from typing import Any, Dict, List
-from unittest.mock import patch
 
 import pytest
 
