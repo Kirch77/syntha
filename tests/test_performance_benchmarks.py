@@ -17,6 +17,7 @@ import pytest
 # Try to import psutil, but don't fail if it's not available
 try:
     import psutil
+
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
@@ -48,7 +49,7 @@ class PerformanceBenchmark:
             # Skip memory measurement if psutil is not available
             result = func(*args, **kwargs)
             return result, 0.0
-            
+
         process = psutil.Process(os.getpid())
         mem_before = process.memory_info().rss / 1024 / 1024  # MB
 
@@ -388,7 +389,9 @@ class TestScalabilityBenchmarks:
 
         # Concurrent execution should provide some benefit (or both very fast)
         if avg_duration > 0:
-            assert total_duration < avg_duration * 0.8  # Should be faster than sequential
+            assert (
+                total_duration < avg_duration * 0.8
+            )  # Should be faster than sequential
         else:
             # Operations are very fast, which is good
             assert True
