@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754346926756,
+  "lastUpdate": 1754347210224,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -5170,6 +5170,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000022648157083673076",
             "extra": "mean: 864.4409371640394 usec\nrounds: 1114"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "rylan.kirchmair@gmail.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "distinct": true,
+          "id": "ef6738229c112ab3a4e0dcdaf8731e4d2141cefd",
+          "message": "Update error handling in TestLangChainAdapter to reflect correct exception type\n\n- Changed the expected exception from SynthaFrameworkError to ImportError when Pydantic is not installed.\n- Updated assertions to verify the correct error message related to the missing Pydantic module.\n\nThese changes improve the accuracy of error handling tests in the Syntha SDK.",
+          "timestamp": "2025-08-04T18:39:27-04:00",
+          "tree_id": "d5d58ee4b5c0e73c187dcf59031c90eeff7ae5b8",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/ef6738229c112ab3a4e0dcdaf8731e4d2141cefd"
+        },
+        "date": 1754347209917,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 289834.86920369684,
+            "unit": "iter/sec",
+            "range": "stddev: 6.23691156821874e-7",
+            "extra": "mean: 3.450240486065177 usec\nrounds: 37524"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 484339.19360516116,
+            "unit": "iter/sec",
+            "range": "stddev: 4.7370799773864885e-7",
+            "extra": "mean: 2.0646687552922085 usec\nrounds: 148105"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2161.1020595296595,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000008307914536070473",
+            "extra": "mean: 462.72687381439044 usec\nrounds: 2425"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4767.390782101202,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001549992381611413",
+            "extra": "mean: 209.75834491152312 usec\nrounds: 4520"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 716.1644370435582,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00005729248344902519",
+            "extra": "mean: 1.3963273632074786 msec\nrounds: 636"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1829.7865354034006,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00005594535907792719",
+            "extra": "mean: 546.511836573077 usec\nrounds: 2778"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 542261.0786094907,
+            "unit": "iter/sec",
+            "range": "stddev: 3.9793264345179554e-7",
+            "extra": "mean: 1.8441301421895893 usec\nrounds: 1337"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 24.487604875428378,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00384875186748191",
+            "extra": "mean: 40.83698692000013 msec\nrounds: 25"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 100088.31056407723,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000014158611866093833",
+            "extra": "mean: 9.991176735466958 usec\nrounds: 20873"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1150.8905414572005,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000013128580309140687",
+            "extra": "mean: 868.8923611569955 usec\nrounds: 1210"
           }
         ]
       }
