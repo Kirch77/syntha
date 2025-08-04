@@ -60,19 +60,7 @@ def demonstrate_langchain_integration():
         subscribers=["system"],
     )
 
-    # OLD WAY (commented out for comparison):
-    # class SynthaGetContextTool(BaseTool):
-    #     name = "get_context"
-    #     description = "Retrieve context data"
-    #     args_schema: Type[BaseModel] = GetContextInput
-    #
-    #     def _run(self, keys: Optional[List[str]] = None) -> str:
-    #         # Manual parameter handling and conversion
-    #         result = handler.handle_tool_call("get_context", keys=keys)
-    #         return json.dumps(result)
-    #
-    # langchain_tools = [SynthaGetContextTool(), ...]  # Repeat for each tool
-
+    # OLD WAY (manual tool creation and parameter handling required; see documentation for details)
     # NEW WAY - Just one line! 🎉
     try:
         langchain_tools = handler.get_langchain_tools()
