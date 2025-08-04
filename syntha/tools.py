@@ -1311,7 +1311,7 @@ def create_hybrid_tool_handler(context_mesh, agent_name: str, user_tool_handler=
             self.handler_func = handler_func
             self.get_syntha_schemas = syntha_handler.get_syntha_schemas_only
             self.handle_syntha_tool = syntha_handler.handle_tool_call
-        
+
         def __call__(self, tool_name: str, **kwargs):
             return self.handler_func(tool_name, **kwargs)
 
