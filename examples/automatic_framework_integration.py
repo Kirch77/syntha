@@ -318,7 +318,7 @@ def demonstrate_performance_comparison():
 
     try:
         langchain_tools = handler.get_langchain_tools()
-    except:
+    except Exception:
         pass
 
     openai_tools = handler.get_openai_functions()
