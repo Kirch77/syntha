@@ -501,12 +501,168 @@ class AnthropicAdapter(FrameworkAdapter):
         return handle_tool_use
 
 
+class AgnoAdapter(FrameworkAdapter):
+    """
+    Adapter for Agno framework integration.
+    Creates Agno-compatible Function instances from Syntha tools.
+    """
+
+    def __init__(self, tool_handler):
+        super().__init__(tool_handler, "agno")
+
+    def convert_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Convert parameters for Agno compatibility.
+
+        Args:
+            parameters: Original parameters
+
+        Returns:
+            Converted parameters
+        """
+        # Agno doesn't need special parameter conversion
+        return parameters
+
+    def create_tool(self, tool_name: str, tool_schema: Dict[str, Any]) -> Any:
+        """
+        Create an Agno Function from a Syntha tool schema.
+        """
+        try:
+            from typing import Any as AnyType
+            from typing import Optional
+
+            from agno.tools import Function
+        except ImportError:
+            raise SynthaFrameworkError(
+                "Agno not installed. Install with: pip install agno",
+                framework="agno",
+            )
+
+        # Create the tool function
+        tool_function = self._create_tool_function(tool_name)
+
+        # Extract parameters from schema
+        parameters = tool_schema.get("parameters", {})
+        properties = parameters.get("properties", {})
+        required = set(parameters.get("required", []))
+
+        # Create function signature for Agno
+        def agno_tool_wrapper(**kwargs) -> str:
+            """
+            Wrapper function for Syntha tool to work with Agno.
+            """
+            try:
+                # Convert parameters as needed
+                converted_kwargs = {}
+                for param_name, param_value in kwargs.items():
+                    if self._should_convert_to_list(tool_name, param_name):
+                        if isinstance(param_value, str):
+                            converted_kwargs[param_name] = [param_value]
+                        else:
+                            converted_kwargs[param_name] = param_value
+                    else:
+                        converted_kwargs[param_name] = param_value
+
+                # Call the original tool function
+                result = tool_function(**converted_kwargs)
+
+                # Convert result to string for Agno
+                if isinstance(result, dict):
+                    return json.dumps(result, indent=2)
+                return str(result)
+            except Exception as e:
+                return f"Error executing {tool_name}: {str(e)}"
+
+        # Set function attributes for Agno
+        agno_tool_wrapper.__name__ = tool_name
+        agno_tool_wrapper.__doc__ = tool_schema.get(
+            "description", f"Syntha {tool_name} tool"
+        )
+
+        # Add parameter annotations
+        annotations = {}
+        for param_name, param_def in properties.items():
+            param_type = param_def.get("type", "string")
+
+            # Map JSON schema types to Python types
+            if param_type == "array":
+                python_type: Any = List[str]
+            elif param_type == "boolean":
+                python_type = bool
+            elif param_type == "integer":
+                python_type = int
+            elif param_type == "number":
+                python_type = float
+            else:
+                python_type = str
+
+            # Make optional if not required
+            if param_name not in required:
+                python_type = Optional[python_type]
+
+            annotations[param_name] = python_type
+
+        # Set return type annotation
+        annotations["return"] = str
+        agno_tool_wrapper.__annotations__ = annotations
+
+        # Create Agno Function from the wrapper
+        return Function.from_callable(agno_tool_wrapper, name=tool_name, strict=False)
+
+    def create_tools(self, tools: Optional[List[str]] = None) -> List[Any]:
+        """
+        Create multiple Agno Functions from Syntha tool schemas.
+
+        Args:
+            tools: Optional list of tool names to create. If None, creates all tools.
+
+        Returns:
+            List of Agno Function instances
+        """
+        available_tools = self.tool_handler.get_available_tools()
+
+        if tools is not None:
+            # Validate requested tools exist
+            invalid_tools = set(tools) - set(available_tools)
+            if invalid_tools:
+                raise SynthaFrameworkError(
+                    f"Unknown tools: {invalid_tools}. Available tools: {available_tools}",
+                    framework=self.framework_name,
+                )
+
+        # Get all schemas and filter by requested tools and access control
+        schemas = self.tool_handler.get_syntha_schemas_only()
+        agno_tools = []
+
+        for schema in schemas:
+            tool_name = schema.get("name")
+            if not tool_name:
+                continue
+
+            # Skip if specific tools requested and this isn't one of them
+            if tools is not None and tool_name not in tools:
+                continue
+
+            # Only create tools the agent has access to
+            if self.tool_handler.has_tool_access(tool_name):
+                try:
+                    agno_tool = self.create_tool(tool_name, schema)
+                    agno_tools.append(agno_tool)
+                except Exception as e:
+                    # Log error but continue with other tools
+                    print(f"Warning: Failed to create Agno tool '{tool_name}': {e}")
+                    continue
+
+        return agno_tools
+
+
 # Registry of available adapters
 FRAMEWORK_ADAPTERS = {
     "langchain": LangChainAdapter,
     "langgraph": LangGraphAdapter,
     "openai": OpenAIAdapter,
     "anthropic": AnthropicAdapter,
+    "agno": AgnoAdapter,
 }
 
 
