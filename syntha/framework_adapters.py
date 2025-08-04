@@ -525,4 +525,4 @@ def create_framework_adapter(framework_name: str, tool_handler) -> FrameworkAdap
         )
 
     adapter_class = FRAMEWORK_ADAPTERS[framework_name]
-    return adapter_class(tool_handler)
+    return adapter_class(tool_handler)  # type: ignore

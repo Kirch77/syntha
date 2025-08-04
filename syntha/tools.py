@@ -1305,11 +1305,17 @@ def create_hybrid_tool_handler(context_mesh, agent_name: str, user_tool_handler=
 
         return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
-    # Add utility methods
-    hybrid_handler.get_syntha_schemas = syntha_handler.get_syntha_schemas_only
-    hybrid_handler.handle_syntha_tool = syntha_handler.handle_tool_call
+    # Create a wrapper object that includes the function and utility methods
+    class HybridHandler:
+        def __init__(self, handler_func, syntha_handler):
+            self.handler_func = handler_func
+            self.get_syntha_schemas = syntha_handler.get_syntha_schemas_only
+            self.handle_syntha_tool = syntha_handler.handle_tool_call
+        
+        def __call__(self, tool_name: str, **kwargs):
+            return self.handler_func(tool_name, **kwargs)
 
-    return hybrid_handler
+    return HybridHandler(hybrid_handler, syntha_handler)
 
 
 # Add these at the end of the file, before the existing convenience functions
