@@ -292,7 +292,7 @@ class TestMemoryUsage:
             for framework in frameworks:
                 try:
                     factory.get_adapter(framework)
-                except:
+                except Exception:
                     pass  # Skip frameworks with missing dependencies
             return factory.get_cache_info()
 
