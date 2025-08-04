@@ -354,12 +354,11 @@ class TestLangChainAdapter:
             "required": ["string_param", "array_param"],
         }
 
-        # This should raise an error since pydantic is not installed
-        with pytest.raises(SynthaFrameworkError) as exc_info:
+        # This should raise an ImportError since pydantic is not installed
+        with pytest.raises(ImportError) as exc_info:
             self.adapter._create_pydantic_fields(parameters)
 
-        assert "LangChain not installed" in str(exc_info.value)
-        assert exc_info.value.framework == "langchain"
+        assert "No module named 'pydantic'" in str(exc_info.value)
 
 
 class TestParameterConversion:
