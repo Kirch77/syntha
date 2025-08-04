@@ -359,7 +359,7 @@ class TestLangChainAdapter:
             "required": ["string_param", "array_param"],
         }
 
-        with patch("syntha.framework_adapters.Field") as mock_field:
+        with patch("pydantic.Field") as mock_field:
             mock_field.return_value = MagicMock()
             fields = self.adapter._create_pydantic_fields(parameters)
 
