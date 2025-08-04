@@ -416,7 +416,7 @@ class TestPerformanceRegression:
         times = []
         for i in range(50):
             start_time = time.time()
-            tools = factory.create_tools("openai")
+            factory.create_tools("openai")
             duration = time.time() - start_time
             times.append(duration)
 
