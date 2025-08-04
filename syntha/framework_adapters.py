@@ -215,8 +215,8 @@ class LangChainAdapter(FrameworkAdapter):
             # Try to import LangChain
             from typing import Type
 
-            from langchain.tools import BaseTool
-            from pydantic import BaseModel, Field, create_model
+            from langchain.tools import BaseTool  # type: ignore
+            from pydantic import BaseModel, Field, create_model  # type: ignore
         except ImportError:
             raise SynthaFrameworkError(
                 "LangChain not installed. Install with: pip install langchain"
@@ -258,7 +258,7 @@ class LangChainAdapter(FrameworkAdapter):
         """
         Convert Syntha parameters to Pydantic field definitions.
         """
-        from pydantic import Field
+        from pydantic import Field  # type: ignore
 
         fields = {}
         properties = parameters.get("properties", {})
@@ -525,4 +525,4 @@ def create_framework_adapter(framework_name: str, tool_handler) -> FrameworkAdap
         )
 
     adapter_class = FRAMEWORK_ADAPTERS[framework_name]
-    return adapter_class(tool_handler)
+    return adapter_class(tool_handler)  # type: ignore
