@@ -16,7 +16,6 @@ import pytest
 sys.path.insert(0, "..")
 
 from syntha import ContextMesh, SynthaFrameworkError, ToolHandler
-from syntha.tool_factory import SynthaToolFactory
 
 
 class TestToolHandlerFrameworkMethods:
