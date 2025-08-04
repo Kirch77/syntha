@@ -183,9 +183,12 @@ class TestCachingPerformance:
         print(f"\n🗄️  Cache Performance:")
         print(f"  Cache miss: {cold_result['average_time']*1000:.2f}ms avg")
         print(f"  Cache hit:  {warm_result['average_time']*1000:.2f}ms avg")
-        print(
-            f"  Speedup:    {cold_result['average_time']/warm_result['average_time']:.1f}x"
+        speedup = (
+            cold_result["average_time"] / warm_result["average_time"]
+            if warm_result["average_time"] > 0
+            else float("inf")
         )
+        print(f"  Speedup:    {speedup:.1f}x")
 
         # Cache hits should be significantly faster
         assert warm_result["average_time"] < cold_result["average_time"] / 2
@@ -214,7 +217,10 @@ class TestCachingPerformance:
         print(f"  First run (cold):  {first_run_time*1000:.2f}ms")
         print(f"  Second run (warm): {second_run_time*1000:.2f}ms")
         print(f"  Cache size:        {cache_info['cache_size']} adapters")
-        print(f"  Speedup:           {first_run_time/second_run_time:.1f}x")
+        speedup = (
+            first_run_time / second_run_time if second_run_time > 0 else float("inf")
+        )
+        print(f"  Speedup:           {speedup:.1f}x")
 
         assert cache_info["cache_size"] == len(frameworks)
         assert second_run_time < first_run_time / 3  # Should be at least 3x faster
@@ -308,7 +314,8 @@ class TestScalabilityBenchmarks:
             print(f"  Total time: {duration*1000:.2f}ms")
             print(f"  Time per handler: {duration/count*1000:.2f}ms")
             print(f"  Total tools: {total_tools}")
-            print(f"  Tools per second: {total_tools/duration:.0f}")
+            tools_per_sec = total_tools / duration if duration > 0 else float("inf")
+            print(f"  Tools per second: {tools_per_sec:.0f}")
 
             # Should scale reasonably
             assert duration < count * 0.1  # Less than 100ms per handler
@@ -352,7 +359,10 @@ class TestScalabilityBenchmarks:
         print(f"  Total time: {total_duration*1000:.2f}ms")
         print(f"  Avg thread time: {avg_duration*1000:.2f}ms")
         print(f"  Total tools: {total_tools}")
-        print(f"  Concurrency benefit: {avg_duration/total_duration:.1f}x")
+        concurrency_benefit = (
+            avg_duration / total_duration if total_duration > 0 else float("inf")
+        )
+        print(f"  Concurrency benefit: {concurrency_benefit:.1f}x")
 
         # Concurrent execution should provide some benefit
         assert total_duration < avg_duration * 0.8  # Should be faster than sequential
@@ -384,7 +394,8 @@ class TestPerformanceRegression:
         print(f"\n📊 Performance Consistency:")
         print(f"  Average time: {avg_time*1000:.2f}ms")
         print(f"  Max deviation: {max_deviation*1000:.2f}ms")
-        print(f"  Coefficient of variation: {max_deviation/avg_time:.2%}")
+        coefficient = max_deviation / avg_time if avg_time > 0 else float("inf")
+        print(f"  Coefficient of variation: {coefficient:.2%}")
 
         # Performance should be consistent (within 50% of average)
         assert max_deviation < avg_time * 0.5

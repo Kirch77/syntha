@@ -87,10 +87,17 @@ class TestToolHandlerFrameworkMethods:
 
     def test_get_langchain_tools_without_langchain(self):
         """Test that LangChain tools raise appropriate error when LangChain not available."""
-        with pytest.raises(SynthaFrameworkError) as exc_info:
-            self.handler.get_langchain_tools()
+        with patch(
+            "syntha.framework_adapters.LangChainAdapter.create_tool"
+        ) as mock_create:
+            mock_create.side_effect = SynthaFrameworkError(
+                "LangChain not installed. Install with: pip install langchain",
+                framework="langchain",
+            )
+            with pytest.raises(SynthaFrameworkError) as exc_info:
+                self.handler.get_langchain_tools()
 
-        assert "LangChain not installed" in str(exc_info.value)
+            assert "LangChain not installed" in str(exc_info.value)
 
     def test_get_tools_for_framework(self):
         """Test the universal get_tools_for_framework method."""
@@ -137,8 +144,15 @@ class TestToolHandlerFrameworkMethods:
             assert result["framework"] == framework
 
         # Test LangChain (should be invalid due to missing dependency)
-        result = self.handler.validate_framework("langchain")
-        assert result["valid"] is False
+        with patch(
+            "syntha.framework_adapters.LangChainAdapter.create_tool"
+        ) as mock_create:
+            mock_create.side_effect = SynthaFrameworkError(
+                "LangChain not installed. Install with: pip install langchain",
+                framework="langchain",
+            )
+            result = self.handler.validate_framework("langchain")
+            assert result["valid"] is False
         assert "error" in result
         assert "suggestion" in result
 

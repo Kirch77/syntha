@@ -116,7 +116,8 @@ class SynthaToolFactory:
         if not self.tool_handler.has_tool_access(tool_name):
             available_tools = self.tool_handler.get_available_tools()
             raise SynthaFrameworkError(
-                f"Tool '{tool_name}' not available. Available tools: {available_tools}"
+                f"Tool '{tool_name}' not available. Available tools: {available_tools}",
+                tool_name=tool_name,
             )
 
         # Get the tool schema
@@ -128,7 +129,9 @@ class SynthaToolFactory:
                 break
 
         if not tool_schema:
-            raise SynthaFrameworkError(f"Schema not found for tool '{tool_name}'")
+            raise SynthaFrameworkError(
+                f"Schema not found for tool '{tool_name}'", tool_name=tool_name
+            )
 
         adapter = self.get_adapter(framework_name)
         return adapter.create_tool(tool_name, tool_schema)
@@ -169,7 +172,9 @@ class SynthaToolFactory:
         if framework_name:
             framework_name = framework_name.lower().strip()
             if not self.is_framework_supported(framework_name):
-                raise SynthaFrameworkError(f"Unsupported framework: {framework_name}")
+                raise SynthaFrameworkError(
+                    f"Unsupported framework: {framework_name}", framework=framework_name
+                )
 
             adapter = self.get_adapter(framework_name)
             available_tools = self.tool_handler.get_available_tools()

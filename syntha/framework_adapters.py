@@ -99,7 +99,9 @@ class FrameworkAdapter(ABC):
                         tools.append(tool)
                 except Exception as e:
                     raise SynthaFrameworkError(
-                        f"Failed to create {self.framework_name} tool '{tool_name}': {str(e)}"
+                        f"Failed to create {self.framework_name} tool '{tool_name}': {str(e)}",
+                        framework=self.framework_name,
+                        tool_name=tool_name,
                     )
 
         return tools
@@ -124,6 +126,15 @@ class FrameworkAdapter(ABC):
                 result = self.tool_handler.handle_tool_call(
                     tool_name, **converted_kwargs
                 )
+
+                # Check if the result indicates an error
+                if isinstance(result, dict) and result.get("success") is False:
+                    return {
+                        "success": False,
+                        "error": f"Tool execution error: {result.get('error', 'Unknown error')}",
+                        "tool_name": tool_name,
+                        "framework": self.framework_name,
+                    }
 
                 # Convert result if needed
                 return self._convert_output_result(tool_name, result)
@@ -156,10 +167,14 @@ class FrameworkAdapter(ABC):
 
         # Convert comma-separated strings to lists for array parameters
         for key, value in kwargs.items():
-            if isinstance(value, str) and "," in value:
+            if isinstance(value, str):
                 # Check if this parameter should be a list
                 if self._should_convert_to_list(tool_name, key):
-                    converted[key] = [item.strip() for item in value.split(",")]
+                    if "," in value:
+                        converted[key] = [item.strip() for item in value.split(",")]
+                    else:
+                        # Empty string or single value becomes list with that value
+                        converted[key] = [value]
 
         return converted
 
@@ -219,7 +234,8 @@ class LangChainAdapter(FrameworkAdapter):
             from pydantic import BaseModel, Field, create_model
         except ImportError:
             raise SynthaFrameworkError(
-                "LangChain not installed. Install with: pip install langchain"
+                "LangChain not installed. Install with: pip install langchain",
+                framework="langchain",
             )
 
         # Convert Syntha schema to Pydantic model
@@ -521,7 +537,8 @@ def create_framework_adapter(framework_name: str, tool_handler) -> FrameworkAdap
     if framework_name not in FRAMEWORK_ADAPTERS:
         supported = list(FRAMEWORK_ADAPTERS.keys())
         raise SynthaFrameworkError(
-            f"Unsupported framework '{framework_name}'. Supported frameworks: {supported}"
+            f"Unsupported framework '{framework_name}'. Supported frameworks: {supported}",
+            framework=framework_name,
         )
 
     adapter_class = FRAMEWORK_ADAPTERS[framework_name]

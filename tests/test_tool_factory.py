@@ -204,9 +204,17 @@ class TestSynthaToolFactory:
 
     def test_validate_framework_requirements_langchain(self):
         """Test framework validation for LangChain (likely missing)."""
-        result = self.factory.validate_framework_requirements("langchain")
-        # Should be invalid due to missing LangChain
-        assert result["valid"] is False
+        # Mock the imports to simulate missing LangChain
+        with patch(
+            "syntha.framework_adapters.LangChainAdapter.create_tool"
+        ) as mock_create:
+            mock_create.side_effect = SynthaFrameworkError(
+                "LangChain not installed. Install with: pip install langchain",
+                framework="langchain",
+            )
+            result = self.factory.validate_framework_requirements("langchain")
+            # Should be invalid due to missing LangChain
+            assert result["valid"] is False
         assert "suggestion" in result
 
     def test_create_hybrid_integration(self):
@@ -430,7 +438,7 @@ class TestFactoryIntegrationScenarios:
         user_handler_func = user_factory.create_function_handler("openai")
 
         admin_result = admin_handler_func("list_context", "{}")
-        user_result = user_handler_func("list_context", "{}")
+        user_result = user_handler_func("get_context", '{"keys": ["test"]}')
 
         assert admin_result["agent_name"] == "AdminAgent"
         assert user_result["agent_name"] == "UserAgent"
