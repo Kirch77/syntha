@@ -75,6 +75,8 @@ class TestAgnoAdapter:
     @patch("syntha.framework_adapters.AgnoAdapter._create_tool_function")
     def test_create_tool_success(self, mock_create_tool_function, agno_adapter):
         """Test successful tool creation."""
+        pytest.importorskip("agno", reason="Agno not installed")
+
         # Mock the tool function
         mock_tool_func = Mock(return_value={"result": "success"})
         mock_create_tool_function.return_value = mock_tool_func
@@ -108,6 +110,8 @@ class TestAgnoAdapter:
     @patch("syntha.framework_adapters.AgnoAdapter._create_tool_function")
     def test_agno_tool_wrapper_execution(self, mock_create_tool_function, agno_adapter):
         """Test the Agno tool wrapper function execution."""
+        pytest.importorskip("agno", reason="Agno not installed")
+
         # Mock the tool function
         mock_tool_func = Mock(return_value={"result": "success", "data": [1, 2, 3]})
         mock_create_tool_function.return_value = mock_tool_func
@@ -157,6 +161,8 @@ class TestAgnoAdapter:
         self, mock_create_tool_function, agno_adapter
     ):
         """Test error handling in the Agno tool wrapper."""
+        pytest.importorskip("agno", reason="Agno not installed")
+
         # Mock the tool function to raise an exception
         mock_tool_func = Mock(side_effect=Exception("Tool execution failed"))
         mock_create_tool_function.return_value = mock_tool_func
@@ -187,6 +193,8 @@ class TestAgnoAdapter:
         self, mock_create_tool_function, agno_adapter
     ):
         """Test parameter list conversion in the Agno tool wrapper."""
+        pytest.importorskip("agno", reason="Agno not installed")
+
         mock_tool_func = Mock(return_value="success")
         mock_create_tool_function.return_value = mock_tool_func
 
@@ -338,6 +346,8 @@ class TestAgnoAdapter:
 
     def test_parameter_type_mapping(self, agno_adapter):
         """Test parameter type mapping from JSON schema to Python types."""
+        pytest.importorskip("agno", reason="Agno not installed")
+
         with patch("syntha.framework_adapters.AgnoAdapter._create_tool_function"):
             captured_wrapper = None
 

@@ -298,6 +298,8 @@ class TestLangChainAdapter:
 
     def test_create_tool_with_langchain_available(self):
         """Test creating a LangChain tool when LangChain is available."""
+        pytest.importorskip("langchain", reason="LangChain not installed")
+
         tool_schema = {
             "name": "test_tool",
             "description": "Test tool description",
