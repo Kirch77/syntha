@@ -298,7 +298,6 @@ class TestLangChainAdapter:
 
     def test_create_tool_with_langchain_available(self):
         """Test creating a LangChain tool when LangChain is available."""
-        # Since LangChain is not available in CI, we'll test the error handling
         tool_schema = {
             "name": "test_tool",
             "description": "Test tool description",
@@ -311,12 +310,15 @@ class TestLangChainAdapter:
             },
         }
 
-        # This should raise an error since LangChain is not installed
-        with pytest.raises(SynthaFrameworkError) as exc_info:
-            self.adapter.create_tool("test_tool", tool_schema)
+        # This should succeed since LangChain is available
+        tool = self.adapter.create_tool("test_tool", tool_schema)
 
-        assert "LangChain not installed" in str(exc_info.value)
-        assert exc_info.value.framework == "langchain"
+        # Verify the tool was created successfully
+        assert tool is not None
+        assert hasattr(tool, "name")
+        assert tool.name == "test_tool"
+        assert hasattr(tool, "description")
+        assert "Test tool description" in tool.description
 
     def test_create_tool_without_langchain(self):
         """Test error handling when LangChain is not available."""
