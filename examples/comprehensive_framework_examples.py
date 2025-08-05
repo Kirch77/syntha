@@ -18,7 +18,7 @@ Requirements:
 
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # Framework imports with fallbacks
 LANGCHAIN_AVAILABLE = False
