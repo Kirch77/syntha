@@ -15,48 +15,28 @@ context = ContextMesh(user_id="your_user_id", enable_persistence=True)
 # Step 2: Create a tool handler for your agent
 handler = ToolHandler(context, agent_name="YourAgent")
 
-# Step 3: Add Syntha tools to your existing tools
-existing_tools = [...your existing tools...]
-all_tools = handler.get_schemas(merge_with=existing_tools)
+# Step 3: Get tools for your framework - just one line!
+langchain_tools = handler.get_langchain_tools()      # LangChain
+openai_functions = handler.get_openai_functions()    # OpenAI
+anthropic_tools = handler.get_anthropic_tools()      # Anthropic Claude
+agno_tools = handler.get_tools_for_framework("agno") # Agno
+generic_tools = handler.get_schemas()                # Any framework
 
 # That's it! Your agent now has context management superpowers
 ```
 
-## Integration Patterns
+## Framework Adapters Overview
 
-### Pattern 1: Non-Destructive Integration
+Syntha provides dedicated adapters for popular AI frameworks:
 
-Syntha never modifies your existing tools. It adds context capabilities alongside them:
-
-```python
-# Your existing tools stay exactly the same
-existing_tools = [
-    {"name": "send_email", "description": "Send an email", ...},
-    {"name": "get_weather", "description": "Get weather data", ...}
-]
-
-# Syntha tools are added automatically
-handler = ToolHandler(context, "MyAgent")
-combined_tools = handler.get_schemas(merge_with=existing_tools)
-
-# Result: existing_tools + syntha_context_tools
-print(f"Before: {len(existing_tools)} tools")
-print(f"After: {len(combined_tools)} tools")  # More tools, same functionality
-```
-
-### Pattern 2: Automatic Conflict Resolution
-
-If tool names conflict, Syntha automatically renames to avoid issues:
-
-```python
-# If you already have a "get_context" tool, Syntha becomes "syntha_get_context"
-existing_tools = [{"name": "get_context", "description": "My existing tool"}]
-combined_tools = handler.get_schemas(merge_with=existing_tools)
-
-# Your tool: "get_context" 
-# Syntha tool: "syntha_get_context"
-# No conflicts!
-```
+| Framework | Method | Output Format | Use Case |
+|-----------|--------|---------------|----------|
+| **LangChain** | `get_langchain_tools()` | `List[BaseTool]` | Agent workflows, chains |
+| **LangGraph** | `get_langgraph_tools()` | `List[Dict]` | Multi-agent graphs |
+| **OpenAI** | `get_openai_functions()` | `List[Dict]` | Function calling API |
+| **Anthropic** | `get_anthropic_tools()` | `List[Dict]` | Claude tool use |
+| **Agno** | `get_tools_for_framework("agno")` | `List[Dict]` | Agno agent framework |
+| **Universal** | `get_schemas()` | `List[Dict]` | Any framework |
 
 ## Framework-Specific Integrations
 
@@ -87,9 +67,9 @@ def search_web(query: str) -> str:
 context = ContextMesh(user_id="langchain_user", enable_persistence=True)
 syntha_handler = ToolHandler(context, agent_name="LangChainAgent")
 
-# Step 3: Combine tools (automatic integration)
+# Step 3: Get tools in LangChain format - automatic conversion!
 existing_tools = [send_email, search_web]
-syntha_tools = syntha_handler.get_langchain_tools()  # Convert to LangChain format
+syntha_tools = syntha_handler.get_langchain_tools()  # Native LangChain BaseTool instances
 all_tools = existing_tools + syntha_tools
 
 print(f"LangChain Tools: {len(existing_tools)}")
@@ -138,24 +118,280 @@ def run_langchain_example():
         "input": "What information do I have about my current projects? Use the context tools to check."
     })
     print(f"Context retrieval result: {result3['output']}")
-    
-    # Agent builds on previous context
-    result4 = agent_executor.invoke({
-        "input": "Search for recent developments in AI healthcare applications and add the findings to my research context."
-    })
-    print(f"Research expansion result: {result4['output']}")
 
 # Run the example
 run_langchain_example()
 context.close()
 ```
 
-**What's happening here:**
+**Key Benefits:**
+- **Native Integration**: `get_langchain_tools()` returns actual LangChain `BaseTool` instances
+- **Automatic Schemas**: Pydantic schemas generated automatically for type safety
+- **Context-Aware Prompting**: Agents know how to use context tools effectively
+- **Persistent Memory**: Information persists across conversations
 
-1. **Non-destructive**: Your existing LangChain tools (`send_email`, `search_web`) work exactly as before
-2. **Automatic conversion**: `get_langchain_tools()` converts Syntha tools to LangChain format
-3. **Context-aware prompting**: The agent knows to use context tools for better responses
-4. **Persistent memory**: Information persists across conversations and tool calls
+### OpenAI Function Calling Integration
+
+OpenAI's function calling is perfect for structured interactions. Here's seamless integration:
+
+```python
+from openai import OpenAI
+from syntha import ContextMesh, ToolHandler
+import json
+
+# Step 1: Create Syntha context
+context = ContextMesh(user_id="openai_user", enable_persistence=True)
+handler = ToolHandler(context, agent_name="OpenAIAgent")
+
+# Step 2: Get OpenAI function definitions - automatic conversion!
+openai_functions = handler.get_openai_functions()
+
+print(f"OpenAI Functions: {len(openai_functions)}")
+print(f"Available functions: {[f['function']['name'] for f in openai_functions]}")
+
+# Step 3: Use with OpenAI API
+client = OpenAI()  # Uses OPENAI_API_KEY from environment
+
+def run_openai_example():
+    print("\n=== OpenAI + Syntha Integration ===")
+    
+    # Create a conversation with function calling
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant with access to context management. Always check for existing context before answering questions."},
+        {"role": "user", "content": "I'm working on a machine learning project about image classification. Save this information and then tell me what context you have available."}
+    ]
+    
+    # Call OpenAI with function definitions
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=messages,
+        functions=[func["function"] for func in openai_functions],
+        function_call="auto"
+    )
+    
+    message = response.choices[0].message
+    
+    # Handle function calls
+    if message.function_call:
+        function_name = message.function_call.name
+        function_args = json.loads(message.function_call.arguments)
+        
+        print(f"OpenAI wants to call: {function_name}")
+        print(f"With arguments: {function_args}")
+        
+        # Execute the function through Syntha
+        result = handler.handle_tool_call(function_name, **function_args)
+        print(f"Function result: {result}")
+        
+        # Continue conversation with function result
+        messages.append({
+            "role": "assistant", 
+            "content": None,
+            "function_call": message.function_call
+        })
+        messages.append({
+            "role": "function",
+            "name": function_name,
+            "content": json.dumps(result)
+        })
+        
+        # Get final response
+        final_response = client.chat.completions.create(
+            model="gpt-4",
+            messages=messages
+        )
+        
+        print(f"Final response: {final_response.choices[0].message.content}")
+    else:
+        print(f"Direct response: {message.content}")
+
+# Run the example
+run_openai_example()
+context.close()
+```
+
+**Key Benefits:**
+- **Perfect Function Schemas**: OpenAI-compatible function definitions with proper types
+- **Seamless Integration**: Drop-in replacement for manual function definitions
+- **Type Safety**: Automatic parameter validation and conversion
+- **Context Persistence**: Functions automatically manage persistent context
+
+### Anthropic Claude Integration
+
+Anthropic Claude's tool use is powerful and flexible. Here's how to integrate:
+
+```python
+from anthropic import Anthropic
+from syntha import ContextMesh, ToolHandler
+import json
+
+# Step 1: Create Syntha context
+context = ContextMesh(user_id="anthropic_user", enable_persistence=True)
+handler = ToolHandler(context, agent_name="ClaudeAgent")
+
+# Step 2: Get Anthropic tool definitions - automatic conversion!
+anthropic_tools = handler.get_anthropic_tools()
+
+print(f"Anthropic Tools: {len(anthropic_tools)}")
+print(f"Available tools: {[tool['name'] for tool in anthropic_tools]}")
+
+# Step 3: Use with Anthropic API
+client = Anthropic()  # Uses ANTHROPIC_API_KEY from environment
+
+def run_anthropic_example():
+    print("\n=== Anthropic Claude + Syntha Integration ===")
+    
+    # Create a conversation with tool use
+    response = client.messages.create(
+        model="claude-3-sonnet-20240229",
+        max_tokens=1024,
+        tools=anthropic_tools,
+        messages=[
+            {
+                "role": "user", 
+                "content": "I'm researching renewable energy trends. Save this topic and then check what context information you have access to."
+            }
+        ]
+    )
+    
+    print(f"Claude response type: {response.content[0].type}")
+    
+    # Handle tool use
+    if response.content[0].type == "tool_use":
+        tool_use = response.content[0]
+        tool_name = tool_use.name
+        tool_input = tool_use.input
+        
+        print(f"Claude wants to use tool: {tool_name}")
+        print(f"With input: {tool_input}")
+        
+        # Execute the tool through Syntha
+        result = handler.handle_tool_call(tool_name, **tool_input)
+        print(f"Tool result: {result}")
+        
+        # Continue conversation with tool result
+        follow_up = client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=1024,
+            messages=[
+                {
+                    "role": "user", 
+                    "content": "I'm researching renewable energy trends. Save this topic and then check what context information you have access to."
+                },
+                {
+                    "role": "assistant",
+                    "content": response.content
+                },
+                {
+                    "role": "user",
+                    "content": f"Tool result: {json.dumps(result)}"
+                }
+            ]
+        )
+        
+        print(f"Claude follow-up: {follow_up.content[0].text}")
+    else:
+        print(f"Direct response: {response.content[0].text}")
+
+# Run the example
+run_anthropic_example()
+context.close()
+```
+
+**Key Benefits:**
+- **Native Tool Definitions**: Claude-compatible tool schemas with proper input validation
+- **Flexible Integration**: Works with Claude's advanced reasoning capabilities
+- **Context-Aware Responses**: Claude can leverage persistent context for better answers
+- **Tool Chaining**: Multiple tool calls in conversation flow
+
+### Agno Integration: Flexible Agent Framework
+
+Agno provides a flexible agent framework. Here's seamless Syntha integration:
+
+```python
+from syntha import ContextMesh, ToolHandler
+import asyncio
+
+# Note: Agno integration example - adjust based on actual Agno API
+class AgnoAgent:
+    """Simple Agno-style agent for demonstration."""
+    
+    def __init__(self, name: str, context_mesh: ContextMesh):
+        self.name = name
+        self.syntha_handler = ToolHandler(context_mesh, agent_name=name)
+        
+        # Get Agno-compatible tools
+        self.agno_tools = self.syntha_handler.get_tools_for_framework("agno")
+        print(f"Agent {name} has {len(self.agno_tools)} Syntha tools available")
+    
+    async def execute_tool(self, tool_name: str, **kwargs):
+        """Execute a tool through Syntha."""
+        return self.syntha_handler.handle_tool_call(tool_name, **kwargs)
+    
+    async def think_and_act(self, task: str):
+        """Agent reasoning with context awareness."""
+        print(f"\n{self.name} thinking about: {task}")
+        
+        # Check available context first
+        context_list = await self.execute_tool("list_context")
+        print(f"Available context: {context_list.get('keys', [])}")
+        
+        # Get relevant context if available
+        if context_list.get('keys'):
+            context_data = await self.execute_tool("get_context", 
+                                                 keys=context_list['keys'])
+            print(f"Retrieved context: {list(context_data.get('context', {}).keys())}")
+        
+        # Perform task and save results
+        result = f"Completed task: {task}"
+        await self.execute_tool("push_context", 
+                               key=f"task_{self.name.lower()}", 
+                               value=result,
+                               topics=["tasks", "results"])
+        
+        return result
+
+# Step 1: Create Syntha context for Agno workflow
+context = ContextMesh(user_id="agno_user", enable_persistence=True)
+
+# Step 2: Create Agno agents with Syntha integration
+async def run_agno_example():
+    print("\n=== Agno + Syntha Integration ===")
+    
+    # Create specialized agents
+    researcher = AgnoAgent("Researcher", context)
+    analyst = AgnoAgent("Analyst", context)
+    reporter = AgnoAgent("Reporter", context)
+    
+    # Set up topic subscriptions
+    await researcher.execute_tool("subscribe_to_topics", topics=["research", "data"])
+    await analyst.execute_tool("subscribe_to_topics", topics=["research", "analysis"])
+    await reporter.execute_tool("subscribe_to_topics", topics=["analysis", "reports"])
+    
+    # Coordinated workflow with shared context
+    print("\n🔍 Phase 1: Research")
+    research_result = await researcher.think_and_act("Research market trends in renewable energy")
+    
+    print("\n📊 Phase 2: Analysis")  
+    analysis_result = await analyst.think_and_act("Analyze the research findings for key insights")
+    
+    print("\n📋 Phase 3: Reporting")
+    report_result = await reporter.think_and_act("Create executive summary from analysis")
+    
+    # Show final shared context
+    final_context = await reporter.execute_tool("list_context")
+    print(f"\n💾 Final Context Keys: {final_context.get('keys', [])}")
+
+# Run the example
+asyncio.run(run_agno_example())
+context.close()
+```
+
+**Key Benefits:**
+- **Universal Compatibility**: `get_tools_for_framework("agno")` provides flexible tool definitions
+- **Async Support**: Works with Agno's asynchronous architecture
+- **Shared Context**: Multiple agents share context seamlessly
+- **Topic-Based Organization**: Agents subscribe to relevant information streams
 
 ### LangGraph Integration: Multi-Agent Workflows
 
@@ -195,92 +431,82 @@ researcher_handler = ToolHandler(context, agent_name="ResearcherAgent")
 analyst_handler = ToolHandler(context, agent_name="AnalystAgent") 
 reporter_handler = ToolHandler(context, agent_name="ReporterAgent")
 
+# Get LangGraph-compatible tools
+researcher_tools = researcher_handler.get_langgraph_tools()
+analyst_tools = analyst_handler.get_langgraph_tools()
+reporter_tools = reporter_handler.get_langgraph_tools()
+
+print(f"Researcher tools: {len(researcher_tools)}")
+print(f"Analyst tools: {len(analyst_tools)}")
+print(f"Reporter tools: {len(reporter_tools)}")
+
 # Step 4: Create workflow nodes with context integration
 def researcher_node(state: WorkflowState):
     """Research agent that gathers and shares information."""
-    print("🔍 Researcher Agent working...")
+    print("🔍 Researcher Node")
     
-    # Subscribe to relevant topics
+    # Subscribe to research topics
     researcher_handler.handle_tool_call("subscribe_to_topics", 
-                                       topics=["research", "data", "findings"])
+                                       topics=["research", "data"])
     
-    # Simulate research work
-    research_data = "Market trends show 40% growth in AI adoption"
-    
-    # Share findings with other agents
-    result = researcher_handler.handle_tool_call("push_context",
-        key="market_research",
-        value=research_data,
-        topics=["research", "data"]
+    # Push research data
+    researcher_handler.handle_tool_call("push_context",
+        key="research_findings",
+        value="Market analysis shows 40% growth in renewable energy",
+        topics=["research"]
     )
     
-    state["messages"].append(f"Researcher: {research_data}")
-    state["context_updates"].append(result)
+    state["messages"].append("Research completed and shared")
+    state["context_updates"].append({"agent": "researcher", "action": "push_context"})
     return state
 
 def analyst_node(state: WorkflowState):
-    """Analyst agent that processes shared research data."""
-    print("📊 Analyst Agent working...")
+    """Analysis agent that processes shared research."""
+    print("📊 Analyst Node")
     
-    # Subscribe to research topics
-    analyst_handler.handle_tool_call("subscribe_to_topics",
-                                    topics=["research", "data", "analysis"])
+    # Subscribe to research and analysis topics
+    analyst_handler.handle_tool_call("subscribe_to_topics", 
+                                    topics=["research", "analysis"])
     
-    # Get research data from context
-    context_result = analyst_handler.handle_tool_call("get_context", 
-                                                     keys=["market_research"])
+    # Get research context
+    research_context = analyst_handler.handle_tool_call("get_context")
+    print(f"Analyst found context: {list(research_context.get('context', {}).keys())}")
     
-    research_data = context_result.get("context", {}).get("market_research", "No data")
-    
-    # Analyze using existing tool
-    analysis = analyze_data(research_data)
-    
-    # Share analysis results
-    result = analyst_handler.handle_tool_call("push_context",
+    # Push analysis results
+    analyst_handler.handle_tool_call("push_context",
         key="analysis_results", 
-        value=analysis,
-        topics=["analysis", "insights"]
+        value="Growth trend confirmed, recommend investment focus",
+        topics=["analysis"]
     )
     
-    state["messages"].append(f"Analyst: {analysis}")
-    state["context_updates"].append(result)
+    state["messages"].append("Analysis completed using research context")
+    state["context_updates"].append({"agent": "analyst", "action": "get_and_push_context"})
     return state
 
 def reporter_node(state: WorkflowState):
-    """Reporter agent that creates final reports."""
-    print("📝 Reporter Agent working...")
+    """Reporter agent that creates final output."""
+    print("📋 Reporter Node")
     
-    # Subscribe to analysis topics
-    reporter_handler.handle_tool_call("subscribe_to_topics",
-                                     topics=["analysis", "insights", "reports"])
+    # Subscribe to analysis and reports topics
+    reporter_handler.handle_tool_call("subscribe_to_topics", 
+                                     topics=["analysis", "reports"])
     
     # Get all available context
-    context_result = reporter_handler.handle_tool_call("list_context")
-    available_keys = context_result.get("keys", [])
+    all_context = reporter_handler.handle_tool_call("get_context")
+    print(f"Reporter found context: {list(all_context.get('context', {}).keys())}")
     
-    if available_keys:
-        # Get the analysis results
-        analysis_context = reporter_handler.handle_tool_call("get_context", 
-                                                           keys=available_keys)
-        
-        insights = analysis_context.get("context", {}).get("analysis_results", "No analysis")
-        
-        # Generate report using existing tool
-        report = generate_report(insights)
-        
-        # Save final report
-        result = reporter_handler.handle_tool_call("push_context",
-            key="final_report",
-            value=report,
-            topics=["reports", "final"]
-        )
-        
-        state["messages"].append(f"Reporter: {report}")
-        state["context_updates"].append(result)
+    # Create final report
+    reporter_handler.handle_tool_call("push_context",
+        key="final_report",
+        value="Executive Summary: Strong renewable energy growth presents investment opportunity",
+        topics=["reports"]
+    )
     
+    state["messages"].append("Final report generated using all context")
+    state["context_updates"].append({"agent": "reporter", "action": "final_report"})
     return state
 
-# Step 5: Build the LangGraph workflow
+# Step 5: Build the workflow graph
 workflow = StateGraph(WorkflowState)
 
 # Add nodes
@@ -294,7 +520,7 @@ workflow.add_edge("researcher", "analyst")
 workflow.add_edge("analyst", "reporter")
 workflow.add_edge("reporter", END)
 
-# Compile the workflow
+# Compile the graph
 app = workflow.compile()
 
 # Step 6: Run the context-aware workflow
@@ -320,166 +546,18 @@ def run_langgraph_example():
     final_context = reporter_handler.handle_tool_call("get_context")
     print(f"\n💾 Final Shared Context:")
     for key, value in final_context.get("context", {}).items():
-        print(f"  {key}: {value[:100]}...")
+        print(f"  {key}: {value}")
 
 # Run the example
 run_langgraph_example()
 context.close()
 ```
 
-**Key LangGraph Benefits:**
-
-1. **Shared Context**: All agents in the workflow share the same context mesh
-2. **Topic-based Organization**: Agents subscribe to relevant information streams
-3. **Persistent State**: Context persists across workflow steps and reruns
-4. **Automatic Coordination**: Agents automatically discover what others have shared
-
-### Agno Integration: Flexible Agent Framework
-
-Agno provides a flexible agent framework. Here's seamless Syntha integration:
-
-```python
-# Note: This is a conceptual example - adjust imports based on Agno's actual API
-from agno import Agent, Tool, Workflow
-from syntha import ContextMesh, ToolHandler
-import asyncio
-
-# Step 1: Create Syntha context for the Agno workflow
-context = ContextMesh(user_id="agno_user", enable_persistence=True)
-
-# Step 2: Create a Syntha-enhanced Agno agent
-class SynthaAgnoAgent(Agent):
-    """Agno agent enhanced with Syntha context management."""
-    
-    def __init__(self, name: str, role: str, context_mesh: ContextMesh):
-        super().__init__(name=name, role=role)
-        
-        # Add Syntha context capabilities
-        self.syntha_handler = ToolHandler(context_mesh, agent_name=name)
-        self.syntha_handler.handle_tool_call("subscribe_to_topics", 
-                                           topics=[role, "shared", "coordination"])
-        
-        # Add Syntha tools to Agno agent
-        self._add_syntha_tools()
-    
-    def _add_syntha_tools(self):
-        """Convert Syntha tools to Agno format and add them."""
-        syntha_schemas = self.syntha_handler.get_schemas()
-        
-        for schema in syntha_schemas:
-            # Create Agno tool wrapper
-            def create_tool_wrapper(tool_name, tool_schema):
-                async def tool_wrapper(**kwargs):
-                    return self.syntha_handler.handle_tool_call(tool_name, **kwargs)
-                
-                return Tool(
-                    name=tool_name,
-                    description=tool_schema['description'],
-                    func=tool_wrapper
-                )
-            
-            agno_tool = create_tool_wrapper(schema['name'], schema)
-            self.add_tool(agno_tool)
-    
-    async def enhanced_think(self, task: str) -> str:
-        """Enhanced thinking that leverages context."""
-        
-        # First, check what context is available
-        context_list = await self.use_tool("list_context")
-        
-        if context_list.get("keys"):
-            # Get relevant context
-            relevant_context = await self.use_tool("get_context", 
-                                                  keys=context_list["keys"])
-            
-            # Use context in reasoning
-            context_info = relevant_context.get("context", {})
-            context_summary = f"Available context: {list(context_info.keys())}"
-        else:
-            context_summary = "No previous context available"
-        
-        # Enhanced reasoning with context
-        reasoning = await super().think(f"{task}\n\nContext: {context_summary}")
-        
-        # Save reasoning for other agents
-        await self.use_tool("push_context",
-            key=f"reasoning_{self.name}",
-            value=reasoning,
-            topics=["reasoning", self.role]
-        )
-        
-        return reasoning
-
-# Step 3: Create specialized Agno agents with Syntha
-async def create_agno_workflow():
-    """Create a multi-agent Agno workflow with shared Syntha context."""
-    
-    # Create context-aware agents
-    researcher = SynthaAgnoAgent("Dr. Research", "researcher", context)
-    strategist = SynthaAgnoAgent("Strategy Bot", "strategist", context) 
-    executor = SynthaAgnoAgent("Action Hero", "executor", context)
-    
-    # Add existing Agno tools to agents
-    @Tool(name="web_search", description="Search the web")
-    async def web_search(query: str) -> str:
-        return f"Web search results for: {query}"
-    
-    @Tool(name="create_plan", description="Create an action plan")
-    async def create_plan(objective: str) -> str:
-        return f"Action plan for: {objective}"
-    
-    @Tool(name="execute_action", description="Execute a planned action")
-    async def execute_action(action: str) -> str:
-        return f"Executed: {action}"
-    
-    # Add tools to appropriate agents
-    researcher.add_tool(web_search)
-    strategist.add_tool(create_plan)
-    executor.add_tool(execute_action)
-    
-    return researcher, strategist, executor
-
-# Step 4: Run coordinated workflow
-async def run_agno_example():
-    print("\n=== Agno + Syntha Integration ===")
-    
-    researcher, strategist, executor = await create_agno_workflow()
-    
-    # Coordinated workflow with shared context
-    
-    # Phase 1: Research
-    print("🔍 Phase 1: Research")
-    research_task = "Research current trends in sustainable technology"
-    research_result = await researcher.enhanced_think(research_task)
-    print(f"Researcher output: {research_result[:100]}...")
-    
-    # Phase 2: Strategy (leverages research context)
-    print("\n📋 Phase 2: Strategy")
-    strategy_task = "Create a strategy based on the research findings"
-    strategy_result = await strategist.enhanced_think(strategy_task)
-    print(f"Strategist output: {strategy_result[:100]}...")
-    
-    # Phase 3: Execution (leverages both previous contexts)
-    print("\n⚡ Phase 3: Execution")
-    execution_task = "Execute the strategic plan"
-    execution_result = await executor.enhanced_think(execution_task)
-    print(f"Executor output: {execution_result[:100]}...")
-    
-    # Show final shared context
-    final_context = researcher.syntha_handler.handle_tool_call("get_context")
-    print(f"\n💾 Shared Context Keys: {list(final_context.get('context', {}).keys())}")
-
-# Run the example
-asyncio.run(run_agno_example())
-context.close()
-```
-
-**Agno Integration Benefits:**
-
-1. **Seamless Enhancement**: Existing Agno agents get context superpowers
-2. **Automatic Tool Addition**: Syntha tools are automatically available to all agents
-3. **Cross-Agent Memory**: Agents build on each other's work through shared context
-4. **Flexible Integration**: Works with any Agno workflow pattern
+**Key Benefits:**
+- **Shared Context**: All agents in the workflow share the same context mesh
+- **Topic-based Organization**: Agents subscribe to relevant information streams  
+- **Persistent State**: Context persists across workflow steps and reruns
+- **Automatic Coordination**: Agents automatically discover what others have shared
 
 ## Integration with Pre-Existing Tool Ecosystems
 
@@ -1071,9 +1149,12 @@ enhanced_tools = handler.get_schemas(merge_with=your_tools)
 
 | Your Current Setup | Integration Approach | Key Benefits |
 |-------------------|---------------------|--------------|
-| **OpenAI Function Calling** | `handler.get_schemas(merge_with=existing)` | Persistent memory, context-aware responses |
-| **LangChain Agents** | `handler.get_langchain_tools()` | Shared context across tool calls |
-| **LangGraph Workflows** | Shared `ContextMesh` across nodes | Multi-agent coordination |
+| **LangChain Agents** | `handler.get_langchain_tools()` | Native BaseTool instances, automatic schemas |
+| **LangGraph Workflows** | `handler.get_langgraph_tools()` + Shared `ContextMesh` | Multi-agent coordination, persistent state |
+| **OpenAI Function Calling** | `handler.get_openai_functions()` | Perfect function schemas, type safety |
+| **Anthropic Claude** | `handler.get_anthropic_tools()` | Native tool definitions, flexible integration |
+| **Agno Framework** | `handler.get_tools_for_framework("agno")` | Universal compatibility, async support |
+| **Any Framework** | `handler.get_schemas()` or `handler.get_tools_for_framework("name")` | Universal JSON schemas, framework-agnostic |
 | **Custom APIs** | Wrapper pattern with context enhancement | Automatic caching, enriched data |
 | **Database Operations** | Context-aware wrapper with analytics | Smart caching, behavioral insights |
 | **Microservices** | Shared context mesh | Cross-service intelligence |

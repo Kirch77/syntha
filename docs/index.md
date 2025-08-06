@@ -31,7 +31,12 @@ context.push("sales_data", {"q4_revenue": 150000}, topics=["sales", "analytics"]
 
 # Agents automatically receive relevant context
 agent_handler = ToolHandler(context, "SalesAgent")
-# Agent now has access to context through tools or prompts
+
+# Get tools for your favorite framework - just one line!
+langchain_tools = agent_handler.get_langchain_tools()      # LangChain
+openai_functions = agent_handler.get_openai_functions()    # OpenAI
+anthropic_tools = agent_handler.get_anthropic_tools()      # Anthropic Claude
+agno_tools = agent_handler.get_tools_for_framework("agno") # Agno
 ```
 
 ### Key Features
@@ -40,8 +45,34 @@ agent_handler = ToolHandler(context, "SalesAgent")
 - **Smart Routing**: Topic-based and subscriber-based context distribution  
 - **User Isolation**: Complete separation between different users' contexts
 - **Persistent Storage**: Context survives across sessions with SQLite/PostgreSQL
-- **Framework Agnostic**: Works with OpenAI, Anthropic, or any LLM framework
+- **Framework Adapters**: One-line integration with LangChain, LangGraph, OpenAI, Anthropic, Agno, and more
 - **Production Ready**: 168+ tests, comprehensive logging, error handling
+
+### Framework Integration Made Simple
+
+Syntha works seamlessly with your existing AI framework:
+
+```python
+# LangChain - Get tools in native format
+langchain_tools = handler.get_langchain_tools()
+
+# OpenAI - Function calling ready
+openai_functions = handler.get_openai_functions()
+
+# Anthropic Claude - Tool definitions ready  
+anthropic_tools = handler.get_anthropic_tools()
+
+# Any framework - Universal method
+tools = handler.get_tools_for_framework("your_framework")
+```
+
+**Supported Frameworks:**
+- ✅ **LangChain** - Full BaseTool integration with schemas
+- ✅ **LangGraph** - Multi-agent workflow support
+- ✅ **OpenAI** - Function calling definitions
+- ✅ **Anthropic Claude** - Tool use specifications
+- ✅ **Agno** - Flexible agent framework integration
+- ✅ **Generic** - JSON schemas for any framework
 
 ## Quick Navigation
 
