@@ -43,7 +43,7 @@ class TestFrameworkAdapterBase:
     def test_supported_frameworks(self):
         """Test that all expected frameworks are supported."""
         frameworks = get_supported_frameworks()
-        expected = ["langchain", "langgraph", "openai", "anthropic"]
+        expected = ["langchain", "langgraph", "openai", "anthropic", "agno"]
 
         assert set(frameworks) == set(expected)
         assert len(frameworks) == len(expected)
@@ -298,7 +298,8 @@ class TestLangChainAdapter:
 
     def test_create_tool_with_langchain_available(self):
         """Test creating a LangChain tool when LangChain is available."""
-        # Since LangChain is not available in CI, we'll test the error handling
+        pytest.importorskip("langchain", reason="LangChain not installed")
+
         tool_schema = {
             "name": "test_tool",
             "description": "Test tool description",
@@ -311,12 +312,15 @@ class TestLangChainAdapter:
             },
         }
 
-        # This should raise an error since LangChain is not installed
-        with pytest.raises(SynthaFrameworkError) as exc_info:
-            self.adapter.create_tool("test_tool", tool_schema)
+        # This should succeed since LangChain is available
+        tool = self.adapter.create_tool("test_tool", tool_schema)
 
-        assert "LangChain not installed" in str(exc_info.value)
-        assert exc_info.value.framework == "langchain"
+        # Verify the tool was created successfully
+        assert tool is not None
+        assert hasattr(tool, "name")
+        assert tool.name == "test_tool"
+        assert hasattr(tool, "description")
+        assert "Test tool description" in tool.description
 
     def test_create_tool_without_langchain(self):
         """Test error handling when LangChain is not available."""
@@ -341,7 +345,7 @@ class TestLangChainAdapter:
 
     def test_pydantic_fields_creation(self):
         """Test creating Pydantic fields from schema."""
-        # Since pydantic is not available in CI, we'll test the error handling
+        # Test that pydantic field creation works when pydantic is available
         parameters = {
             "type": "object",
             "properties": {
@@ -354,11 +358,20 @@ class TestLangChainAdapter:
             "required": ["string_param", "array_param"],
         }
 
-        # This should raise an ImportError since pydantic is not installed
-        with pytest.raises(ImportError) as exc_info:
-            self.adapter._create_pydantic_fields(parameters)
-
-        assert "No module named 'pydantic'" in str(exc_info.value)
+        # Test the actual functionality if pydantic is available
+        try:
+            fields = self.adapter._create_pydantic_fields(parameters)
+            # Verify that fields were created correctly
+            assert "string_param" in fields
+            assert "array_param" in fields
+            assert "bool_param" in fields
+            assert "int_param" in fields
+            assert "float_param" in fields
+        except ImportError:
+            # If pydantic is not available, test the error handling
+            with pytest.raises(ImportError) as exc_info:
+                self.adapter._create_pydantic_fields(parameters)
+            assert "No module named 'pydantic'" in str(exc_info.value)
 
 
 class TestParameterConversion:
