@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754347210224,
+  "lastUpdate": 1754495426595,
   "repoUrl": "https://github.com/Kirch77/Syntha_v2",
   "entries": {
     "Benchmark": [
@@ -5264,6 +5264,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000013128580309140687",
             "extra": "mean: 868.8923611569955 usec\nrounds: 1210"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "129435653+Kirch77@users.noreply.github.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cafc80b0fb317ccf871ff64c35de1e8f34010306",
+          "message": "Integrate syntha with agno and refine examples (#14)\n\n* Add Agno framework integration with comprehensive examples and tests\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Potential fix for code scanning alert no. 156: Unused import\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Potential fix for code scanning alert no. 158: Unused import\n\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>\n\n* Delete ..\\..\\..\\windows\\system32\\config\\sam\n\n* Delete C:\\Windows\\System32\\config\\SAM\n\n* test\n\n* Update test_create_tool_with_langchain_available to verify successful tool creation when LangChain is available. Removed outdated comments and assertions related to error handling, enhancing test clarity and accuracy.\n\n* Add import checks for Agno and LangChain in respective tests to ensure dependencies are installed\n\n---------\n\nCo-authored-by: Cursor Agent <cursoragent@cursor.com>\nCo-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>",
+          "timestamp": "2025-08-06T11:49:55-04:00",
+          "tree_id": "40f040443373bf1c87bd4de71432a49770925eb0",
+          "url": "https://github.com/Kirch77/Syntha_v2/commit/cafc80b0fb317ccf871ff64c35de1e8f34010306"
+        },
+        "date": 1754495426222,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 303007.4544820222,
+            "unit": "iter/sec",
+            "range": "stddev: 6.03559078042414e-7",
+            "extra": "mean: 3.300248839453325 usec\nrounds: 28219"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 485044.81190976454,
+            "unit": "iter/sec",
+            "range": "stddev: 5.341558150028186e-7",
+            "extra": "mean: 2.0616651811256466 usec\nrounds: 141363"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2231.8927231127514,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000011848349978873345",
+            "extra": "mean: 448.0502085267481 usec\nrounds: 2369"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4953.80005754436,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000017480566545005352",
+            "extra": "mean: 201.86523242435993 usec\nrounds: 4694"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 708.5706819376086,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000060781434620571106",
+            "extra": "mean: 1.4112918096829363 msec\nrounds: 599"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1863.3158815506467,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000026541218478562507",
+            "extra": "mean: 536.6776561619829 usec\nrounds: 1777"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 520220.0877593183,
+            "unit": "iter/sec",
+            "range": "stddev: 5.963133574703166e-7",
+            "extra": "mean: 1.9222633334040988 usec\nrounds: 1200"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 15.813251307281392,
+            "unit": "iter/sec",
+            "range": "stddev: 0.009195981492085111",
+            "extra": "mean: 63.23810205555505 msec\nrounds: 18"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 102154.33641806617,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000015104667081494155",
+            "extra": "mean: 9.789109645894074 usec\nrounds: 20475"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1154.3235189920076,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00004007586965062233",
+            "extra": "mean: 866.3082606800148 usec\nrounds: 1147"
           }
         ]
       }
