@@ -106,8 +106,12 @@ class TestToolCreationPerformance:
         )
 
         # Performance assertions (made more lenient for different system loads)
-        assert result["average_time"] < 0.05  # Should be under 50ms (increased from 10ms)
-        assert result["times_per_second"] > 20  # Should create >20 tools/sec (decreased from 100)
+        assert (
+            result["average_time"] < 0.05
+        )  # Should be under 50ms (increased from 10ms)
+        assert (
+            result["times_per_second"] > 20
+        )  # Should create >20 tools/sec (decreased from 100)
 
     def test_multiple_tools_creation_speed(self):
         """Test speed of creating all tools for a framework."""
@@ -211,7 +215,9 @@ class TestCachingPerformance:
         else:
             # Both operations are very fast, which is good
             assert True
-        assert warm_result["average_time"] < 0.01  # Cache hits should be <10ms (increased from 1ms)
+        assert (
+            warm_result["average_time"] < 0.01
+        )  # Cache hits should be <10ms (increased from 1ms)
 
     def test_multiple_framework_caching(self):
         """Test caching performance with multiple frameworks."""
