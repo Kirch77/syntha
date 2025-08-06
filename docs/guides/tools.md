@@ -343,7 +343,36 @@ You now know:
 
 **Your agents are now ready to be context-aware and efficient!**
 
-Next: Check out the [Framework Integration Guide](examples.md) to see how to add these tools to your existing LangChain, LangGraph, or Agno agents.
+## Framework Integration: Get Tools in Your Format
+
+Syntha provides dedicated adapters for popular AI frameworks. Instead of dealing with JSON schemas, get tools in your framework's native format:
+
+```python
+from syntha import ContextMesh, ToolHandler
+
+context = ContextMesh(user_id="your_user", enable_persistence=True)
+handler = ToolHandler(context, "YourAgent")
+
+# Get tools in your framework's native format - just one line!
+langchain_tools = handler.get_langchain_tools()      # LangChain BaseTool instances
+openai_functions = handler.get_openai_functions()    # OpenAI function definitions  
+anthropic_tools = handler.get_anthropic_tools()      # Anthropic tool schemas
+agno_tools = handler.get_tools_for_framework("agno") # Agno-compatible tools
+generic_tools = handler.get_schemas()                # Universal JSON schemas
+```
+
+### Framework Adapter Benefits
+
+| Framework | Method | What You Get | Key Benefits |
+|-----------|--------|--------------|--------------|
+| **LangChain** | `get_langchain_tools()` | Native `BaseTool` instances | Automatic Pydantic schemas, type safety |
+| **LangGraph** | `get_langgraph_tools()` | Tool dictionaries | Perfect for multi-agent workflows |
+| **OpenAI** | `get_openai_functions()` | Function call definitions | Drop-in replacement for manual functions |
+| **Anthropic** | `get_anthropic_tools()` | Claude tool schemas | Native tool use integration |
+| **Agno** | `get_tools_for_framework("agno")` | Agno-compatible tools | Flexible async support |
+| **Universal** | `get_schemas()` | JSON schemas | Works with any framework |
+
+Next: Check out the [Framework Integration Guide](examples.md) to see complete examples for LangChain, OpenAI, Anthropic, Agno, and more.
 
 ### When to Use Permissions
 
