@@ -113,7 +113,7 @@ context.push("company_research", {
 }, topics=["sales", "research"])
 
 # Account manager gets the complete picture
-account_data = context.get_by_topics(["sales"], "AccountManager")
+sales_keys = context.get_available_keys_by_topic("AccountManager").get("sales", [])
 # Perfect handoff with zero information loss
 ```
 

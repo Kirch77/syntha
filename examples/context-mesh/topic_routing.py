@@ -18,10 +18,10 @@ def main():
     context = ContextMesh(user_id="team_alpha")
 
     # Subscribe agents to different topics
-    context.subscribe_to_topics("SalesAgent", ["sales", "customers"])
-    context.subscribe_to_topics("MarketingAgent", ["marketing", "customers"])
-    context.subscribe_to_topics("TechAgent", ["engineering", "api"])
-    context.subscribe_to_topics("ManagerAgent", ["sales", "marketing", "engineering"])
+    context.register_agent_topics("SalesAgent", ["sales", "customers"])
+    context.register_agent_topics("MarketingAgent", ["marketing", "customers"])
+    context.register_agent_topics("TechAgent", ["engineering", "api"])
+    context.register_agent_topics("ManagerAgent", ["sales", "marketing", "engineering"])
 
     print("✅ Agents subscribed to topics")
 
@@ -57,18 +57,18 @@ def main():
         agent_context = context.get_all_for_agent(agent)
         print(f"\n📋 {agent} sees: {list(agent_context.keys())}")
 
-    # Get context by topics
-    sales_context = context.get_by_topics(["sales"], "SalesAgent")
-    customer_context = context.get_by_topics(["customers"], "MarketingAgent")
+    # Show keys by topic for agents
+    sales_keys = context.get_available_keys_by_topic("SalesAgent").get("sales", [])
+    customer_keys = context.get_available_keys_by_topic("MarketingAgent").get("customers", [])
 
-    print(f"\n🎯 Sales-related context: {list(sales_context.keys())}")
-    print(f"🎯 Customer-related context: {list(customer_context.keys())}")
+    print(f"\n🎯 Sales-related keys: {sales_keys}")
+    print(f"🎯 Customer-related keys: {customer_keys}")
 
-    # Discover available topics
-    topics = context.discover_topics()
-    print(f"\n📚 Available topics: {list(topics.keys())}")
-    for topic, subscribers in topics.items():
-        print(f"   - {topic}: {len(subscribers)} subscribers")
+    # Discover available topics (from context)
+    topics = context.get_all_topics()
+    print(f"\n📚 Available topics: {topics}")
+    for topic in topics:
+        print(f"   - {topic}: {len(context.get_subscribers_for_topic(topic))} subscribers")
 
     print("\n✅ Topic routing complete!")
 

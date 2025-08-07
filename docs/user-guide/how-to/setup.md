@@ -69,20 +69,21 @@ GRANT ALL PRIVILEGES ON DATABASE syntha_prod TO syntha_user;
 context = ContextMesh(
     user_id="prod_user",
     db_backend="postgresql",
-    database_url="postgresql://syntha_user:secure_password@localhost:5432/syntha_prod"
+    connection_string="postgresql://syntha_user:secure_password@localhost:5432/syntha_prod"
 )
 ```
 
 Or use environment variables:
 ```bash
-export DATABASE_URL="postgresql://syntha_user:secure_password@localhost:5432/syntha_prod"
+export CONNECTION_STRING="postgresql://syntha_user:secure_password@localhost:5432/syntha_prod"
 ```
 
 ```python
+import os
 context = ContextMesh(
     user_id="prod_user",
-    db_backend="postgresql"
-    # Automatically uses DATABASE_URL
+    db_backend="postgresql",
+    connection_string=os.getenv("CONNECTION_STRING")
 )
 ```
 
@@ -220,7 +221,7 @@ volumes:
 ### Required Environment Variables
 ```bash
 # Database (for PostgreSQL)
-export DATABASE_URL="postgresql://user:pass@host:5432/db"
+export CONNECTION_STRING="postgresql://user:pass@host:5432/db"
 
 # LLM API Keys
 export OPENAI_API_KEY="your-openai-key"
@@ -248,7 +249,7 @@ import os
 SYNTHA_CONFIG = {
     # Database
     "db_backend": "postgresql",
-    "database_url": os.getenv("DATABASE_URL"),
+    "connection_string": os.getenv("CONNECTION_STRING"),
     
     # Performance
     "enable_indexing": True,
@@ -329,7 +330,7 @@ context = ContextMesh(
 context = ContextMesh(
     user_id="user123",
     db_backend="postgresql",
-    database_url="postgresql://user:pass@host:5432/db?pool_size=20&max_overflow=30",
+    connection_string="postgresql://user:pass@host:5432/db",
     enable_indexing=True,
     auto_cleanup=True
 )

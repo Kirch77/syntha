@@ -81,7 +81,7 @@ context = ContextMesh(user_id="user123")
 context = ContextMesh(
     user_id="user123",
     db_backend="postgresql",
-    database_url="postgresql://user:pass@localhost:5432/syntha_db"
+    connection_string="postgresql://user:pass@localhost:5432/syntha_db"
 )
 ```
 

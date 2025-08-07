@@ -164,8 +164,8 @@ def main():
     print("   - Integrates with LangChain memory systems")
 
     # 7. Demonstrate multi-agent workflow potential
-    context.subscribe_to_topics("DataAnalyst", ["research", "data"])
-    context.subscribe_to_topics("ReportWriter", ["analysis", "writing"])
+    context.register_agent_topics("DataAnalyst", ["research", "data"])
+    context.register_agent_topics("ReportWriter", ["analysis", "writing"])
 
     handler.handle_tool_call(
         "push_context",

@@ -375,7 +375,7 @@ backend = create_database_backend(
 )
 ```
 
-**Alternative**: You can also provide a complete connection string:
+**Alternative**: Provide a complete connection string via `connection_string`:
 
 ```python
 backend = create_database_backend(
@@ -441,10 +441,7 @@ context = ContextMesh(
     user_id="user123", 
     enable_persistence=True,
     db_backend="postgresql",
-    host="localhost",
-    database="syntha",
-    user="syntha_user",
-    password="password"
+    connection_string="postgresql://syntha_user:password@localhost:5432/syntha"
 )
 
 # All context operations are automatically persisted

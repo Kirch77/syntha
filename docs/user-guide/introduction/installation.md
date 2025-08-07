@@ -77,21 +77,22 @@ pip install psycopg2-binary
 context = ContextMesh(
     user_id="user123",
     db_backend="postgresql",
-    database_url="postgresql://user:pass@localhost:5432/syntha_db"
+    connection_string="postgresql://user:pass@localhost:5432/syntha_db"
 )
 ```
 
 Or use environment variables:
 
 ```bash
-export DATABASE_URL="postgresql://user:pass@localhost:5432/syntha_db"
+export CONNECTION_STRING="postgresql://user:pass@localhost:5432/syntha_db"
 ```
 
 ```python
+import os
 context = ContextMesh(
     user_id="user123",
-    db_backend="postgresql"
-    # Will use DATABASE_URL automatically
+    db_backend="postgresql",
+    connection_string=os.getenv("CONNECTION_STRING")
 )
 ```
 
@@ -131,7 +132,7 @@ Set these environment variables for your setup:
 
 ```bash
 # Database (if using PostgreSQL)
-export DATABASE_URL="postgresql://user:pass@localhost:5432/syntha_db"
+export CONNECTION_STRING="postgresql://user:pass@localhost:5432/syntha_db"
 
 # LLM API Keys
 export OPENAI_API_KEY="your-openai-key"
@@ -149,7 +150,7 @@ Create a `syntha_config.py` file:
 # syntha_config.py
 SYNTHA_CONFIG = {
     "db_backend": "postgresql",
-    "database_url": "postgresql://user:pass@localhost:5432/syntha_db",
+    "connection_string": "postgresql://user:pass@localhost:5432/syntha_db",
     "enable_logging": True,
     "log_level": "INFO"
 }

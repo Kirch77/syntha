@@ -99,7 +99,7 @@ def main():
     print(f"   Custom sales prompt: {len(custom_sales_prompt)} characters")
 
     # 4. Build prompts with topic filtering
-    context.subscribe_to_topics("MarketingAgent", ["marketing", "campaigns"])
+    context.register_agent_topics("MarketingAgent", ["marketing", "campaigns"])
     context.push(
         "campaign_data", {"current": "Q1 Growth", "budget": 50000}, topics=["marketing"]
     )
@@ -148,8 +148,8 @@ def main():
     print("\n🎯 Topic-based prompt filtering:")
 
     # Subscribe to specific topics
-    context.subscribe_to_topics("TechAgent", ["engineering", "product"])
-    context.subscribe_to_topics("BusinessAgent", ["sales", "marketing", "business"])
+    context.register_agent_topics("TechAgent", ["engineering", "product"])
+    context.register_agent_topics("BusinessAgent", ["sales", "marketing", "business"])
 
     # Push topic-specific content
     context.push("tech_update", "New API endpoints released", topics=["engineering"])

@@ -278,7 +278,8 @@ def create_isolated_sqlite_user(user_id: str):
     
     mesh = ContextMesh(
         user_id=user_id,
-        database_url=f"sqlite:///{db_path}"
+        db_backend="sqlite",
+        db_path=db_path
     )
     
     return mesh
@@ -288,8 +289,8 @@ alice_mesh = create_isolated_sqlite_user("alice")
 bob_mesh = create_isolated_sqlite_user("bob")
 
 # Physical separation at the file system level
-print("Alice DB:", alice_mesh.database_url)
-print("Bob DB:", bob_mesh.database_url)
+print("Alice DB:", "sqlite file per-user")
+print("Bob DB:", "sqlite file per-user")
 ```
 
 ### PostgreSQL Schema Isolation
@@ -300,11 +301,11 @@ def create_isolated_postgres_user(user_id: str):
     """Create a user with their own PostgreSQL schema."""
     
     # Each user gets their own schema in the same database
-    database_url = f"postgresql://user:pass@localhost:5432/syntha?schema={user_id}"
-    
+    conn = f"postgresql://user:pass@localhost:5432/syntha"
     mesh = ContextMesh(
         user_id=user_id,
-        database_url=database_url
+        db_backend="postgresql",
+        connection_string=conn
     )
     
     return mesh

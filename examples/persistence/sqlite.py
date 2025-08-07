@@ -65,7 +65,7 @@ def main():
     )
 
     # Add topic-based context
-    context1.subscribe_to_topics("Agent1", ["development", "ui"])
+    context1.register_agent_topics("Agent1", ["development", "ui"])
     context1.push(
         "dev_notes", "Completed user authentication module", topics=["development"]
     )
@@ -131,10 +131,11 @@ def main():
     print("\n🎯 Testing topic subscription persistence:")
 
     # Agent2 should see topic-based context from previous session
-    context2.subscribe_to_topics("Agent2", ["development", "ui"])
-    topic_context = context2.get_by_topics(["development"], "Agent2")
+    context2.register_agent_topics("Agent2", ["development", "ui"])
+    keys_by_topic = context2.get_available_keys_by_topic("Agent2")
+    restored_dev_keys = keys_by_topic.get("development", [])
 
-    print(f"   Topic-based context restored: {list(topic_context.keys())}")
+    print(f"   Topic-based context restored: {restored_dev_keys}")
 
     # 10. Demonstrate multi-user isolation in persistence
     print("\n👥 Testing multi-user isolation:")

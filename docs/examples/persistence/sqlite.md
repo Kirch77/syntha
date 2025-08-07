@@ -21,13 +21,15 @@ mesh = ContextMesh(user_id="sqlite_user")
 # Custom SQLite database file
 mesh = ContextMesh(
     user_id="sqlite_user",
-    database_url="sqlite:///custom_path/syntha.db"
+    db_backend="sqlite",
+    db_path="custom_path/syntha.db"
 )
 
 # In-memory SQLite (for testing)
 mesh = ContextMesh(
     user_id="test_user",
-    database_url="sqlite:///:memory:"
+    db_backend="sqlite",
+    db_path= ":memory:"
 )
 ```
 
@@ -37,13 +39,8 @@ mesh = ContextMesh(
 # SQLite with custom settings
 mesh = ContextMesh(
     user_id="advanced_user",
-    database_url="sqlite:///syntha.db",
-    database_config={
-        "pragma_journal_mode": "WAL",
-        "pragma_synchronous": "NORMAL",
-        "pragma_cache_size": -64000,  # 64MB cache
-        "pragma_temp_store": "MEMORY"
-    }
+    db_backend="sqlite",
+    db_path="syntha.db"
 )
 ```
 

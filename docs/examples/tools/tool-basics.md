@@ -37,7 +37,7 @@ def main():
     
     # List all available context
     list_result = handler.handle_tool_call("list_context")
-    print(f"\n📋 Available context keys: {list_result['keys']}")
+    print(f"\n📋 Available context keys: {list_result['all_accessible_keys']}")
     
     # Subscribe to topics
     subscribe_result = handler.handle_tool_call(

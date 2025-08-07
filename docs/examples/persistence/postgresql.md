@@ -18,13 +18,13 @@ from syntha import ContextMesh
 # PostgreSQL connection
 mesh = ContextMesh(
     user_id="postgres_user",
-    database_url="postgresql://username:password@localhost:5432/syntha"
+    connection_string="postgresql://username:password@localhost:5432/syntha"
 )
 
 # With connection pool settings
 mesh = ContextMesh(
     user_id="postgres_user",
-    database_url="postgresql://username:password@localhost:5432/syntha",
+    connection_string="postgresql://username:password@localhost:5432/syntha",
     database_config={
         "pool_size": 10,
         "max_overflow": 20,
@@ -50,7 +50,7 @@ from syntha import ContextMesh
 # Use environment variables
 mesh = ContextMesh(
     user_id="env_user",
-    database_url=os.getenv("SYNTHA_DB_URL")
+    connection_string=os.getenv("CONNECTION_STRING")
 )
 ```
 
