@@ -406,7 +406,9 @@ class TestScalabilityBenchmarks:
             else:
                 # For slower operations, expect some concurrency benefit
                 # Made more lenient for Windows CI environments
-                assert total_duration < avg_duration * 1.2  # Allow for up to 20% overhead
+                assert (
+                    total_duration < avg_duration * 1.2
+                )  # Allow for up to 20% overhead
         else:
             # Operations are very fast, which is good
             assert True

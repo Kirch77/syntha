@@ -160,20 +160,30 @@ def demonstrate_single_agent():
 
     # Pre-populate with some initial data
     print("\n📊 Setting up initial context data...")
-    context_mesh.push("healthcare_stats", {
-        "market_size": "$15.1 billion by 2030",
-        "growth_rate": "37.5% CAGR",
-        "key_areas": ["diagnostics", "drug_discovery", "patient_monitoring"]
-    }, topics=["healthcare-ai"], ttl_hours=24)
-    
-    context_mesh.push("ai_research_2024", {
-        "breakthrough": "GPT-4 medical applications",
-        "accuracy": "95% in radiology diagnosis",
-        "adoption": "60% of hospitals exploring AI"
-    }, topics=["healthcare-ai"], ttl_hours=24)
-    
+    context_mesh.push(
+        "healthcare_stats",
+        {
+            "market_size": "$15.1 billion by 2030",
+            "growth_rate": "37.5% CAGR",
+            "key_areas": ["diagnostics", "drug_discovery", "patient_monitoring"],
+        },
+        topics=["healthcare-ai"],
+        ttl_hours=24,
+    )
+
+    context_mesh.push(
+        "ai_research_2024",
+        {
+            "breakthrough": "GPT-4 medical applications",
+            "accuracy": "95% in radiology diagnosis",
+            "adoption": "60% of hospitals exploring AI",
+        },
+        topics=["healthcare-ai"],
+        ttl_hours=24,
+    )
+
     print("✅ Initial context populated")
-    
+
     # Show what's in context before agent starts
     print("\n🔍 Current context state:")
     stats = context_mesh.get_stats()
@@ -188,14 +198,14 @@ def demonstrate_single_agent():
     # Have the agent do some research
     print("\n📚 Research Agent working...")
     print("🔧 Agent will see this context and tools:")
-    
+
     response = research_agent.run(
         "First, check what healthcare AI information is already available in the context. Then research additional benefits of AI in healthcare and store your findings under the topic 'healthcare-ai'"
     )
 
     print(f"\n✅ Research completed!")
     print(f"Response: {response.content}")
-    
+
     # Show updated context after agent work
     print("\n📈 Context after agent work:")
     updated_stats = context_mesh.get_stats()
@@ -219,36 +229,51 @@ def demonstrate_multi_agent_collaboration():
 
     # Pre-populate with initial renewable energy data
     print("\n📊 Setting up initial renewable energy context...")
-    context_mesh.push("solar_trends_2024", {
-        "efficiency": "22.8% average for commercial panels",
-        "cost_reduction": "85% decrease since 2010",
-        "capacity": "1.2 TW global installed capacity",
-        "growth": "25% year-over-year growth"
-    }, topics=["renewable-energy"], ttl_hours=48)
-    
-    context_mesh.push("wind_energy_stats", {
-        "offshore_growth": "30% increase in offshore installations",
-        "turbine_size": "Average 3.0 MW capacity per turbine",
-        "capacity_factor": "35-45% average capacity factor",
-        "investment": "$380 billion global investment in 2024"
-    }, topics=["renewable-energy"], ttl_hours=48)
-    
-    context_mesh.push("battery_storage", {
-        "technology": "Lithium-ion dominates with 90% market share",
-        "cost_decline": "70% cost reduction since 2020",
-        "grid_scale": "15 GW of grid-scale storage deployed",
-        "duration": "4-hour duration standard for grid storage"
-    }, topics=["energy-storage"], ttl_hours=48)
-    
+    context_mesh.push(
+        "solar_trends_2024",
+        {
+            "efficiency": "22.8% average for commercial panels",
+            "cost_reduction": "85% decrease since 2010",
+            "capacity": "1.2 TW global installed capacity",
+            "growth": "25% year-over-year growth",
+        },
+        topics=["renewable-energy"],
+        ttl_hours=48,
+    )
+
+    context_mesh.push(
+        "wind_energy_stats",
+        {
+            "offshore_growth": "30% increase in offshore installations",
+            "turbine_size": "Average 3.0 MW capacity per turbine",
+            "capacity_factor": "35-45% average capacity factor",
+            "investment": "$380 billion global investment in 2024",
+        },
+        topics=["renewable-energy"],
+        ttl_hours=48,
+    )
+
+    context_mesh.push(
+        "battery_storage",
+        {
+            "technology": "Lithium-ion dominates with 90% market share",
+            "cost_decline": "70% cost reduction since 2020",
+            "grid_scale": "15 GW of grid-scale storage deployed",
+            "duration": "4-hour duration standard for grid storage",
+        },
+        topics=["energy-storage"],
+        ttl_hours=48,
+    )
+
     print("✅ Initial renewable energy context populated")
-    
+
     # Show initial context state
     print("\n🔍 Initial context available to agents:")
     stats = context_mesh.get_stats()
     print(f"   • Total items: {stats['total_items']}")
     all_topics = context_mesh.get_all_topics()
     print(f"   • Active topics: {', '.join(all_topics)}")
-    
+
     initial_context = context_mesh.get_context()
     for key, value in initial_context.items():
         print(f"   • {key}: {str(value)[:80]}...")
@@ -260,13 +285,15 @@ def demonstrate_multi_agent_collaboration():
 
     # Step 1: Research agent gathers information
     print("\n📚 Step 1: Research Agent gathering information...")
-    print("🔧 Agent prompt: Analyze existing renewable energy data and add new research")
+    print(
+        "🔧 Agent prompt: Analyze existing renewable energy data and add new research"
+    )
     research_response = research_agent.run(
         "Review the existing renewable energy data in context. Then research and add information about emerging trends like green hydrogen and floating solar. Store under topic 'renewable-energy'"
     )
     print(f"Research: {research_response.content[:300]}...")
 
-    # Step 2: Analysis agent processes the information  
+    # Step 2: Analysis agent processes the information
     print("\n🔍 Step 2: Analysis Agent processing information...")
     print("🔧 Agent prompt: Analyze all renewable energy data and identify top trends")
     analysis_response = analysis_agent.run(
@@ -281,7 +308,7 @@ def demonstrate_multi_agent_collaboration():
         "Review ALL research and analysis work on renewable energy. Create a comprehensive workflow summary showing what each agent contributed and the key insights discovered."
     )
     print(f"Summary: {coordinator_response.content[:300]}...")
-    
+
     # Show final context state
     print("\n📈 Final context state after all agent work:")
     final_stats = context_mesh.get_stats()
