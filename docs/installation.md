@@ -17,6 +17,49 @@ pip install syntha
 
 That's it! Syntha is now ready to use with sensible defaults.
 
+## Framework-Specific Installation
+
+For seamless integration with your preferred AI framework, install the optional dependencies:
+
+### LangChain Integration
+
+```bash
+pip install syntha langchain
+```
+
+### LangGraph Integration
+
+```bash
+pip install syntha langgraph
+```
+
+### OpenAI Integration
+
+```bash
+pip install syntha openai
+```
+
+### Anthropic Claude Integration
+
+```bash
+pip install syntha anthropic
+```
+
+### Agno Integration
+
+```bash
+pip install syntha agno
+```
+
+### All Frameworks (Complete Setup)
+
+```bash
+pip install syntha langchain langgraph openai anthropic agno
+```
+
+!!! tip "Framework Dependencies"
+    Syntha works without any framework dependencies - they're only needed if you want to use the specific `get_*_tools()` methods. The core context management works with any framework using `get_schemas()`.
+
 ## Quick Start
 
 Verify your installation with this simple example:
@@ -39,6 +82,79 @@ context.close()
 ```
 
 If this runs without errors, you're ready to go!
+
+## Framework Quick Start Examples
+
+### LangChain Quick Start
+
+```python
+from syntha import ContextMesh, ToolHandler
+
+# Create context and handler
+context = ContextMesh(user_id="langchain_user", enable_persistence=True)
+handler = ToolHandler(context, "MyAgent")
+
+# Get LangChain tools - just one line!
+langchain_tools = handler.get_langchain_tools()
+
+# Use with your LangChain agent
+print(f"Ready! {len(langchain_tools)} LangChain tools available")
+context.close()
+```
+
+### OpenAI Quick Start
+
+```python
+from syntha import ContextMesh, ToolHandler
+
+# Create context and handler  
+context = ContextMesh(user_id="openai_user", enable_persistence=True)
+handler = ToolHandler(context, "MyAgent")
+
+# Get OpenAI function definitions - just one line!
+openai_functions = handler.get_openai_functions()
+
+# Use with OpenAI API
+print(f"Ready! {len(openai_functions)} OpenAI functions available")
+context.close()
+```
+
+### Anthropic Quick Start
+
+```python
+from syntha import ContextMesh, ToolHandler
+
+# Create context and handler
+context = ContextMesh(user_id="anthropic_user", enable_persistence=True) 
+handler = ToolHandler(context, "MyAgent")
+
+# Get Anthropic tool definitions - just one line!
+anthropic_tools = handler.get_anthropic_tools()
+
+# Use with Anthropic Claude
+print(f"Ready! {len(anthropic_tools)} Anthropic tools available")
+context.close()
+```
+
+### Universal Framework Support
+
+```python
+from syntha import ContextMesh, ToolHandler
+
+# Create context and handler
+context = ContextMesh(user_id="any_framework_user", enable_persistence=True)
+handler = ToolHandler(context, "MyAgent")
+
+# Works with any framework using JSON schemas
+tools = handler.get_schemas()
+
+# Or get tools for a specific framework
+agno_tools = handler.get_tools_for_framework("agno")
+
+print(f"Universal: {len(tools)} tools available")
+print(f"Agno: {len(agno_tools)} tools available")
+context.close()
+```
 
 ## Database Setup (Optional)
 

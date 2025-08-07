@@ -6,7 +6,8 @@ for multi-agent conversations with shared context.
 """
 
 import json
-from syntha import ContextMesh, build_system_prompt, ToolHandler
+
+from syntha import ContextMesh, ToolHandler, build_system_prompt
 
 # Note: This example requires OpenAI API key and the openai package
 # pip install openai

@@ -400,6 +400,47 @@ class SynthaTimeoutError(SynthaError):
             )
 
 
+class SynthaFrameworkError(SynthaError):
+    """Framework integration-related errors."""
+
+    def __init__(
+        self,
+        message: str,
+        framework: Optional[str] = None,
+        tool_name: Optional[str] = None,
+        **kwargs,
+    ):
+        """
+        Initialize framework error.
+
+        Args:
+            message: Error message
+            framework: Framework name that caused the error
+            tool_name: Tool name that caused the error
+            **kwargs: Additional arguments passed to parent class
+        """
+        super().__init__(message, **kwargs)
+        self.framework = framework
+        self.tool_name = tool_name
+
+        # Add framework-specific context
+        if framework:
+            self.context["framework"] = framework
+        if tool_name:
+            self.context["tool_name"] = tool_name
+
+        # Add framework-specific suggestions
+        if framework:
+            self.suggestions.extend(
+                [
+                    f"Check if {framework} is properly installed",
+                    f"Verify {framework} version compatibility",
+                    "Review framework documentation",
+                    "Check for missing dependencies",
+                ]
+            )
+
+
 class ErrorHandler:
     """Centralized error handling and logging."""
 
@@ -526,6 +567,7 @@ __all__ = [
     "SynthaSecurityError",
     "SynthaPerformanceError",
     "SynthaTimeoutError",
+    "SynthaFrameworkError",
     "ErrorHandler",
     "handle_syntha_error",
 ]

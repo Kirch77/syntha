@@ -7,14 +7,15 @@ including role-based access, custom restrictions, and multi-agent setups.
 """
 
 import json
+
 from syntha import (
+    PREDEFINED_ROLES,
     ContextMesh,
     ToolHandler,
-    create_role_based_handler,
-    create_restricted_handler,
     create_multi_agent_handlers,
+    create_restricted_handler,
+    create_role_based_handler,
     get_role_info,
-    PREDEFINED_ROLES,
 )
 
 
