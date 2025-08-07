@@ -422,4 +422,4 @@ except SynthaValidationError as e:
 
 ---
 
-**Next**: Learn about [Tools API](tools.md) for agent integration
+**Next**: Learn about [Tool Handler API](tool-handler.md) for agent integration

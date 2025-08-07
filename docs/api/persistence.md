@@ -571,4 +571,4 @@ for key, (value, subscribers, ttl, created_at) in import_data["context"].items()
 
 ---
 
-**Next**: Learn about [Tool Schemas](schemas.md) for complete function call reference
+**Next**: Learn about [Tool Handler API](tool-handler.md) for complete function call reference
