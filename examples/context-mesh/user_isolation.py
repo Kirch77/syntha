@@ -73,8 +73,8 @@ def main():
         print(f"\n❌ Cross-user access blocked: {e}")
 
     # Show that agents in each context are also isolated
-    user1_context.subscribe_to_topics("SalesAgent", ["sales"])
-    user2_context.subscribe_to_topics("SalesAgent", ["sales"])
+    user1_context.register_agent_topics("SalesAgent", ["sales"])
+    user2_context.register_agent_topics("SalesAgent", ["sales"])
 
     # Push sales data to each user's context
     user1_context.push("sales_lead", "Alice's Premium Lead", topics=["sales"])
