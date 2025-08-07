@@ -58,23 +58,51 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
-  - Home: index.md
-  - Core Concepts: core-concepts.md
-  - Installation: installation.md
+  - User Guide:
+    - Introduction:
+      - What is Syntha: user-guide/introduction/what-is-syntha.md
+      - Quick Start: user-guide/introduction/quick-start.md
+      - Installation: user-guide/introduction/installation.md
+    - Concepts:
+      - Overview: user-guide/concepts/overview.md
+      - Context Mesh: user-guide/concepts/context-mesh.md
+      - Tools & Tool Handler: user-guide/concepts/tools.md
+      - Framework Adapters: user-guide/concepts/adapters.md
+      - Prompts: user-guide/concepts/prompts.md
+      - Persistence: user-guide/concepts/persistence.md
+      - User Isolation: user-guide/concepts/user-isolation.md
+    - How To:
+      - Setup & Installation: user-guide/how-to/setup.md
+      - Contributing: user-guide/how-to/contributing.md
+  - Examples:
+    - Overview: examples/overview.md
+    - Context Mesh:
+      - Basic Usage: examples/context-mesh/basic-usage.md
+      - Topic Routing: examples/context-mesh/topic-routing.md
+      - User Isolation: examples/context-mesh/user-isolation.md
+    - Tools & Tool Handler:
+      - Tool Basics: examples/tools/tool-basics.md
+      - Access Control: examples/tools/access-control.md
+      - Multi-Agent Setup: examples/tools/multi-agent.md
+    - Framework Adapters:
+      - OpenAI Integration: examples/adapters/openai.md
+      - Anthropic Integration: examples/adapters/anthropic.md
+      - LangChain Integration: examples/adapters/langchain.md
+      - Agno Integration: examples/adapters/agno.md
+    - Prompts:
+      - System Prompts: examples/prompts/system-prompts.md
+      - Context Injection: examples/prompts/context-injection.md
+    - Persistence:
+      - SQLite Setup: examples/persistence/sqlite.md
+      - PostgreSQL Setup: examples/persistence/postgresql.md
+    - Extras:
+      - Complete Workflows: examples/extras/complete-workflows.md
+      - Real-World Use Cases: examples/extras/real-world.md
   - API Reference:
     - Overview: api/overview.md
-    - Getting Started:
-      - ContextMesh: api/context-mesh.md
-      - Tools: api/tools.md
-    - Advanced Features:
-      - Prompts: api/prompts.md
-      - Persistence: api/persistence.md
-    - Reference:
-      - Tool Schemas: api/schemas.md
-  - Guides:
-    - Getting Started: guides/overview.md
-    - Basics: guides/basics.md
-    - Context Management: guides/context.md
-    - Tools & Permissions: guides/tools.md
-    - Advanced Patterns: guides/advanced.md
-    - Framework Integration: guides/examples.md 
+    - Context Mesh: api/context-mesh.md
+    - Tool Handler: api/tool-handler.md
+    - Framework Adapters: api/framework-adapters.md
+    - Prompts: api/prompts.md
+    - Persistence: api/persistence.md
+    - Exceptions: api/exceptions.md 
