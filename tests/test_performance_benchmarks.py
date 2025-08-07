@@ -255,7 +255,9 @@ class TestCachingPerformance:
                 # Just ensure the warm run is not slower than the cold run in trivial cases
                 assert second_run_time <= first_run_time
             else:
-                assert second_run_time < first_run_time / 3  # Should be at least 3x faster
+                assert (
+                    second_run_time < first_run_time / 3
+                )  # Should be at least 3x faster
         else:
             # Both operations are very fast, which is good
             assert True
