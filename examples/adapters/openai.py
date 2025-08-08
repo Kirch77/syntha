@@ -16,6 +16,11 @@ import os
 
 from syntha import ContextMesh, ToolHandler, build_system_prompt
 
+try:
+    from openai import OpenAI  # type: ignore
+except Exception:
+    OpenAI = None
+
 
 def simulate_openai_call(messages, tools=None, model="gpt-4"):
     """
@@ -76,11 +81,8 @@ def main():
 
     # Check for API key (for real usage)
     api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        print("✅ OpenAI API key found")
-    else:
-        print("⚠️  No OpenAI API key found - using simulation mode")
-        print("   Set OPENAI_API_KEY environment variable for real usage")
+    use_real = bool(api_key and OpenAI)
+    print("✅ Using real OpenAI client" if use_real else "⚠️  Using simulation mode")
 
     # 1. Set up Syntha
     context = ContextMesh(user_id="sales_team")
@@ -129,7 +131,7 @@ def main():
 
     print(f"🔧 Available tools: {[tool['function']['name'] for tool in tools]}")
 
-    # 4. Simulate conversation
+    # 4. Conversation
     messages = [
         {"role": "system", "content": system_prompt},
         {
@@ -138,8 +140,17 @@ def main():
         },
     ]
 
-    # Simulate OpenAI response (replace with real API call)
-    response = simulate_openai_call(messages, tools)
+    if use_real:
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            tools=tools,
+            tool_choice="auto",
+        )
+    else:
+        # Simulated response (triggers get_context)
+        response = simulate_openai_call(messages, tools)
 
     # 5. Handle tool calls
     if response["choices"][0]["message"].get("tool_calls"):
@@ -159,12 +170,8 @@ def main():
                 for key, value in result["context"].items():
                     print(f"     - {key}: {type(value).__name__}")
 
-    # 6. Show how to continue the conversation
-    print("\n💡 Next steps for real integration:")
-    print("1. Install: pip install openai")
-    print("2. Set environment variable: export OPENAI_API_KEY='your-key-here'")
-    print("3. Replace simulate_openai_call() with real OpenAI client")
-    print("4. Handle tool call results in conversation flow")
+    if not use_real:
+        print("\n💡 To use a real LLM: pip install openai && export OPENAI_API_KEY='<key>'")
 
     # 7. Demonstrate framework-specific tool formats
     print("\n🔄 OpenAI-specific tool formats:")
