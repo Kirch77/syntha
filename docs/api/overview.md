@@ -195,7 +195,7 @@ Create conversation-style prompts.
 |------|-------------|-------------|
 | `admin` | Full system access | All tools, all context |
 | `contributor` | Standard agent access | Most tools, relevant context |
-| `viewer` | Read-only access | Get/list tools only |
+| `readonly` | Read-only access | Get/list tools only |
 
 ### Role-Based Handlers
 
@@ -252,7 +252,7 @@ Production database for high concurrency.
 context = ContextMesh(
     user_id="user123",
     db_backend="postgresql",
-    database_url="postgresql://user:pass@host:5432/db"
+    connection_string="postgresql://user:pass@host:5432/db"
 )
 ```
 

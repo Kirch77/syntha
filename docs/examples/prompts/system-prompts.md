@@ -2,40 +2,36 @@
 
 Example of using Syntha for dynamic system prompt management.
 
-## Overview
-
-System prompts with context injection allow for:
-- Dynamic prompt generation based on context
-- Personalized system instructions
-- Context-aware prompt templates
-
 ## Basic Usage
 
 ```python
-from syntha import ContextMesh, ToolHandler
+from syntha import ContextMesh, build_system_prompt, build_custom_prompt
 
+# Create context
 mesh = ContextMesh(user_id="prompt_user")
-handler = ToolHandler(mesh, "PromptAgent")
 
-# Store user context for prompt injection
-handler.push_context("user_profile", {
-    "name": "Alice",
-    "expertise": "machine learning",
-    "preferences": {"style": "technical", "detail": "high"}
-})
+mesh.push("company_profile", {"name": "InnovateTech", "industry": "B2B SaaS"})
+mesh.push("current_goals", {"revenue_target": 2500000, "expansion": ["EU", "APAC"]})
+mesh.push("team_structure", {"engineering": 45, "sales": 25, "marketing": 20})
 
-# Create context-aware system prompt
-def generate_system_prompt():
-    profile = handler.get_context("user_profile")
-    return f"""You are an AI assistant helping {profile['name']}.
-    User expertise: {profile['expertise']}
-    Communication style: {profile['preferences']['style']}
-    Detail level: {profile['preferences']['detail']}
-    
-    Adapt your responses accordingly."""
+# Build system prompts
+sales_prompt = build_system_prompt("SalesAgent", mesh)
+print(len(sales_prompt))
 
-system_prompt = generate_system_prompt()
-print(system_prompt)
+# Build a custom prompt from selected keys and a template
+sales_template = (
+    "You are a senior sales consultant.\n\n"
+    "Company: {company_profile}\n"
+    "Goals: {current_goals}\n"
+    "Team: {team_structure}\n"
+)
+custom = build_custom_prompt(
+    agent_name="SalesAgent",
+    context_mesh=mesh,
+    keys=["company_profile", "current_goals", "team_structure"],
+    template=sales_template,
+)
+print(len(custom))
 ```
 
 ## See Also

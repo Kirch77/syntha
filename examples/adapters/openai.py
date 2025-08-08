@@ -177,7 +177,8 @@ def main():
     print("\n🔄 OpenAI-specific tool formats:")
     openai_tools = handler.get_openai_functions()
     for tool in openai_tools[:2]:  # Show first 2 tools
-        print(f"   {tool['name']}: {tool['description'][:50]}...")
+        fn = tool.get("function", {})
+        print(f"   {fn.get('name')}: {fn.get('description', '')[:50]}...")
 
     print("\n✅ OpenAI integration example complete!")
 

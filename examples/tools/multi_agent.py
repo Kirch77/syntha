@@ -17,34 +17,14 @@ def main():
     # Create context mesh for a project team
     context = ContextMesh(user_id="project_team")
 
-    # Define agent configurations
-    agent_configs = [
-        {
-            "name": "ProjectManager",
-            "role": "admin",
-            "topics": ["planning", "status", "team"],
-        },
-        {
-            "name": "Developer",
-            "role": "contributor",
-            "topics": ["development", "bugs", "features"],
-        },
-        {
-            "name": "Designer",
-            "role": "contributor",
-            "topics": ["design", "ui", "branding"],
-        },
-        {
-            "name": "QAAgent",
-            "role": "contributor",
-            "topics": ["testing", "bugs", "quality"],
-        },
-        {
-            "name": "ClientLiaison",
-            "role": "viewer",
-            "topics": ["client", "requirements", "status"],
-        },
-    ]
+    # Define agent configurations (dict form required by create_multi_agent_handlers)
+    agent_configs = {
+        "ProjectManager": {"role": "admin"},
+        "Developer": {"role": "contributor"},
+        "Designer": {"role": "contributor"},
+        "QAAgent": {"role": "contributor"},
+        "ClientLiaison": {"role": "readonly"},
+    }
 
     # Create multiple handlers at once
     handlers = create_multi_agent_handlers(context, agent_configs)

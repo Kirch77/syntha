@@ -14,7 +14,7 @@ for role in PREDEFINED_ROLES:
     print(role, get_role_info(role)["description"])
 
 admin = create_role_based_handler(mesh, "AdminAgent", "admin")
-viewer = create_role_based_handler(mesh, "ViewerAgent", "viewer")
+viewer = create_role_based_handler(mesh, "ViewerAgent", "readonly")
 
 print([s["name"] for s in admin.get_schemas()])
 print([s["name"] for s in viewer.get_schemas()])

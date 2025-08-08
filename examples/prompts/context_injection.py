@@ -71,17 +71,18 @@ Please provide professional and empathetic assistance.
 """
 
     # Inject context into the template
+    base_prompt = custom_template.format(
+        customer_name="{context}",
+        customer_tier="{context}",
+        account_value="{context}",
+        satisfaction_score="{context}",
+        current_issue="{context}",
+    )
     injected_prompt = inject_context_into_prompt(
-        prompt_template=custom_template,
-        context_mesh=context,
+        existing_prompt=base_prompt,
         agent_name="ServiceAgent",
-        context_mappings={
-            "customer_name": "customer_profile.name",
-            "customer_tier": "customer_profile.tier",
-            "account_value": "customer_profile.account_value",
-            "satisfaction_score": "customer_profile.satisfaction_score",
-            "current_issue": "current_issue.description",
-        },
+        context_mesh=context,
+        placement="replace_placeholder",
     )
 
     print("Custom template with injected context:")
@@ -134,30 +135,25 @@ Current Issue (Priority: {priority}):
         (support_data["resolved_tickets"] / support_data["total_tickets"]) * 100
     )
 
+    # Replace placeholders with {context} where we want context injection
+    advanced_base = advanced_template.replace("{customer_name}", "{context}") \
+        .replace("{customer_id}", "{context}") \
+        .replace("{tier}", "{context}") \
+        .replace("{value}", "{context}") \
+        .replace("{satisfaction}", "{context}") \
+        .replace("{total_tickets}", "{context}") \
+        .replace("{avg_resolution}", "{context}") \
+        .replace("{priority}", "{context}") \
+        .replace("{issue_description}", "{context}") \
+        .replace("{tier_specific_instructions}", tier_instructions.get(customer_data["tier"], "")) \
+        .replace("{priority_specific_guidance}", priority_guidance.get(current_issue_data["priority"], "")) \
+        .replace("{resolution_rate}", str(resolution_rate))
+
     advanced_injected = inject_context_into_prompt(
-        prompt_template=advanced_template,
-        context_mesh=context,
+        existing_prompt=advanced_base,
         agent_name="ServiceAgent",
-        context_mappings={
-            "customer_name": "customer_profile.name",
-            "customer_id": "customer_profile.id",
-            "tier": "customer_profile.tier",
-            "value": "customer_profile.account_value",
-            "satisfaction": "customer_profile.satisfaction_score",
-            "total_tickets": "support_history.total_tickets",
-            "avg_resolution": "support_history.avg_resolution_time",
-            "priority": "current_issue.priority",
-            "issue_description": "current_issue.description",
-        },
-        additional_context={
-            "tier_specific_instructions": tier_instructions.get(
-                customer_data["tier"], ""
-            ),
-            "priority_specific_guidance": priority_guidance.get(
-                current_issue_data["priority"], ""
-            ),
-            "resolution_rate": resolution_rate,
-        },
+        context_mesh=context,
+        placement="replace_placeholder",
     )
 
     print("Advanced template with conditional logic:")
@@ -172,9 +168,8 @@ Current Issue (Priority: {priority}):
     message_prompt = build_message_prompt(
         agent_name="ServiceAgent",
         context_mesh=context,
-        system_message="You are a professional customer service representative.",
-        user_message="I have a billing question about my recent invoice.",
-        include_context=True,
+        template="{context}\nUser: I have a billing question about my recent invoice.",
+        include_context_header=True,
     )
 
     print("Message-based prompt structure:")
@@ -209,19 +204,22 @@ Special Instructions: {special_instructions}
 Please assist with: {current_issue}
 """
 
+    updated_base = updated_template.replace("{agent_name}", "ServiceAgent").replace(
+        "{customer_name}", "{context}"
+    ).replace("{tier}", "{context}").replace(
+        "{previous_interaction}", "{context}"
+    ).replace(
+        "{preferred_contact}", "{context}"
+    ).replace(
+        "{special_instructions}", "{context}"
+    ).replace(
+        "{current_issue}", "{context}"
+    )
     updated_prompt = inject_context_into_prompt(
-        prompt_template=updated_template,
-        context_mesh=context,
+        existing_prompt=updated_base,
         agent_name="ServiceAgent",
-        context_mappings={
-            "agent_name": "ServiceAgent",  # Static value
-            "customer_name": "customer_profile.name",
-            "tier": "customer_profile.tier",
-            "previous_interaction": "agent_notes.previous_interaction",
-            "preferred_contact": "agent_notes.preferred_contact",
-            "special_instructions": "agent_notes.special_instructions",
-            "current_issue": "current_issue.description",
-        },
+        context_mesh=context,
+        placement="replace_placeholder",
     )
 
     print("Updated prompt with new context:")
@@ -239,17 +237,12 @@ Issue: {missing_field|No issue specified}
 Priority: {priority|normal}
 """
 
-    # This would handle missing fields gracefully
+    # Fallbacks not supported natively; we will prepend context safely
     safe_prompt = inject_context_into_prompt(
-        prompt_template=fallback_template,
-        context_mesh=context,
+        existing_prompt=fallback_template,
         agent_name="ServiceAgent",
-        context_mappings={
-            "customer_name": "customer_profile.name",
-            "missing_field": "nonexistent.field",  # This will use fallback
-            "priority": "current_issue.priority",
-        },
-        use_fallbacks=True,
+        context_mesh=context,
+        placement="prepend",
     )
 
     print("Prompt with fallback handling:")

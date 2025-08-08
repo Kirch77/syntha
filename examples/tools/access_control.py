@@ -32,7 +32,7 @@ def main():
 
     # Create role-based handlers
     admin_handler = create_role_based_handler(context, "AdminAgent", "admin")
-    viewer_handler = create_role_based_handler(context, "ViewerAgent", "viewer")
+    viewer_handler = create_role_based_handler(context, "ViewerAgent", "readonly")
 
     print("\n✅ Role-based handlers created")
 

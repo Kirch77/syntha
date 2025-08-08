@@ -12,9 +12,9 @@ mesh = ContextMesh(user_id="project_team")
 
 # Define agent configurations (role controls tool access)
 agent_configs = [
-    {"name": "ProjectManager", "role": "admin", "topics": ["planning", "team"]},
-    {"name": "Developer", "role": "contributor", "topics": ["development", "status"]},
-    {"name": "Designer", "role": "contributor", "topics": ["design", "status"]},
+    {"name": "ProjectManager", "role": "admin", "topics": ["planning", "status", "team"]},
+    {"name": "Developer", "role": "contributor", "topics": ["development", "bugs", "features"]},
+    {"name": "Designer", "role": "contributor", "topics": ["design", "ui", "branding"]},
 ]
 
 # Create handlers
@@ -44,7 +44,7 @@ handlers["Designer"].handle_tool_call(
 
 # Retrieve context for Developer
 dev_ctx = handlers["Developer"].handle_tool_call("get_context")
-print(list(dev_ctx["context"].keys()))  # ['project_info', 'development_status', ...]
+print(list(dev_ctx["context"].keys()))
 
 # Keys organized by topic for Designer
 print(mesh.get_available_keys_by_topic("Designer"))

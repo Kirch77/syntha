@@ -2,41 +2,30 @@
 
 Examples of injecting context data into prompts for more informed AI responses.
 
-## Overview
-
-Context injection enables:
-- Automatic insertion of relevant context into prompts
-- Dynamic prompt enhancement
-- Personalized AI interactions
-
 ## Basic Context Injection
 
 ```python
-from syntha import ContextMesh, ToolHandler
+from syntha import ContextMesh, build_message_prompt
 
 mesh = ContextMesh(user_id="injection_user")
-handler = ToolHandler(mesh, "InjectionAgent")
 
 # Store relevant context
-handler.push_context("recent_activity", {
+mesh.push("recent_activity", {
     "last_project": "ML Pipeline",
     "current_focus": "data preprocessing",
-    "challenges": ["missing data", "feature scaling"]
+    "challenges": ["missing data", "feature scaling"],
 })
 
-# Inject context into prompt
-def create_context_aware_prompt(user_message):
-    context = handler.get_context("recent_activity")
-    
-    return f"""Context: User is working on {context['last_project']}, 
-    focusing on {context['current_focus']}. 
-    Current challenges: {', '.join(context['challenges'])}.
-    
-    User message: {user_message}
-    
-    Please provide relevant assistance based on this context."""
-
-prompt = create_context_aware_prompt("How should I handle this data issue?")
+# Build a message prompt with injected context
+prompt = build_message_prompt(
+    agent_name="InjectionAgent",
+    context_mesh=mesh,
+    template=(
+        "{context}\n\n"
+        "Please provide relevant assistance based on this context."
+    ),
+    include_context_header=True,
+)
 print(prompt)
 ```
 
