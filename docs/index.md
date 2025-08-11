@@ -1,60 +1,54 @@
-# What is Syntha?
+# Syntha SDK
 
-Syntha is a multi-agent context framework that solves the coordination problem in AI systems. Instead of manually passing data between agents, Syntha creates a shared knowledge space where agents can intelligently store, discover, and retrieve relevant information.
+A lightweight, context-based multi-agent framework. Build agents that share, route, and persist context — with first-class tooling for prompts, tools, and popular LLM frameworks.
 
-## The Problem
+<div class="grid cards" markdown>
 
-Building AI applications with multiple agents is challenging because:
+-   :material-download-box: **Installation**
+    
+    Set up Syntha in minutes on your machine or server.
+    
+    [:material-arrow-right-circle: Install Syntha](user-guide/introduction/installation.md)
 
-- **Context Chaos**: Agents work in isolation without shared knowledge
-- **Manual Coordination**: You have to manually pass data between agents
-- **Information Loss**: Context gets lost during agent handoffs
-- **Brittle Workflows**: One failed agent breaks the entire system
+-   :material-rocket-launch: **Quick Start**
+    
+    Create a context mesh, add tools, and run your first agent.
+    
+    [:material-arrow-right-circle: Quick Start](user-guide/introduction/quick-start.md)
 
-## The Solution
+-   :material-book-open-variant: **User Guide**
+    
+    Learn core concepts: context mesh, tools, prompts, persistence, and more.
+    
+    [:material-arrow-right-circle: Concepts Overview](user-guide/concepts/overview.md)
 
-Syntha creates a **Context Mesh** - a smart, persistent memory layer that:
+-   :material-code-braces: **Examples**
+    
+    Copy-paste runnable examples for context mesh, tools, frameworks, and workflows.
+    
+    [:material-arrow-right-circle: Examples Overview](examples/overview.md)
 
-- **Automatically shares context** between agents based on topics and subscriptions
-- **Maintains context continuity** across sessions and agent handoffs
-- **Provides user isolation** to keep different users' data completely separate
-- **Integrates seamlessly** with your existing LLM framework
+-   :material-api: **API Reference**
+    
+    Detailed documentation for classes, functions, and adapters.
+    
+    [:material-arrow-right-circle: API Overview](api/overview.md)
 
-## How It Works
+-   :material-database: **Persistence**
+    
+    Store and isolate context with SQLite or PostgreSQL.
+    
+    [:material-arrow-right-circle: Persistence](user-guide/concepts/persistence.md)
 
-```python
-from syntha import ContextMesh, ToolHandler
+</div>
 
-# Create shared context space
-context = ContextMesh(user_id="user123")
+---
 
-# Agents push context as they work
-context.push("customer_data", {"name": "John", "tier": "Premium"})
-context.push("analysis_result", research_data, topics=["sales", "strategy"])
+### Highlights
 
-# Other agents automatically get relevant context when they need it
-handler = ToolHandler(context, "SalesAgent")
-# Agent now has access to all relevant context through tools
-```
+- Context Mesh with topic routing and user isolation
+- ToolHandler with framework adapters (OpenAI, Anthropic, LangChain, Agno)
+- Prompt builders for system and message prompts
+- Pluggable persistence (SQLite, PostgreSQL)
 
-## Key Benefits
-
-- **Zero Configuration**: Works out of the box with SQLite, scales to PostgreSQL
-- **Framework Agnostic**: Integrates with OpenAI, Anthropic, LangChain, and more
-- **Production Ready**: 168+ tests, structured logging, proper error handling
-- **User Isolation**: Complete separation between different users' contexts
-- **Persistent Memory**: Context survives between sessions
-
-## Who Should Use Syntha?
-
-**Developers** building multi-agent AI applications who want to focus on agent logic instead of context management.
-
-**Teams** creating scalable AI systems that need reliable agent coordination.
-
-**Companies** deploying production AI applications that require robust context handling and user isolation.
-
-## Next Steps
-
-- [Quick Start Guide](user-guide/introduction/quick-start.md) - Get up and running in 5 minutes
-- [Installation](user-guide/introduction/installation.md) - Detailed setup instructions
-- [Core Concepts](user-guide/concepts/overview.md) - Understand how Syntha works
+Need help? See the [Setup & Installation guide](user-guide/how-to/setup.md) or open an issue on the repo.
