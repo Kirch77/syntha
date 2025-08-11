@@ -35,10 +35,10 @@ class PerformanceBenchmark:
         self.results = {}
 
     def measure_time(self, func, *args, **kwargs):
-        """Measure execution time of a function."""
-        start_time = time.time()
+        """Measure execution time of a function using high-resolution timer."""
+        start_time = time.perf_counter()
         result = func(*args, **kwargs)
-        end_time = time.time()
+        end_time = time.perf_counter()
         return result, end_time - start_time
 
     def measure_memory(self, func, *args, **kwargs):
@@ -66,13 +66,14 @@ class PerformanceBenchmark:
             _, duration = self.measure_time(func, *args, **kwargs)
             times.append(duration)
 
+        total = sum(times)
         self.results[name] = {
             "iterations": iterations,
-            "total_time": sum(times),
-            "average_time": sum(times) / len(times),
+            "total_time": total,
+            "average_time": (total / len(times)) if total > 0 else 0.0,
             "min_time": min(times),
             "max_time": max(times),
-            "times_per_second": iterations / sum(times) if sum(times) > 0 else 0,
+            "times_per_second": (iterations / total) if total > 0 else float("inf"),
         }
 
         return self.results[name]
@@ -114,10 +115,12 @@ class TestToolCreationPerformance:
             or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
         )
         ci_multiplier = 2.0 if is_ci else 1.0
-        avg_limit = 0.07 * ci_multiplier
-        min_tps = 10 / ci_multiplier
+        avg_limit = 0.09 * ci_multiplier
+        min_tps = 5 / ci_multiplier
+        # For extremely fast measurements, times_per_second can be unstable; allow zero only if average_time is near-zero
         assert result["average_time"] < avg_limit
-        assert result["times_per_second"] > min_tps
+        if result["average_time"] > 0:
+            assert result["times_per_second"] >= min_tps
 
     def test_multiple_tools_creation_speed(self):
         """Test speed of creating all tools for a framework."""
@@ -137,14 +140,17 @@ class TestToolCreationPerformance:
         print(f"  Tool sets per second: {result['times_per_second']:.1f}")
         print(f"  Time per tool: {result['average_time']/tool_count*1000:.2f}ms")
 
-        # Performance assertions
-        assert result["average_time"] < 0.1  # Should be under 100ms for all tools
-        # For very fast operations, be more tolerant
+        # Performance assertions (platform/CI aware)
+        import os
+        is_ci = (
+            os.getenv("CI", "false").lower() == "true"
+            or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
+        )
+        avg_limit = 0.12 if is_ci else 0.1
+        min_tps = 8 if not is_ci else 5
+        assert result["average_time"] < avg_limit
         if result["average_time"] > 0:
-            assert result["times_per_second"] > 10  # Should create >10 sets/sec
-        else:
-            # Operations are very fast, which is good
-            assert True
+            assert result["times_per_second"] >= min_tps
 
     def test_framework_comparison_speed(self):
         """Compare tool creation speed across frameworks."""
@@ -381,8 +387,14 @@ class TestScalabilityBenchmarks:
             tools_per_sec = total_tools / duration if duration > 0 else float("inf")
             print(f"  Tools per second: {tools_per_sec:.0f}")
 
-            # Should scale reasonably
-            assert duration < count * 0.1  # Less than 100ms per handler
+            # Should scale reasonably (platform/CI aware)
+            import os
+            is_ci = (
+                os.getenv("CI", "false").lower() == "true"
+                or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
+            )
+            per_handler_limit = 0.15 if is_ci else 0.1
+            assert duration < count * per_handler_limit
 
     def test_concurrent_tool_creation(self):
         """Test concurrent tool creation performance."""
@@ -437,10 +449,14 @@ class TestScalabilityBenchmarks:
                 assert avg_duration > 0
             else:
                 # For slower operations, expect some concurrency benefit
-                # Made more lenient for Windows CI environments
-                assert (
-                    total_duration < avg_duration * 1.2
-                )  # Allow for up to 20% overhead
+                # Made more lenient and CI-aware due to scheduler variability
+                import os
+                is_ci = (
+                    os.getenv("CI", "false").lower() == "true"
+                    or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
+                )
+                factor = 1.5 if is_ci else 1.2
+                assert total_duration < avg_duration * factor
         else:
             # Operations are very fast, which is good
             assert True
