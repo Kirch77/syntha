@@ -55,6 +55,6 @@ handler = ToolHandler(context, "SalesAgent")
 
 ## Next Steps
 
-- [Quick Start Guide](quick-start.md) - Get up and running in 5 minutes
-- [Installation](installation.md) - Detailed setup instructions
-- [Core Concepts](../concepts/overview.md) - Understand how Syntha works
+- [Quick Start Guide](user-guide/introduction/quick-start.md) - Get up and running in 5 minutes
+- [Installation](user-guide/introduction/installation.md) - Detailed setup instructions
+- [Core Concepts](user-guide/concepts/overview.md) - Understand how Syntha works
