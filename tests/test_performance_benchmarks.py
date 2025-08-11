@@ -142,6 +142,7 @@ class TestToolCreationPerformance:
 
         # Performance assertions (platform/CI aware)
         import os
+
         is_ci = (
             os.getenv("CI", "false").lower() == "true"
             or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
@@ -389,6 +390,7 @@ class TestScalabilityBenchmarks:
 
             # Should scale reasonably (platform/CI aware)
             import os
+
             is_ci = (
                 os.getenv("CI", "false").lower() == "true"
                 or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
@@ -451,6 +453,7 @@ class TestScalabilityBenchmarks:
                 # For slower operations, expect some concurrency benefit
                 # Made more lenient and CI-aware due to scheduler variability
                 import os
+
                 is_ci = (
                     os.getenv("CI", "false").lower() == "true"
                     or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
