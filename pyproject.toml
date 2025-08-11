@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "syntha"
-version = "0.2.0"
+version = "0.2.1"
 description = "Prompt-based multi-agent context framework"
 readme = "README.md"
 authors = [{name = "Syntha Team", email = "contact@syntha.ai"}]
@@ -40,10 +40,10 @@ frameworks = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/syntha/syntha-sdk"
-Repository = "https://github.com/syntha/syntha-sdk"
-Documentation = "https://docs.syntha.ai"
-Issues = "https://github.com/syntha/syntha-sdk/issues"
+Homepage = "https://github.com/Kirch77/syntha"
+Repository = "https://github.com/Kirch77/syntha"
+Documentation = "https://doc.syntha.ca"
+Issues = "https://github.com/Kirch77/syntha/issues"
 
 [tool.black]
 line-length = 88

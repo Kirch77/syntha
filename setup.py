@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="syntha",
-    version="0.2.0",
+    version="0.2.1",
     author="Syntha Team",
     author_email="contact@syntha.ai",
     description="Prompt-based multi-agent context framework",
@@ -23,12 +23,12 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=[
         "typing-extensions>=4.0.0",
     ],
