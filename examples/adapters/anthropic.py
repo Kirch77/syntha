@@ -16,6 +16,11 @@ import os
 
 from syntha import ContextMesh, ToolHandler, build_system_prompt
 
+try:
+    import anthropic  # type: ignore
+except Exception:
+    anthropic = None
+
 
 def simulate_anthropic_call(messages, tools=None, model="claude-3-sonnet-20240229"):
     """
@@ -66,11 +71,8 @@ def main():
 
     # Check for API key (for real usage)
     api_key = os.getenv("ANTHROPIC_API_KEY")
-    if api_key:
-        print("✅ Anthropic API key found")
-    else:
-        print("⚠️  No Anthropic API key found - using simulation mode")
-        print("   Set ANTHROPIC_API_KEY environment variable for real usage")
+    use_real = bool(api_key and anthropic)
+    print("✅ Using real Anthropic client" if use_real else "⚠️  Using simulation mode")
 
     # 1. Set up Syntha
     context = ContextMesh(user_id="support_team")
@@ -129,12 +131,24 @@ def main():
         }
     ]
 
-    # Simulate Anthropic response (replace with real API call)
-    response = simulate_anthropic_call(messages, tools)
+    if use_real:
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=700,
+            system="You have access to context tools. Use them when appropriate.",
+            messages=[{"role": "user", "content": messages[0]["content"]}],
+            tools=tools,
+        )
+        # Normalize real response to a dict-like structure with content blocks
+        content_blocks = response.content
+    else:
+        sim = simulate_anthropic_call(messages, tools)
+        content_blocks = sim.get("content", [])
 
     # 5. Handle tool calls
-    if response.get("content"):
-        for content_block in response["content"]:
+    if content_blocks:
+        for content_block in content_blocks:
             if content_block.get("type") == "tool_use":
                 tool_name = content_block["name"]
                 tool_input = content_block.get("input", {})

@@ -52,7 +52,7 @@ from syntha import ContextMesh
 # PostgreSQL configuration
 mesh = ContextMesh(
     user_id="user123",
-    database_url="postgresql://user:password@localhost:5432/syntha"
+    connection_string="postgresql://user:password@localhost:5432/syntha"
 )
 ```
 

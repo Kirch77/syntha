@@ -117,8 +117,8 @@ Agents subscribe to topics and automatically receive relevant context.
 
 ```python
 # Agents subscribe to topics they care about
-context.subscribe_to_topics("SalesAgent", ["sales", "customers"])
-context.subscribe_to_topics("SupportAgent", ["support", "customers"])
+context.register_agent_topics("SalesAgent", ["sales", "customers"])
+context.register_agent_topics("SupportAgent", ["support", "customers"])
 
 # Push context to topics
 context.push("customer_issue", issue_data, topics=["support", "customers"])

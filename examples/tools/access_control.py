@@ -32,7 +32,7 @@ def main():
 
     # Create role-based handlers
     admin_handler = create_role_based_handler(context, "AdminAgent", "admin")
-    viewer_handler = create_role_based_handler(context, "ViewerAgent", "viewer")
+    viewer_handler = create_role_based_handler(context, "ViewerAgent", "readonly")
 
     print("\n✅ Role-based handlers created")
 
@@ -65,11 +65,8 @@ def main():
     except Exception as e:
         print(f"❌ Viewer push blocked: {str(e)}")
 
-    # Create custom restricted handler
-    restricted_tools = ["get_context", "list_context"]
-    restricted_handler = create_restricted_handler(
-        context, "RestrictedAgent", allowed_tools=restricted_tools
-    )
+    # Create restricted handler (predefined levels: safe, minimal, readonly)
+    restricted_handler = create_restricted_handler(context, "RestrictedAgent", "minimal")
 
     restricted_available = [
         schema["name"] for schema in restricted_handler.get_schemas()

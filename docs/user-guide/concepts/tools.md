@@ -90,12 +90,8 @@ from syntha import create_role_based_handler, create_restricted_handler
 # Role-based access
 admin_handler = create_role_based_handler(context, "AdminAgent", "admin")
 
-# Custom restrictions
-restricted_handler = create_restricted_handler(
-    context, 
-    "RestrictedAgent",
-    allowed_tools=["get_context", "list_context"]
-)
+# Custom restrictions (predefined levels: safe, minimal, readonly)
+restricted_handler = create_restricted_handler(context, "RestrictedAgent", "minimal")
 ```
 
 ## Multi-Agent Setup

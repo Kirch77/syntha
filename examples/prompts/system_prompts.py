@@ -89,17 +89,23 @@ def main():
     # 3. Build custom prompts with specific instructions
     print("\n🎯 Building custom prompts:")
 
+    sales_template = (
+        "You are a senior sales consultant specializing in B2B SaaS.\n\n"
+        "Customer profile: {company_profile}\n\n"
+        "Goals: {current_goals}\n\n"
+        "Team: {team_structure}\n"
+    )
     custom_sales_prompt = build_custom_prompt(
         agent_name="SalesAgent",
         context_mesh=context,
-        custom_instructions="You are a senior sales consultant specializing in B2B SaaS solutions. Focus on ROI and business value when discussing our products.",
-        include_context_summary=True,
+        keys=["company_profile", "current_goals", "team_structure"],
+        template=sales_template,
     )
 
     print(f"   Custom sales prompt: {len(custom_sales_prompt)} characters")
 
     # 4. Build prompts with topic filtering
-    context.subscribe_to_topics("MarketingAgent", ["marketing", "campaigns"])
+    context.register_agent_topics("MarketingAgent", ["marketing", "campaigns"])
     context.push(
         "campaign_data", {"current": "Q1 Growth", "budget": 50000}, topics=["marketing"]
     )
@@ -114,19 +120,22 @@ def main():
     minimal_prompt = build_custom_prompt(
         agent_name="SimpleAgent",
         context_mesh=context,
-        custom_instructions="You are a helpful assistant.",
-        include_context_summary=False,
-        include_agent_context=False,
+        keys=["company_profile"],
+        template="You are a helpful assistant. Context: {company_profile}",
     )
     print(f"   Minimal prompt: {len(minimal_prompt)} characters")
 
     # Detailed prompt with context
+    detailed_template = (
+        "You are an expert business analyst.\n\n"
+        "Company: {company_profile}\n"
+        "Roadmap: {product_roadmap}\n"
+    )
     detailed_prompt = build_custom_prompt(
         agent_name="DetailedAgent",
         context_mesh=context,
-        custom_instructions="You are an expert business analyst with deep knowledge of SaaS companies.",
-        include_context_summary=True,
-        include_agent_context=True,
+        keys=["company_profile", "product_roadmap"],
+        template=detailed_template,
     )
     print(f"   Detailed prompt: {len(detailed_prompt)} characters")
 
@@ -148,8 +157,8 @@ def main():
     print("\n🎯 Topic-based prompt filtering:")
 
     # Subscribe to specific topics
-    context.subscribe_to_topics("TechAgent", ["engineering", "product"])
-    context.subscribe_to_topics("BusinessAgent", ["sales", "marketing", "business"])
+    context.register_agent_topics("TechAgent", ["engineering", "product"])
+    context.register_agent_topics("BusinessAgent", ["sales", "marketing", "business"])
 
     # Push topic-specific content
     context.push("tech_update", "New API endpoints released", topics=["engineering"])

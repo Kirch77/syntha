@@ -13,7 +13,7 @@ Copy and run this code to see LangChain integration in action!
 
 import os
 
-from syntha import ContextMesh, ToolHandler, build_system_prompt
+from syntha import ContextMesh, ToolHandler, build_system_prompt, SynthaFrameworkError
 
 
 def simulate_langchain_agent():
@@ -33,27 +33,26 @@ def simulate_langchain_agent():
     }
 
 
-def real_langchain_example():
+def real_langchain_example(langchain_tools, prompt):
     """
     Example of real LangChain integration (commented out for demo).
     Uncomment and modify for actual usage.
     """
-    # Uncomment these lines for real LangChain usage:
+    # Real LangChain usage (will execute only if called)
+    from langchain.agents import initialize_agent, AgentType  # type: ignore
+    from langchain_openai import ChatOpenAI  # type: ignore
 
-    # from langchain.agents import initialize_agent, AgentType
-    # from langchain_openai import ChatOpenAI
-    #
-    # llm = ChatOpenAI(temperature=0, openai_api_key=os.getenv("OPENAI_API_KEY"))
-    #
-    # agent = initialize_agent(
-    #     tools=langchain_tools,
-    #     llm=llm,
-    #     agent=AgentType.OPENAI_FUNCTIONS,
-    #     verbose=True
-    # )
-    #
-    # result = agent.run(prompt)
-    # return result
+    llm = ChatOpenAI(temperature=0, openai_api_key=os.getenv("OPENAI_API_KEY"))
+
+    agent = initialize_agent(
+        tools=langchain_tools,
+        llm=llm,
+        agent=AgentType.OPENAI_FUNCTIONS,
+        verbose=True,
+    )
+
+    result = agent.run(prompt)
+    return result
 
 
 def main():
@@ -106,12 +105,22 @@ def main():
 
     print("✅ Research context added to mesh")
 
-    # 2. Get LangChain-compatible tools
-    langchain_tools = handler.get_langchain_tools()
-
-    print(f"🔧 LangChain tools created: {len(langchain_tools)} tools")
-    for tool in langchain_tools:
-        print(f"   - {tool.name}: {tool.description[:50]}...")
+    # 2. Get LangChain-compatible tools (fallback if LangChain not installed)
+    langchain_tools = None
+    try:
+        langchain_tools = handler.get_langchain_tools()
+        print(f"🔧 LangChain tools created: {len(langchain_tools)} tools")
+        for tool in langchain_tools:
+            # BaseTool objects expose name/description
+            name = getattr(tool, "name", getattr(tool, "__name__", "unknown"))
+            description = getattr(tool, "description", "")
+            print(f"   - {name}: {description[:50]}...")
+    except SynthaFrameworkError as e:
+        print("⚠️  LangChain not available (pip install langchain langchain-openai). Using schema fallback.")
+        schemas = handler.get_schemas()
+        print(f"🔧 Available tool schemas: {len(schemas)}")
+        for schema in schemas:
+            print(f"   - {schema.get('name')}: {schema.get('description', '')[:50]}...")
 
     # 3. Build context-aware prompt
     system_prompt = build_system_prompt("ResearchAgent", context)
@@ -122,8 +131,21 @@ def main():
 
     print(f"\n📝 Generated context-aware prompt ({len(full_prompt)} characters)")
 
-    # 4. Simulate LangChain agent execution
-    result = simulate_langchain_agent()
+    # 4. Run LangChain agent if available; otherwise, simulate
+    try:
+        if langchain_tools and api_key:
+            # Avoid local module shadowing when running this file directly
+            import sys, os
+            here_dir = os.path.dirname(__file__)
+            if sys.path and sys.path[0] == here_dir:
+                sys.path.pop(0)
+            result_text = real_langchain_example(langchain_tools, full_prompt)
+            result = {"output": result_text, "tool_calls": []}
+        else:
+            result = simulate_langchain_agent()
+    except Exception as e:
+        print(f"⚠️  LangChain execution failed ({e}). Falling back to simulation.")
+        result = simulate_langchain_agent()
 
     print(f"\n🤖 Agent Output: {result['output']}")
     print("   Tool calls made:")
@@ -164,8 +186,8 @@ def main():
     print("   - Integrates with LangChain memory systems")
 
     # 7. Demonstrate multi-agent workflow potential
-    context.subscribe_to_topics("DataAnalyst", ["research", "data"])
-    context.subscribe_to_topics("ReportWriter", ["analysis", "writing"])
+    context.register_agent_topics("DataAnalyst", ["research", "data"])
+    context.register_agent_topics("ReportWriter", ["analysis", "writing"])
 
     handler.handle_tool_call(
         "push_context",

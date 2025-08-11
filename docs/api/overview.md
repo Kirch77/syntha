@@ -14,115 +14,115 @@ The central context sharing system.
 | `auto_cleanup` | `bool` | `True` | Automatically remove expired items |
 | `enable_persistence` | `bool` | `True` | Store context in database |
 | `db_backend` | `str` | `"sqlite"` | Database backend ("sqlite" or "postgresql") |
-| `db_path` | `str` | `"syntha.db"` | SQLite database file path |
-| `database_url` | `str` | `None` | PostgreSQL connection string |
+| `db_path` | `str` | `"syntha_context.db"` | SQLite database file path |
+| `connection_string` | `str` | `None` | PostgreSQL connection string (alternative to host/user/etc.) |
+| `host,user,password,database,port` | various | `None` | PostgreSQL connection parameters (if not using `connection_string`) |
 
 **Key Methods:**
-- `push(key, value, subscribers=None, topics=None, ttl=None)` - Add context to mesh
-- `get(key, agent_name)` - Retrieve specific context item
-- `get_all_for_agent(agent_name)` - Get all accessible context for agent
-- `get_by_topics(topics, agent_name)` - Get context filtered by topics
-- `subscribe_to_topics(agent_name, topics)` - Subscribe agent to topics
-- `discover_topics()` - List available topics and subscribers
+- `push(key, value, subscribers=None, topics=None, ttl=None)`
+- `get(key, agent_name=None)`
+- `get_all_for_agent(agent_name)`
+- `get_keys_for_agent(agent_name)`
+- `register_agent_topics(agent_name, topics)`
+- `get_topics_for_agent(agent_name)`
+- `unsubscribe_from_topics(agent_name, topics)`
+- `get_all_topics()` / `get_subscribers_for_topic(topic)`
+- `get_available_keys_by_topic(agent_name)`
+- `delete_topic(topic)`
+- `cleanup_expired()` / `remove(key)`
 
 ### ToolHandler
-Interface for agents to interact with Context Mesh.
+Primary interface for agents to interact via tools.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `context_mesh` | `ContextMesh` | Required | The Context Mesh instance |
-| `agent_name` | `str` | Required | Name of the agent using this handler |
+| `agent_name` | `str` | `None` | Name of the agent using this handler |
 | `allowed_tools` | `List[str]` | `None` | Restrict available tools |
-| `role` | `str` | `"contributor"` | Agent role for access control |
+| `denied_tools` | `List[str]` | `[]` | Explicitly deny tools |
+| `role_based_access` | `Dict[str,List[str]]` | `{}` | Optional role map |
 
 **Key Methods:**
-- `handle_tool_call(tool_name, **kwargs)` - Execute a tool call
-- `get_schemas()` - Get OpenAI-compatible tool schemas
-- `get_langchain_tools()` - Get LangChain BaseTool instances
-- `get_anthropic_tools()` - Get Anthropic tool definitions
-- `get_tools_for_framework(framework)` - Get framework-specific tools
-- `has_tool_access(tool_name)` - Check if agent can use tool
+- `handle_tool_call(tool_name, **kwargs)`
+- `get_schemas()` / `get_syntha_schemas_only()`
+- `get_langchain_tools()` / `get_langgraph_tools()` / `get_openai_functions()` / `get_anthropic_tools()` / `get_tools_for_framework(name)`
+- Access control helpers: `set_agent_role`, `set_allowed_tools`, `set_denied_tools`, `add_allowed_tool`, `add_denied_tool`, `get_available_tools`, `has_tool_access`
 
 ## Available Tools
 
 All ToolHandler instances provide these tools:
 
 ### get_context
-Retrieve context from the mesh.
+Retrieve context for the calling agent.
 
-**Parameters:**
-- `keys` (optional): `List[str]` - Specific keys to retrieve
+Parameters: `keys` (optional `List[str]`)
 
-**Returns:**
+Returns:
 ```python
 {
-    "success": bool,
-    "context": dict,
-    "agent_name": str,
-    "keys_requested": List[str],
-    "keys_found": List[str],
-    "message": str
+  "success": bool,
+  "context": dict,
+  "agent_name": str,
+  "keys_requested": List[str],
+  "keys_found": List[str],
+  "message": str
 }
 ```
 
 ### push_context
-Share context with other agents.
+Share context with routing options.
 
-**Parameters:**
-- `key`: `str` - Context identifier
-- `value`: `Any` - Context data
-- `subscribers` (optional): `List[str]` - Target agents
-- `topics` (optional): `List[str]` - Topic routing
-- `ttl` (optional): `float` - Time-to-live in seconds
+Parameters: `key: str`, `value: Any (string or JSON)`, `topics?: List[str]`, `subscribers?: List[str]`, `ttl_hours?: float` (default 24)
 
-**Returns:**
+Returns:
 ```python
 {
-    "success": bool,
-    "key": str,
-    "routing": dict,
-    "message": str
+  "success": bool,
+  "message": str,
+  "key": str,
+  "value": Any,
+  "topics": Optional[List[str]],
+  "subscribers": Optional[List[str]],
+  "ttl_hours": float
 }
 ```
 
 ### list_context
-Discover available context keys.
+Discover available context keys (and by topic).
 
-**Returns:**
+Returns:
 ```python
 {
-    "success": bool,
-    "keys": List[str],
-    "total_count": int,
-    "agent_name": str
+  "success": bool,
+  "keys_by_topic": Dict[str, List[str]],
+  "all_accessible_keys": List[str],
+  "topics_subscribed": List[str],
+  "agent_name": str,
+  "total_keys": int
 }
 ```
 
 ### subscribe_to_topics
-Subscribe to topic-based routing.
+Subscribe the calling agent to topics.
 
-**Parameters:**
-- `topics`: `List[str]` - Topics to subscribe to
+Parameters: `topics: List[str]`
 
-**Returns:**
+Returns:
 ```python
-{
-    "success": bool,
-    "topics": List[str],
-    "agent_name": str,
-    "message": str
-}
+{ "success": True, "agent": str, "topics": List[str], "message": str }
 ```
 
 ### discover_topics
-Find available topics and subscribers.
+Find available topics and subscriber info.
 
-**Returns:**
+Returns:
 ```python
 {
-    "success": bool,
-    "topics": Dict[str, List[str]],
-    "agent_name": str
+  "success": bool,
+  "topics": { "topic": { "subscriber_count": int, "is_active": bool, "subscribers"?: List[str] } },
+  "total_topics": int,
+  "popular_topics": List[str],
+  "suggestions": Dict
 }
 ```
 
@@ -130,14 +130,13 @@ Find available topics and subscribers.
 
 ### Supported Frameworks
 
-| Framework | Method | Returns |
-|-----------|--------|---------|
-| OpenAI | `get_schemas()` | `List[Dict]` - Function calling schemas |
-| OpenAI | `get_openai_functions()` | `List[Dict]` - Alternative format |
-| LangChain | `get_langchain_tools()` | `List[BaseTool]` - LangChain tools |
-| Anthropic | `get_anthropic_tools()` | `List[Dict]` - Claude tool definitions |
-| Agno | `get_tools_for_framework("agno")` | `List[Dict]` - Agno format |
-| Generic | `get_tools_for_framework("generic")` | `List[Dict]` - JSON schemas |
+| Framework | How to get tools |
+|-----------|------------------|
+| OpenAI | `handler.get_openai_functions()` or `handler.get_schemas()` |
+| LangChain | `handler.get_langchain_tools()` |
+| LangGraph | `handler.get_langgraph_tools()` |
+| Anthropic | `handler.get_anthropic_tools()` |
+| Agno | `handler.get_tools_for_framework("agno")` |
 
 ## Prompt Builders
 
@@ -196,7 +195,7 @@ Create conversation-style prompts.
 |------|-------------|-------------|
 | `admin` | Full system access | All tools, all context |
 | `contributor` | Standard agent access | Most tools, relevant context |
-| `viewer` | Read-only access | Get/list tools only |
+| `readonly` | Read-only access | Get/list tools only |
 
 ### Role-Based Handlers
 
@@ -253,7 +252,7 @@ Production database for high concurrency.
 context = ContextMesh(
     user_id="user123",
     db_backend="postgresql",
-    database_url="postgresql://user:pass@host:5432/db"
+    connection_string="postgresql://user:pass@host:5432/db"
 )
 ```
 
@@ -326,7 +325,7 @@ context = ContextMesh(
 
 ## Next Steps
 
-- **[Context Mesh Details](context-mesh.md)** - Complete ContextMesh API
-- **[Tool Handler Details](tool-handler.md)** - Complete ToolHandler API
-- **[Framework Adapters Details](framework-adapters.md)** - Integration specifics
-- **[Examples](../examples/overview.md)** - Working code samples
+- **[Context Mesh Details](context-mesh.md)**
+- **[Tool Handler Details](tool-handler.md)**
+- **[Framework Adapters Details](framework-adapters.md)**
+- **[Examples](../examples/overview.md)**

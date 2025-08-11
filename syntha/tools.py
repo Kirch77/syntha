@@ -1456,14 +1456,15 @@ def create_restricted_handler(
 
 
 def create_multi_agent_handlers(
-    context_mesh: ContextMesh, agent_configs: Dict[str, Dict[str, Any]]
+    context_mesh: ContextMesh, agent_configs: Any
 ) -> Dict[str, ToolHandler]:
     """
     Create multiple ToolHandlers with different access configurations.
 
     Args:
         context_mesh: The ContextMesh instance
-        agent_configs: Dict mapping agent names to their configuration
+        agent_configs: Either a dict mapping agent names to their configuration
+            or a list of agent configuration dicts with a required 'name' field.
 
     Returns:
         Dict mapping agent names to their ToolHandler instances
@@ -1480,7 +1481,26 @@ def create_multi_agent_handlers(
     """
     handlers = {}
 
-    for agent_name, config in agent_configs.items():
+    # Normalize input to a dict: {agent_name: config}
+    if isinstance(agent_configs, dict):
+        normalized_configs: Dict[str, Dict[str, Any]] = agent_configs
+    elif isinstance(agent_configs, list):
+        normalized_configs = {}
+        for idx, cfg in enumerate(agent_configs):
+            if not isinstance(cfg, dict) or "name" not in cfg:
+                raise ValueError(
+                    "Each agent config in list form must be a dict with a 'name' field"
+                )
+            agent_name = cfg["name"]
+            # Store a copy without the name field to avoid duplication
+            normalized_cfg = {k: v for k, v in cfg.items() if k != "name"}
+            normalized_configs[agent_name] = normalized_cfg
+    else:
+        raise ValueError(
+            "agent_configs must be a dict of name->config or a list of configs with 'name'"
+        )
+
+    for agent_name, config in normalized_configs.items():
         if "role" in config:
             # Use role-based creation
             handlers[agent_name] = create_role_based_handler(

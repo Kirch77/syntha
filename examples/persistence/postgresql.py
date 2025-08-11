@@ -21,12 +21,12 @@ def main():
     print("=" * 40)
 
     # Check for database configuration
-    database_url = os.getenv("DATABASE_URL")
-    if not database_url:
-        print("⚠️  No DATABASE_URL found - using simulation mode")
-        print("   For real usage, set DATABASE_URL environment variable:")
+    connection_string = os.getenv("CONNECTION_STRING")
+    if not connection_string:
+        print("⚠️  No CONNECTION_STRING found - using simulation mode")
+        print("   For real usage, set CONNECTION_STRING environment variable:")
         print(
-            "   export DATABASE_URL='postgresql://user:pass@localhost:5432/syntha_db'"
+            "   export CONNECTION_STRING='postgresql://user:pass@localhost:5432/syntha_db'"
         )
         simulate_postgresql_setup()
         return
@@ -41,7 +41,7 @@ def main():
             user_id="production_user",
             enable_persistence=True,
             db_backend="postgresql",
-            database_url=database_url,
+            connection_string=connection_string,
         )
 
         handler1 = ToolHandler(context1, "ProductionAgent")
@@ -104,11 +104,11 @@ def main():
     )
 
     # Set up topic-based routing for different teams
-    context1.subscribe_to_topics(
+    context1.register_agent_topics(
         "ProductionAgent", ["production", "monitoring", "alerts"]
     )
-    context1.subscribe_to_topics("AnalyticsAgent", ["analytics", "metrics", "reports"])
-    context1.subscribe_to_topics("SalesAgent", ["sales", "customers", "revenue"])
+    context1.register_agent_topics("AnalyticsAgent", ["analytics", "metrics", "reports"])
+    context1.register_agent_topics("SalesAgent", ["sales", "customers", "revenue"])
 
     # Push topic-specific context
     context1.push(
@@ -189,7 +189,7 @@ def main():
             user_id=user_id,
             enable_persistence=True,
             db_backend="postgresql",
-            database_url=database_url,
+            connection_string=connection_string,
         )
 
         # Add user-specific data
@@ -217,19 +217,8 @@ def main():
     print("   - Advanced indexing and query optimization")
 
     # 7. Configuration examples
-    print("\n⚙️  PostgreSQL configuration examples:")
-    print("   Environment variable:")
-    print("   export DATABASE_URL='postgresql://user:pass@host:5432/db'")
-    print("   ")
-    print("   Direct configuration:")
-    print("   ContextMesh(")
-    print("       db_backend='postgresql',")
-    print("       db_host='localhost',")
-    print("       db_port=5432,")
-    print("       db_name='syntha_db',")
-    print("       db_user='syntha_user',")
-    print("       db_password='secure_password'")
-    print("   )")
+    print("\n⚙️  PostgreSQL configuration:")
+    print("   export CONNECTION_STRING='postgresql://user:pass@host:5432/db'")
 
     print("\n✅ PostgreSQL persistence example complete!")
     print("🐘 Ready for production-scale deployments")
