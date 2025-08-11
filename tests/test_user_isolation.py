@@ -469,15 +469,22 @@ def test_user_isolation_performance():
         elapsed = time.perf_counter() - start_time
 
         # Should complete in reasonable time (5 users × 40 operations each = 200 ops)
-        # Allow more time on slower systems, especially Windows Python 3.9
+        # Allow more time on slower systems and CI
         import platform
         import sys
+        import os
+
+        is_ci = (
+            os.getenv("CI", "false").lower() == "true"
+            or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
+        )
+        ci_multiplier = 1.5 if is_ci else 1.0
 
         # More generous timeout for Windows (any Python version)
         if platform.system() == "Windows":
-            timeout = 8.0  # 8 seconds for Windows (all Python versions)
+            timeout = 10.0 * ci_multiplier  # was 8.0
         else:
-            timeout = 3.0  # 3 seconds for other systems
+            timeout = 4.0 * ci_multiplier  # was 3.0
 
         assert (
             elapsed < timeout
