@@ -1,6 +1,6 @@
 # Syntha SDK
 
-A lightweight, context-based multi-agent framework. Build agents that share, route, and persist context — with first-class tooling for prompts, tools, and popular LLM frameworks.
+A lightweight, context-based multi-agent framework. Build agents that share, route, and persist context - with first-class tooling for prompts, tools, and popular LLM frameworks.
 
 <div class="grid cards" markdown>
 
