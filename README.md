@@ -4,7 +4,7 @@ The context-based multi‑agent framework. Build agents that share, route, and p
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Documentation](https://img.shields.io/badge/docs-available-blue.svg)](https://docs.syntha.ca)
+[![Documentation](https://img.shields.io/badge/docs-available-blue.svg)](https://doc.syntha.ca)
 
 ---
 
@@ -51,10 +51,10 @@ See the docs for concise, copy‑paste examples.
 
 ## Documentation
 
-- Docs: https://docs.syntha.ca
-- Quick Start: https://docs.syntha.ca/user-guide/introduction/quick-start/
-- Examples: https://docs.syntha.ca/examples/overview/
-- API Reference: https://docs.syntha.ca/api/overview/
+- Docs: https://doc.syntha.ca
+- Quick Start: https://doc.syntha.ca/user-guide/introduction/quick-start/
+- Examples: https://doc.syntha.ca/examples/overview/
+- API Reference: https://doc.syntha.ca/api/overview/
 
 ## License
 
