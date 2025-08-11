@@ -24,15 +24,13 @@ jobs:
           python -m pip install build twine
       - name: Build package
         run: python -m build
-        working-directory: syntha
       - name: Check distributions
         run: python -m twine check dist/* | cat
-        working-directory: syntha
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist
-          path: syntha/dist/*
+          path: dist/*
 
   publish-pypi:
     name: Publish to PyPI
