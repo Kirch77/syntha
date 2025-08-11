@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754600653965,
+  "lastUpdate": 1754931474648,
   "repoUrl": "https://github.com/Kirch77/syntha",
   "entries": {
     "Benchmark": [
@@ -6204,6 +6204,100 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00010778459161951276",
             "extra": "mean: 858.3088009908715 usec\nrounds: 1211"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "129435653+Kirch77@users.noreply.github.com",
+            "name": "Kirch77",
+            "username": "Kirch77"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "453b24305c55acc96d4a636fb6f82f634bb49fd7",
+          "message": "Improve sdk documentation for clarity and accuracy (#17)\n\n* Refactor documentation and examples for improved context mesh API\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Replace subscribe_to_topics with register_agent_topics in user isolation example\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Refactor Anthropic and OpenAI adapter examples for clarity and real API usage\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Implement real OpenAI client support with fallback to simulation mode\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Simplify user isolation example with focused, concise code demonstration\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Refactor prompt generation with flexible templates and dynamic keys\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Refactor docs and examples: Simplify configs, update roles, improve context handling\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n* Enhance examples and documentation for framework adapters and context handling\n\n- Updated Agno, Anthropic, LangChain, and OpenAI integration examples to improve clarity and usability.\n- Implemented robust error handling and fallback mechanisms for real API usage.\n- Enhanced context management with dynamic updates and improved prompt generation.\n- Standardized tool handling across examples for consistency and better user experience.\n\nCo-authored-by: rylan.kirchmair <rylan.kirchmair@gmail.com>\n\n---------\n\nCo-authored-by: Cursor Agent <cursoragent@cursor.com>",
+          "timestamp": "2025-08-11T12:57:26-04:00",
+          "tree_id": "a7a2cfbca2b74c9d9ef65b0aad4150b408536998",
+          "url": "https://github.com/Kirch77/syntha/commit/453b24305c55acc96d4a636fb6f82f634bb49fd7"
+        },
+        "date": 1754931474276,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_push_performance",
+            "value": 293823.20720052096,
+            "unit": "iter/sec",
+            "range": "stddev: 6.119068381581718e-7",
+            "extra": "mean: 3.403407135630187 usec\nrounds: 27384"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_single_get_performance",
+            "value": 479242.6609521178,
+            "unit": "iter/sec",
+            "range": "stddev: 4.791785161736229e-7",
+            "extra": "mean: 2.086625589661168 usec\nrounds: 138447"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_push_performance",
+            "value": 2144.5665486679686,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000037235292936666445",
+            "extra": "mean: 466.2946927998663 usec\nrounds: 2347"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_batch_get_performance",
+            "value": 4915.064288504257,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000011477586564472582",
+            "extra": "mean: 203.4561383741978 usec\nrounds: 4589"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_concurrent_access_performance",
+            "value": 670.5326365751349,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00009682796536319724",
+            "extra": "mean: 1.4913517186988519 msec\nrounds: 615"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_topic_routing_performance",
+            "value": 1852.9581201537271,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000014772490825901016",
+            "extra": "mean: 539.6776047572175 usec\nrounds: 3069"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_ttl_cleanup_performance",
+            "value": 545108.4983030327,
+            "unit": "iter/sec",
+            "range": "stddev: 2.714398544641407e-7",
+            "extra": "mean: 1.8344971746231835 usec\nrounds: 1416"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestContextMeshPerformance::test_database_persistence_performance",
+            "value": 25.085647417415615,
+            "unit": "iter/sec",
+            "range": "stddev: 0.003144871386591572",
+            "extra": "mean: 39.8634319999951 msec\nrounds: 25"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_tool_execution_performance",
+            "value": 100910.93629371694,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000014639068665835746",
+            "extra": "mean: 9.909728684801268 usec\nrounds: 20795"
+          },
+          {
+            "name": "tests/performance/test_performance.py::TestToolHandlerPerformance::test_batch_tool_execution_performance",
+            "value": 1165.6256493707494,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000015170685483064834",
+            "extra": "mean: 857.9083692434525 usec\nrounds: 1151"
           }
         ]
       }
