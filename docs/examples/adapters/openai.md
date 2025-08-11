@@ -1,113 +1,224 @@
-# OpenAI Integration
-
-Integration with OpenAI's function calling for context-aware conversations.
-
-## Prerequisites
-
-```bash
-pip install openai
-export OPENAI_API_KEY='your-key-here'
-```
-
-## Example
+# OpenAI Integration (mirrors `examples/adapters/openai.py`)
 
 ```python
-import os
+"""
+Framework Adapters - OpenAI Integration Example
+
+This example demonstrates how to integrate Syntha with OpenAI's API
+for context-aware multi-agent conversations.
+
+Prerequisites:
+- pip install openai
+- Set OPENAI_API_KEY environment variable
+
+Copy and run this code to see OpenAI integration in action!
+"""
+
 import json
+import os
+
 from syntha import ContextMesh, ToolHandler, build_system_prompt
 
 try:
-    import openai  # type: ignore
-    from openai import OpenAI
-except ImportError:
-    openai = None
+    from openai import OpenAI  # type: ignore
+except Exception:
     OpenAI = None
+
+
+def simulate_openai_call(messages, tools=None, model="gpt-4"):
+    """
+    Simulate OpenAI API call for demonstration.
+    Replace this with actual OpenAI client in real usage.
+    """
+    print(f"🤖 [SIMULATED] OpenAI API Call to {model}")
+    print(f"   Messages: {len(messages)}")
+    if tools:
+        tool_names = [tool["function"]["name"] for tool in tools]
+        print(f"   Tools: {tool_names}")
+
+    # Simulate agent deciding to use a tool
+    return {
+        "choices": [
+            {
+                "message": {
+                    "content": "I'll help you with the sales analysis. Let me check the current context first.",
+                    "tool_calls": [
+                        {
+                            "id": "call_123",
+                            "type": "function",
+                            "function": {
+                                "name": "get_context",
+                                "arguments": json.dumps({}),
+                            },
+                        }
+                    ],
+                }
+            }
+        ]
+    }
+
+
+def real_openai_example():
+    """
+    Example of real OpenAI integration (commented out for demo).
+    Uncomment and modify for actual usage.
+    """
+    # Uncomment these lines for real OpenAI usage:
+
+    # import openai
+    # client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    #
+    # response = client.chat.completions.create(
+    #     model="gpt-4",
+    #     messages=messages,
+    #     tools=tools,
+    #     tool_choice="auto"
+    # )
+    #
+    # return response
+
 
 def main():
     print("🚀 Framework Adapters - OpenAI Integration")
     print("=" * 50)
 
+    # Check for API key (for real usage)
     api_key = os.getenv("OPENAI_API_KEY")
     use_real = bool(api_key and OpenAI)
     print("✅ Using real OpenAI client" if use_real else "⚠️  Using simulation mode")
 
-    # Set up Syntha
+    # 1. Set up Syntha
     context = ContextMesh(user_id="sales_team")
     handler = ToolHandler(context, "SalesAgent")
 
     # Add business context
-    context.push("company_info", {"name": "TechSolutions Inc", "industry": "Software"})
-    context.push("sales_data", {"q4_revenue": 250000, "leads_generated": 45, "conversion_rate": 0.12})
+    context.push(
+        "company_info",
+        {
+            "name": "TechSolutions Inc",
+            "industry": "Software Development",
+            "size": "50-100 employees",
+            "target_market": "Small to medium businesses",
+        },
+    )
 
-    # Build context-aware system prompt
+    context.push(
+        "sales_data",
+        {
+            "q4_revenue": 250000,
+            "leads_generated": 45,
+            "conversion_rate": 0.12,
+            "top_products": ["CRM Pro", "Analytics Suite", "Mobile App"],
+        },
+    )
+
+    context.push(
+        "current_campaign",
+        {
+            "name": "New Year Growth",
+            "budget": 15000,
+            "channels": ["email", "social_media", "webinars"],
+            "start_date": "2025-01-01",
+        },
+    )
+
+    print("✅ Business context added to mesh")
+
+    # 2. Build context-aware system prompt
     system_prompt = build_system_prompt("SalesAgent", context)
 
-    # Prepare OpenAI-compatible tools
-    tools = [{"type": "function", "function": schema} for schema in handler.get_schemas()]
+    # 3. Prepare OpenAI function calling tools
+    tools = [
+        {"type": "function", "function": schema} for schema in handler.get_schemas()
+    ]
 
+    print(f"🔧 Available tools: {[tool['function']['name'] for tool in tools]}")
+
+    # 4. Conversation
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": "Analyze our sales performance"},
+        {
+            "role": "user",
+            "content": "Analyze our sales performance and suggest improvements for Q1.",
+        },
     ]
 
     if use_real:
-        client = OpenAI(api_key=api_key)
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            tools=tools,
-            tool_choice="auto",
-        )
+        try:
+            client = OpenAI(api_key=api_key)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                tools=tools,
+                tool_choice="auto",
+            )
+        except Exception as e:
+            print(f"⚠️  OpenAI call failed ({e}). Falling back to simulation.")
+            response = simulate_openai_call(messages, tools)
     else:
-        # Simulated response that triggers a get_context call
-        response = {
-            "choices": [
-                {
-                    "message": {
-                        "content": "I'll check the current context first.",
-                        "tool_calls": [
-                            {
-                                "id": "call_123",
-                                "type": "function",
-                                "function": {"name": "get_context", "arguments": json.dumps({})},
+        # Simulated response (triggers get_context)
+        response = simulate_openai_call(messages, tools)
+
+    # 5. Handle tool calls (supports dict-shaped or SDK object response)
+    tool_calls = []
+    # Try SDK object form
+    try:
+        choice0 = getattr(response, "choices", [None])[0]
+        if choice0 is not None:
+            message = getattr(choice0, "message", None)
+            oc_tool_calls = getattr(message, "tool_calls", None) if message else None
+            if oc_tool_calls:
+                for tc in oc_tool_calls:
+                    tool_calls.append(
+                        {
+                            "function": {
+                                "name": getattr(tc.function, "name", ""),
+                                "arguments": getattr(tc.function, "arguments", "{}"),
                             }
-                        ],
-                    }
-                }
-            ]
-        }
+                        }
+                    )
+    except Exception:
+        pass
 
-    # Handle tool calls
-    choice = response["choices"][0]
-    tool_calls = choice["message"].get("tool_calls", []) if isinstance(choice, dict) else choice.message.tool_calls
+    # Fallback to dict form
+    if not tool_calls and isinstance(response, dict):
+        tool_calls = response.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
 
-    if tool_calls:
-        for call in tool_calls:
-            fn = call["function"]["name"] if isinstance(call, dict) else call.function.name
-            args_raw = call["function"]["arguments"] if isinstance(call, dict) else call.function.arguments
-            args = json.loads(args_raw) if isinstance(args_raw, str) else (args_raw or {})
-            result = handler.handle_tool_call(fn, **args)
-            print(f"🔧 {fn} -> {result['success']} ({len(result.get('context', {}))} items)")
-    else:
-        print("No tool calls issued by the model.")
+    for tool_call in tool_calls:
+        function_name = tool_call["function"]["name"]
+        raw_args = tool_call["function"].get("arguments")
+        function_args = json.loads(raw_args) if isinstance(raw_args, str) and raw_args else {}
+
+        print(f"\n🔧 Agent wants to call: {function_name}")
+        print(f"   Arguments: {function_args}")
+
+        # Execute the tool call
+        result = handler.handle_tool_call(function_name, **function_args)
+        print(f"   Result: {result['success']}")
+
+        if result.get("success") and "context" in result:
+            print("   Retrieved context:")
+            for key, value in result["context"].items():
+                print(f"     - {key}: {type(value).__name__}")
+
+    if not use_real:
+        print("\n💡 To use a real LLM: pip install openai && export OPENAI_API_KEY='<key>'")
+
+    # 7. Demonstrate framework-specific tool formats
+    print("\n🔄 OpenAI-specific tool formats:")
+    openai_tools = handler.get_openai_functions()
+    for tool in openai_tools[:2]:  # Show first 2 tools
+        fn = tool.get("function", {})
+        print(f"   {fn.get('name')}: {fn.get('description', '')[:50]}...")
 
     print("\n✅ OpenAI integration example complete!")
+
 
 if __name__ == "__main__":
     main()
 ```
 
-## Framework-Specific Tools
-
-```python
-# Get OpenAI-specific tool formats
-openai_tools = handler.get_openai_functions()
-for tool in openai_tools:
-    print(f"{tool['name']}: {tool['description']}")
-```
-
-## See Also
-
+See also:
 - [Anthropic Integration](anthropic.md)
 - [LangChain Integration](langchain.md)
 - [Tool Basics](../tools/tool-basics.md)

@@ -141,34 +141,62 @@ def main():
     ]
 
     if use_real:
-        client = OpenAI(api_key=api_key)
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            tools=tools,
-            tool_choice="auto",
-        )
+        try:
+            client = OpenAI(api_key=api_key)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                tools=tools,
+                tool_choice="auto",
+            )
+        except Exception as e:
+            print(f"⚠️  OpenAI call failed ({e}). Falling back to simulation.")
+            response = simulate_openai_call(messages, tools)
     else:
         # Simulated response (triggers get_context)
         response = simulate_openai_call(messages, tools)
 
-    # 5. Handle tool calls
-    if response["choices"][0]["message"].get("tool_calls"):
-        for tool_call in response["choices"][0]["message"]["tool_calls"]:
-            function_name = tool_call["function"]["name"]
-            function_args = json.loads(tool_call["function"]["arguments"])
+    # 5. Handle tool calls (supports dict-shaped or SDK object response)
+    tool_calls = []
+    # Try SDK object form
+    try:
+        choice0 = getattr(response, "choices", [None])[0]
+        if choice0 is not None:
+            message = getattr(choice0, "message", None)
+            oc_tool_calls = getattr(message, "tool_calls", None) if message else None
+            if oc_tool_calls:
+                for tc in oc_tool_calls:
+                    tool_calls.append(
+                        {
+                            "function": {
+                                "name": getattr(tc.function, "name", ""),
+                                "arguments": getattr(tc.function, "arguments", "{}"),
+                            }
+                        }
+                    )
+    except Exception:
+        pass
 
-            print(f"\n🔧 Agent wants to call: {function_name}")
-            print(f"   Arguments: {function_args}")
+    # Fallback to dict form
+    if not tool_calls and isinstance(response, dict):
+        tool_calls = response.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
 
-            # Execute the tool call
-            result = handler.handle_tool_call(function_name, **function_args)
-            print(f"   Result: {result['success']}")
+    for tool_call in tool_calls:
+        function_name = tool_call["function"]["name"]
+        raw_args = tool_call["function"].get("arguments")
+        function_args = json.loads(raw_args) if isinstance(raw_args, str) and raw_args else {}
 
-            if result["success"] and "context" in result:
-                print("   Retrieved context:")
-                for key, value in result["context"].items():
-                    print(f"     - {key}: {type(value).__name__}")
+        print(f"\n🔧 Agent wants to call: {function_name}")
+        print(f"   Arguments: {function_args}")
+
+        # Execute the tool call
+        result = handler.handle_tool_call(function_name, **function_args)
+        print(f"   Result: {result['success']}")
+
+        if result.get("success") and "context" in result:
+            print("   Retrieved context:")
+            for key, value in result["context"].items():
+                print(f"     - {key}: {type(value).__name__}")
 
     if not use_real:
         print("\n💡 To use a real LLM: pip install openai && export OPENAI_API_KEY='<key>'")

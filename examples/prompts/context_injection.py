@@ -58,17 +58,17 @@ def main():
     print("\n📝 Basic context injection:")
 
     custom_template = """
-You are a customer service representative helping {customer_name}.
-
-Customer Details:
-- Account Tier: {customer_tier}
-- Account Value: ${account_value:,}
-- Satisfaction Score: {satisfaction_score}/5.0
-
-Current Issue: {current_issue}
-
-Please provide professional and empathetic assistance.
-"""
+    You are a customer service representative helping {customer_name}.
+    
+    Customer Details:
+    - Account Tier: {customer_tier}
+    - Account Value: ${account_value}
+    - Satisfaction Score: {satisfaction_score}/5.0
+    
+    Current Issue: {current_issue}
+    
+    Please provide professional and empathetic assistance.
+    """
 
     # Inject context into the template
     base_prompt = custom_template.format(
@@ -97,7 +97,7 @@ Please provide professional and empathetic assistance.
 Customer Service Agent Instructions
 
 Customer: {customer_name} (ID: {customer_id})
-Tier: {tier} | Value: ${value:,} | Satisfaction: {satisfaction}/5
+    Tier: {tier} | Value: ${value} | Satisfaction: {satisfaction}/5
 
 {tier_specific_instructions}
 
@@ -174,10 +174,10 @@ Current Issue (Priority: {priority}):
 
     print("Message-based prompt structure:")
     print("─" * 40)
-    for message in message_prompt:
-        print(f"Role: {message['role']}")
-        print(f"Content: {message['content'][:100]}...")
-        print("─" * 20)
+    # build_message_prompt returns a string; print the first chunk for readability
+    preview = message_prompt
+    print(preview[:400] + ("..." if len(preview) > 400 else ""))
+    print("─" * 20)
 
     # 4. Dynamic context updates and re-injection
     print("\n🔄 Dynamic context updates:")

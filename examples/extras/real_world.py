@@ -46,8 +46,13 @@ def maybe_openai_summarize(agent_name: str, handler: ToolHandler, mesh: ContextM
         fn = call["function"]["name"]
         args = call["function"].get("arguments")
         args = json.loads(args) if isinstance(args, str) and args else {}
+        print(f"→ Tool call: {fn}({args})")
         result = handler.handle_tool_call(fn, **args)
-        print(f"🔧 {fn} -> {result['success']} ({len(result.get('context', {}))} items)")
+        if result.get("success") and "context" in result:
+            keys = list(result["context"].keys())
+            print(f"  Result: success; keys returned: {keys}")
+        else:
+            print(f"  Result: {result}")
 
 
 def customer_support_use_case():
@@ -68,6 +73,11 @@ def customer_support_use_case():
             "account_value": 15000,
         },
     )
+
+    # Subscribe relevant agents to topics
+    context.register_agent_topics("L1Support", ["support", "escalation"]) 
+    context.register_agent_topics("L2Technical", ["support", "resolution"]) 
+    context.register_agent_topics("CustomerSuccess", ["support", "followup"]) 
 
     # L1 Support Agent handles initial inquiry
     l1_agent = ToolHandler(context, "L1Support")
@@ -112,6 +122,11 @@ def customer_support_use_case():
         user_message="Summarize the current support case for handoff.",
     )
 
+    # Show what each role can see
+    for agent in ("L1Support", "L2Technical", "CustomerSuccess"):
+        handler = ToolHandler(context, agent)
+        data = handler.handle_tool_call("get_context")
+        print(f" 👀 {agent} sees {len(data.get('context', {}))} keys: {list(data.get('context', {}).keys())}")
     print("✅ Multi-tier support with complete context continuity")
 
 
@@ -121,6 +136,9 @@ def sales_intelligence_use_case():
     print("-" * 42)
 
     context = ContextMesh(user_id="lead_techcorp_001")
+    context.register_agent_topics("MarketingAgent", ["sales", "intelligence"]) 
+    context.register_agent_topics("SDRAgent", ["sales", "qualified"]) 
+    context.register_agent_topics("AccountExecutive", ["sales", "qualified"]) 
 
     # Marketing Qualified Lead (MQL) data
     context.push(
@@ -167,6 +185,11 @@ def sales_intelligence_use_case():
         user_message="Draft a follow-up email for the qualified lead.",
     )
 
+    # Visibility snapshot
+    for agent in ("MarketingAgent", "SDRAgent", "AccountExecutive"):
+        handler = ToolHandler(context, agent)
+        data = handler.handle_tool_call("get_context")
+        print(f" 👀 {agent} sees: {list(data.get('context', {}).keys())}")
     print("✅ Coordinated sales process with shared intelligence")
 
 
@@ -176,6 +199,7 @@ def content_operations_use_case():
     print("-" * 43)
 
     context = ContextMesh(user_id="content_team")
+    context.register_agent_topics("ContentWriter", ["content", "review"]) 
 
     # Content strategy context
     context.push(
@@ -203,6 +227,8 @@ def content_operations_use_case():
         user_message="Propose 3 title variations based on current context.",
     )
 
+    writer_view = ToolHandler(context, "ContentWriter").handle_tool_call("get_context")
+    print(f" 👀 Writer sees keys: {list(writer_view.get('context', {}).keys())}")
     print("✅ Streamlined content workflow with quality controls")
 
 

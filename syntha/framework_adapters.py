@@ -227,14 +227,19 @@ class LangChainAdapter(FrameworkAdapter):
         Create a LangChain BaseTool from a Syntha tool schema.
         """
         try:
-            # Try to import LangChain
+            # Try to import LangChain (support both legacy and new paths)
             from typing import Type
 
-            from langchain.tools import BaseTool
+            try:
+                from langchain.tools import BaseTool  # type: ignore
+            except Exception:
+                # LangChain >= 0.2/0.3 moved BaseTool to langchain_core.tools
+                from langchain_core.tools import BaseTool  # type: ignore
+
             from pydantic import BaseModel, Field, create_model
         except ImportError:
             raise SynthaFrameworkError(
-                "LangChain not installed. Install with: pip install langchain",
+                "LangChain not installed or import path changed. Install/upgrade with: pip install langchain langchain-core",
                 framework="langchain",
             )
 

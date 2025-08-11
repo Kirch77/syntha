@@ -45,7 +45,18 @@ def maybe_run_openai(handler_name: str, handlers: Dict[str, Any], context: Conte
             tool_choice="auto",
         )
         choice = response.choices[0]
-        tool_calls = choice.message.tool_calls or []
+        # Normalize tool calls to dicts
+        tool_calls = []
+        if getattr(choice, "message", None) and getattr(choice.message, "tool_calls", None):
+            for tc in choice.message.tool_calls:
+                tool_calls.append(
+                    {
+                        "function": {
+                            "name": getattr(tc.function, "name", ""),
+                            "arguments": getattr(tc.function, "arguments", "{}"),
+                        }
+                    }
+                )
     else:
         # Simulate a get_context tool call
         tool_calls = [
@@ -80,6 +91,13 @@ def main():
     ]
 
     handlers = create_multi_agent_handlers(context, agent_configs)
+
+    # Register topics for each agent if provided in config
+    for cfg in agent_configs:
+        name = cfg["name"]
+        topics = cfg.get("topics") or []
+        if topics:
+            context.register_agent_topics(name, topics)
     print(f"✅ Created {len(handlers)} handlers")
 
     # 2) Push core context by role

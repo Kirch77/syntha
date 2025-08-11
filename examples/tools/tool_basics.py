@@ -29,18 +29,21 @@ def main():
     print(f"\n📥 Retrieved context: {result['success']}")
     print(f"   Keys found: {result['keys_found']}")
 
-    # Use tool handler to push new context
+    # Use tool handler to push new context (use topics broadcast for clarity)
     push_result = handler.handle_tool_call(
         "push_context",
         key="status",
         value="development",
-        subscribers=["AssistantAgent", "DeveloperAgent"],
+        topics=["development"],
     )
     print(f"\n📤 Pushed context: {push_result['success']}")
 
     # List all available context
     list_result = handler.handle_tool_call("list_context")
-    print(f"\n📋 Available context keys: {list_result['keys']}")
+    keys_by_topic = list_result.get("keys_by_topic", {}) if list_result.get("success") else {}
+    all_keys = list_result.get("all_accessible_keys", []) if list_result.get("success") else []
+    print(f"\n📋 Available context keys (by topic): {keys_by_topic}")
+    print(f"   All keys: {all_keys}")
 
     # Subscribe to topics
     subscribe_result = handler.handle_tool_call(
@@ -58,7 +61,7 @@ def main():
     print(f"\n📡 Pushed to topics: {topic_push_result['success']}")
 
     # Discover available topics
-    discover_result = handler.handle_tool_call("discover_topics")
+    discover_result = handler.handle_tool_call("discover_topics", include_subscriber_names=True)
     if discover_result["success"]:
         topics = discover_result["topics"]
         print(f"\n📚 Available topics: {list(topics.keys())}")
