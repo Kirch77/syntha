@@ -12,6 +12,7 @@ Copy and run this code to see LangChain integration in action!
 """
 
 import os
+import sys
 
 from syntha import ContextMesh, SynthaFrameworkError, ToolHandler, build_system_prompt
 
@@ -137,9 +138,6 @@ def main():
     try:
         if langchain_tools and api_key:
             # Avoid local module shadowing when running this file directly
-            import os
-            import sys
-
             here_dir = os.path.dirname(__file__)
             if sys.path and sys.path[0] == here_dir:
                 sys.path.pop(0)
