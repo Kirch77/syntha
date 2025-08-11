@@ -4,6 +4,8 @@ site_url: https://docs.syntha.ai
 repo_url: https://github.com/syntha/syntha-sdk
 repo_name: syntha/syntha-sdk
 
+docs_dir: Syntha_v2/docs
+
 theme:
   name: material
   palette:
