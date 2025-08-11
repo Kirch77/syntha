@@ -1,282 +1,66 @@
-name: Release Management
+name: Release (PyPI Trusted Publishing)
 
 on:
   push:
-    branches: [main]
-    tags: ['v*']
-  workflow_dispatch:
-    inputs:
-      release_type:
-        description: 'Type of release'
-        required: true
-        default: 'patch'
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-      prerelease:
-        description: 'Is this a prerelease?'
-        required: false
-        default: false
-        type: boolean
+    tags:
+      - 'v*.*.*'
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
   id-token: write
 
 jobs:
-  # Determine if this is a release
-  check-release:
+  build:
+    name: Build distributions
     runs-on: ubuntu-latest
-    outputs:
-      is_release: ${{ steps.check.outputs.is_release }}
-      version: ${{ steps.check.outputs.version }}
-    steps:
-      - name: Check if release
-        id: check
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "is_release=true" >> $GITHUB_OUTPUT
-            echo "version=workflow_dispatch" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            echo "is_release=true" >> $GITHUB_OUTPUT
-            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            echo "is_release=false" >> $GITHUB_OUTPUT
-          fi
-
-  # Build and test before release
-  build-and-test:
-    needs: check-release
-    if: needs.check-release.outputs.is_release == 'true'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-    
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-test.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install dependencies
+          python-version: '3.12'
+      - name: Install build tooling
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-test.txt
-          pip install -e .
-
-      - name: Run tests
-        run: |
-          pytest tests/ -v --cov=syntha --cov-report=xml
-
-      - name: Upload coverage
-        if: matrix.python-version == '3.11'
-        uses: codecov/codecov-action@v5
+          python -m pip install build twine
+      - name: Build package
+        run: python -m build
+        working-directory: syntha
+      - name: Check distributions
+        run: python -m twine check dist/* | cat
+        working-directory: syntha
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
+          name: dist
+          path: syntha/dist/*
 
-  # Create or update release
-  release:
-    needs: [check-release, build-and-test]
-    if: needs.check-release.outputs.is_release == 'true'
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.create_release.outputs.tag }}
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    
+    if: ${{ !contains(github.ref_name, '-') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+          name: dist
+          path: dist
+      - name: Publish (OIDC Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          python-version: '3.11'
+          packages-dir: dist 
 
-      - name: Install release tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install bump2version wheel twine
-
-      - name: Configure git
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-
-      - name: Create release (workflow_dispatch)
-        if: github.event_name == 'workflow_dispatch'
-        id: create_release
-        run: |
-          # Bump version
-          bump2version ${{ github.event.inputs.release_type }} --verbose
-          
-          # Get new version
-          NEW_VERSION=$(python -c "import syntha; print(syntha.__version__)")
-          TAG="v${NEW_VERSION}"
-          
-          # Push changes
-          git push origin main
-          git push origin $TAG
-          
-          # Create release notes
-          cat > release_notes.md << 'EOF'
-          ## What's Changed
-          
-          This release includes improvements and bug fixes. See [CHANGELOG.md](https://github.com/Kirch77/Syntha_v2/blob/main/CHANGELOG.md) for detailed changes.
-          
-          ## Installation
-          
-          ```bash
-          pip install syntha==$NEW_VERSION
-          ```
-          
-          ## Full Changelog
-          
-          **Full Changelog**: https://github.com/Kirch77/Syntha_v2/compare/v$(python -c "import syntha; v=syntha.__version__; parts=v.split('.'); parts[-1]=str(int(parts[-1])-1); print('.'.join(parts))")...${TAG}
-          EOF
-          
-          # Create GitHub release
-          gh release create $TAG \
-            --title "Release $TAG" \
-            --notes-file release_notes.md \
-            ${{ github.event.inputs.prerelease == 'true' && '--prerelease' || '' }}
-          
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "upload_url=$(gh release view $TAG --json uploadUrl -q .uploadUrl)" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Handle tag release
-        if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-        id: handle_tag_release
-        run: |
-          TAG=${{ needs.check-release.outputs.version }}
-          
-          # Create release notes
-          cat > release_notes.md << 'EOF'
-          ## What's Changed
-          
-          This release includes improvements and bug fixes. See [CHANGELOG.md](https://github.com/Kirch77/Syntha_v2/blob/main/CHANGELOG.md) for detailed changes.
-          
-          ## Installation
-          
-          ```bash
-          pip install syntha==${TAG#v}
-          ```
-          EOF
-          
-          # Create GitHub release
-          gh release create $TAG \
-            --title "Release $TAG" \
-            --notes-file release_notes.md
-          
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "upload_url=$(gh release view $TAG --json uploadUrl -q .uploadUrl)" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Build and publish to PyPI
-  publish:
-    needs: [check-release, build-and-test, release]
-    if: needs.check-release.outputs.is_release == 'true'
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: build
     runs-on: ubuntu-latest
-    
+    if: ${{ contains(github.ref_name, '-') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-
-      - name: Build distribution
-        run: |
-          python -m build
-
-      - name: Check distribution
-        run: |
-          python -m twine check dist/*
-
-      - name: Publish to Test PyPI
+          name: dist
+          path: dist
+      - name: Publish to TestPyPI (OIDC)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          skip-existing: true
-        continue-on-error: true
-
-      - name: Publish to PyPI
-        if: github.event.inputs.prerelease != 'true'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
-        continue-on-error: true
-
-      - name: PyPI Publishing Info
-        run: |
-          echo "## 📦 PyPI Publishing" >> $GITHUB_STEP_SUMMARY
-          echo "If publishing failed, you may need to configure PyPI API tokens:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Create accounts at test.pypi.org and pypi.org" >> $GITHUB_STEP_SUMMARY
-          echo "2. Generate API tokens in your account settings" >> $GITHUB_STEP_SUMMARY
-          echo "3. Add TEST_PYPI_API_TOKEN and PYPI_API_TOKEN to repository secrets" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload release assets
-        run: |
-          gh release upload ${{ needs.release.outputs.tag }} dist/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Update documentation after release
-  update-docs:
-    needs: [check-release, publish]
-    if: needs.check-release.outputs.is_release == 'true'
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r docs-new/requirements.txt
-
-      - name: Update documentation
-        run: |
-          cd docs-new
-          mike deploy --push --update-aliases $(python -c "import syntha; print(syntha.__version__)") latest
-          mike set-default --push latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          packages-dir: dist

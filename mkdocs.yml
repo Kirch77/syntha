@@ -1,8 +1,8 @@
 site_name: Syntha SDK Documentation
 site_description: Context-Based Multi-Agent Framework
-site_url: https://docs.syntha.ai
-repo_url: https://github.com/syntha/syntha-sdk
-repo_name: syntha/syntha-sdk
+site_url: https://doc.syntha.ai
+repo_url: https://github.com/Kirch77/syntha
+repo_name: syntha
 
 docs_dir: docs
 
