@@ -82,7 +82,7 @@ from .tools import (
     get_role_info,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.2.2"
 __author__ = "Syntha Team"
 
 __all__ = [
