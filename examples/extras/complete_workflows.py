@@ -5,11 +5,11 @@ End-to-end product launch workflow using Syntha’s multi-agent tools.
 Uses a real OpenAI model if OPENAI_API_KEY is available; otherwise simulates.
 """
 
-import os
 import json
-from typing import Dict, Any
+import os
+from typing import Any, Dict
 
-from syntha import ContextMesh, create_multi_agent_handlers, build_system_prompt
+from syntha import ContextMesh, build_system_prompt, create_multi_agent_handlers
 
 try:
     from openai import OpenAI  # type: ignore
@@ -17,7 +17,9 @@ except Exception:
     OpenAI = None
 
 
-def maybe_run_openai(handler_name: str, handlers: Dict[str, Any], context: ContextMesh) -> None:
+def maybe_run_openai(
+    handler_name: str, handlers: Dict[str, Any], context: ContextMesh
+) -> None:
     api_key = os.getenv("OPENAI_API_KEY")
     use_real = bool(api_key and OpenAI)
     print("\n🤖 LLM step:", "Using real OpenAI" if use_real else "Simulation mode")
@@ -26,7 +28,9 @@ def maybe_run_openai(handler_name: str, handlers: Dict[str, Any], context: Conte
     handler = handlers[handler_name]
 
     # Prepare OpenAI tools (function calling)
-    tools = [{"type": "function", "function": schema} for schema in handler.get_schemas()]
+    tools = [
+        {"type": "function", "function": schema} for schema in handler.get_schemas()
+    ]
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -47,7 +51,9 @@ def maybe_run_openai(handler_name: str, handlers: Dict[str, Any], context: Conte
         choice = response.choices[0]
         # Normalize tool calls to dicts
         tool_calls = []
-        if getattr(choice, "message", None) and getattr(choice.message, "tool_calls", None):
+        if getattr(choice, "message", None) and getattr(
+            choice.message, "tool_calls", None
+        ):
             for tc in choice.message.tool_calls:
                 tool_calls.append(
                     {
@@ -60,9 +66,7 @@ def maybe_run_openai(handler_name: str, handlers: Dict[str, Any], context: Conte
     else:
         # Simulate a get_context tool call
         tool_calls = [
-            {
-                "function": {"name": "get_context", "arguments": json.dumps({})}
-            }
+            {"function": {"name": "get_context", "arguments": json.dumps({})}}
         ]
 
     # Execute tool calls
@@ -71,7 +75,9 @@ def maybe_run_openai(handler_name: str, handlers: Dict[str, Any], context: Conte
         args = call["function"].get("arguments")
         args = json.loads(args) if isinstance(args, str) and args else {}
         result = handler.handle_tool_call(fn, **args)
-        print(f"🔧 {fn} -> {result['success']} ({len(result.get('context', {}))} items)")
+        print(
+            f"🔧 {fn} -> {result['success']} ({len(result.get('context', {}))} items)"
+        )
 
 
 def main():
@@ -79,15 +85,44 @@ def main():
     print("=" * 50)
 
     # 1) Create mesh and agents
-    context = ContextMesh(user_id="ecommerce_team", enable_persistence=True, db_backend="sqlite", db_path="product_launch.db")
+    context = ContextMesh(
+        user_id="ecommerce_team",
+        enable_persistence=True,
+        db_backend="sqlite",
+        db_path="product_launch.db",
+    )
 
     agent_configs = [
-        {"name": "MarketResearcher", "role": "contributor", "topics": ["research", "market", "trends"]},
-        {"name": "ProductManager", "role": "admin", "topics": ["product", "requirements", "strategy"]},
-        {"name": "EngineeringLead", "role": "contributor", "topics": ["development", "technical", "timeline"]},
-        {"name": "MarketingManager", "role": "contributor", "topics": ["marketing", "campaign", "launch"]},
-        {"name": "SalesDirector", "role": "contributor", "topics": ["sales", "pricing", "materials"]},
-        {"name": "ProjectCoordinator", "role": "admin", "topics": ["coordination", "status", "timeline"]},
+        {
+            "name": "MarketResearcher",
+            "role": "contributor",
+            "topics": ["research", "market", "trends"],
+        },
+        {
+            "name": "ProductManager",
+            "role": "admin",
+            "topics": ["product", "requirements", "strategy"],
+        },
+        {
+            "name": "EngineeringLead",
+            "role": "contributor",
+            "topics": ["development", "technical", "timeline"],
+        },
+        {
+            "name": "MarketingManager",
+            "role": "contributor",
+            "topics": ["marketing", "campaign", "launch"],
+        },
+        {
+            "name": "SalesDirector",
+            "role": "contributor",
+            "topics": ["sales", "pricing", "materials"],
+        },
+        {
+            "name": "ProjectCoordinator",
+            "role": "admin",
+            "topics": ["coordination", "status", "timeline"],
+        },
     ]
 
     handlers = create_multi_agent_handlers(context, agent_configs)
@@ -129,7 +164,10 @@ def main():
     handlers["MarketingManager"].handle_tool_call(
         "push_context",
         key="marketing_strategy",
-        value={"theme": "Hydrate Sustainably", "channels": ["social", "influencers", "paid"]},
+        value={
+            "theme": "Hydrate Sustainably",
+            "channels": ["social", "influencers", "paid"],
+        },
         topics=["marketing", "campaign"],
     )
 

@@ -40,8 +40,12 @@ def main():
 
     # List all available context
     list_result = handler.handle_tool_call("list_context")
-    keys_by_topic = list_result.get("keys_by_topic", {}) if list_result.get("success") else {}
-    all_keys = list_result.get("all_accessible_keys", []) if list_result.get("success") else []
+    keys_by_topic = (
+        list_result.get("keys_by_topic", {}) if list_result.get("success") else {}
+    )
+    all_keys = (
+        list_result.get("all_accessible_keys", []) if list_result.get("success") else []
+    )
     print(f"\n📋 Available context keys (by topic): {keys_by_topic}")
     print(f"   All keys: {all_keys}")
 
@@ -61,7 +65,9 @@ def main():
     print(f"\n📡 Pushed to topics: {topic_push_result['success']}")
 
     # Discover available topics
-    discover_result = handler.handle_tool_call("discover_topics", include_subscriber_names=True)
+    discover_result = handler.handle_tool_call(
+        "discover_topics", include_subscriber_names=True
+    )
     if discover_result["success"]:
         topics = discover_result["topics"]
         print(f"\n📚 Available topics: {list(topics.keys())}")

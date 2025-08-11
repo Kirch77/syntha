@@ -470,9 +470,9 @@ def test_user_isolation_performance():
 
         # Should complete in reasonable time (5 users × 40 operations each = 200 ops)
         # Allow more time on slower systems and CI
+        import os
         import platform
         import sys
-        import os
 
         is_ci = (
             os.getenv("CI", "false").lower() == "true"

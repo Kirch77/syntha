@@ -7,8 +7,9 @@ across different industries and business scenarios.
 Uses a real OpenAI model if OPENAI_API_KEY is available; otherwise prints flows.
 """
 
-import os
 import json
+import os
+
 from syntha import ContextMesh, ToolHandler, build_system_prompt
 
 try:
@@ -17,13 +18,17 @@ except Exception:
     OpenAI = None
 
 
-def maybe_openai_summarize(agent_name: str, handler: ToolHandler, mesh: ContextMesh, user_message: str) -> None:
+def maybe_openai_summarize(
+    agent_name: str, handler: ToolHandler, mesh: ContextMesh, user_message: str
+) -> None:
     api_key = os.getenv("OPENAI_API_KEY")
     use_real = bool(api_key and OpenAI)
     print("\n🤖 LLM step:", "Using real OpenAI" if use_real else "Simulation mode")
 
     system_prompt = build_system_prompt(agent_name, mesh)
-    tools = [{"type": "function", "function": schema} for schema in handler.get_schemas()]
+    tools = [
+        {"type": "function", "function": schema} for schema in handler.get_schemas()
+    ]
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -40,7 +45,9 @@ def maybe_openai_summarize(agent_name: str, handler: ToolHandler, mesh: ContextM
         )
         tool_calls = response.choices[0].message.tool_calls or []
     else:
-        tool_calls = [{"function": {"name": "get_context", "arguments": json.dumps({})}}]
+        tool_calls = [
+            {"function": {"name": "get_context", "arguments": json.dumps({})}}
+        ]
 
     for call in tool_calls:
         fn = call["function"]["name"]
@@ -75,9 +82,9 @@ def customer_support_use_case():
     )
 
     # Subscribe relevant agents to topics
-    context.register_agent_topics("L1Support", ["support", "escalation"]) 
-    context.register_agent_topics("L2Technical", ["support", "resolution"]) 
-    context.register_agent_topics("CustomerSuccess", ["support", "followup"]) 
+    context.register_agent_topics("L1Support", ["support", "escalation"])
+    context.register_agent_topics("L2Technical", ["support", "resolution"])
+    context.register_agent_topics("CustomerSuccess", ["support", "followup"])
 
     # L1 Support Agent handles initial inquiry
     l1_agent = ToolHandler(context, "L1Support")
@@ -126,7 +133,9 @@ def customer_support_use_case():
     for agent in ("L1Support", "L2Technical", "CustomerSuccess"):
         handler = ToolHandler(context, agent)
         data = handler.handle_tool_call("get_context")
-        print(f" 👀 {agent} sees {len(data.get('context', {}))} keys: {list(data.get('context', {}).keys())}")
+        print(
+            f" 👀 {agent} sees {len(data.get('context', {}))} keys: {list(data.get('context', {}).keys())}"
+        )
     print("✅ Multi-tier support with complete context continuity")
 
 
@@ -136,9 +145,9 @@ def sales_intelligence_use_case():
     print("-" * 42)
 
     context = ContextMesh(user_id="lead_techcorp_001")
-    context.register_agent_topics("MarketingAgent", ["sales", "intelligence"]) 
-    context.register_agent_topics("SDRAgent", ["sales", "qualified"]) 
-    context.register_agent_topics("AccountExecutive", ["sales", "qualified"]) 
+    context.register_agent_topics("MarketingAgent", ["sales", "intelligence"])
+    context.register_agent_topics("SDRAgent", ["sales", "qualified"])
+    context.register_agent_topics("AccountExecutive", ["sales", "qualified"])
 
     # Marketing Qualified Lead (MQL) data
     context.push(
@@ -199,7 +208,7 @@ def content_operations_use_case():
     print("-" * 43)
 
     context = ContextMesh(user_id="content_team")
-    context.register_agent_topics("ContentWriter", ["content", "review"]) 
+    context.register_agent_topics("ContentWriter", ["content", "review"])
 
     # Content strategy context
     context.push(

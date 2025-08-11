@@ -107,7 +107,9 @@ def main():
     context1.register_agent_topics(
         "ProductionAgent", ["production", "monitoring", "alerts"]
     )
-    context1.register_agent_topics("AnalyticsAgent", ["analytics", "metrics", "reports"])
+    context1.register_agent_topics(
+        "AnalyticsAgent", ["analytics", "metrics", "reports"]
+    )
     context1.register_agent_topics("SalesAgent", ["sales", "customers", "revenue"])
 
     # Push topic-specific context

@@ -13,7 +13,7 @@ Copy and run this code to see LangChain integration in action!
 
 import os
 
-from syntha import ContextMesh, ToolHandler, build_system_prompt, SynthaFrameworkError
+from syntha import ContextMesh, SynthaFrameworkError, ToolHandler, build_system_prompt
 
 
 def simulate_langchain_agent():
@@ -39,7 +39,7 @@ def real_langchain_example(langchain_tools, prompt):
     Uncomment and modify for actual usage.
     """
     # Real LangChain usage (will execute only if called)
-    from langchain.agents import initialize_agent, AgentType  # type: ignore
+    from langchain.agents import AgentType, initialize_agent  # type: ignore
     from langchain_openai import ChatOpenAI  # type: ignore
 
     llm = ChatOpenAI(temperature=0, openai_api_key=os.getenv("OPENAI_API_KEY"))
@@ -116,7 +116,9 @@ def main():
             description = getattr(tool, "description", "")
             print(f"   - {name}: {description[:50]}...")
     except SynthaFrameworkError as e:
-        print("⚠️  LangChain not available (pip install langchain langchain-openai). Using schema fallback.")
+        print(
+            "⚠️  LangChain not available (pip install langchain langchain-openai). Using schema fallback."
+        )
         schemas = handler.get_schemas()
         print(f"🔧 Available tool schemas: {len(schemas)}")
         for schema in schemas:
@@ -135,7 +137,9 @@ def main():
     try:
         if langchain_tools and api_key:
             # Avoid local module shadowing when running this file directly
-            import sys, os
+            import os
+            import sys
+
             here_dir = os.path.dirname(__file__)
             if sys.path and sys.path[0] == here_dir:
                 sys.path.pop(0)

@@ -179,12 +179,16 @@ def main():
 
     # Fallback to dict form
     if not tool_calls and isinstance(response, dict):
-        tool_calls = response.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
+        tool_calls = (
+            response.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
+        )
 
     for tool_call in tool_calls:
         function_name = tool_call["function"]["name"]
         raw_args = tool_call["function"].get("arguments")
-        function_args = json.loads(raw_args) if isinstance(raw_args, str) and raw_args else {}
+        function_args = (
+            json.loads(raw_args) if isinstance(raw_args, str) and raw_args else {}
+        )
 
         print(f"\n🔧 Agent wants to call: {function_name}")
         print(f"   Arguments: {function_args}")
@@ -199,7 +203,9 @@ def main():
                 print(f"     - {key}: {type(value).__name__}")
 
     if not use_real:
-        print("\n💡 To use a real LLM: pip install openai && export OPENAI_API_KEY='<key>'")
+        print(
+            "\n💡 To use a real LLM: pip install openai && export OPENAI_API_KEY='<key>'"
+        )
 
     # 7. Demonstrate framework-specific tool formats
     print("\n🔄 OpenAI-specific tool formats:")

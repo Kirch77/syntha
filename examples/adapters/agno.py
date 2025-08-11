@@ -13,7 +13,7 @@ Copy and run this code to see Agno integration in action!
 
 import os
 
-from syntha import ContextMesh, ToolHandler, build_system_prompt, SynthaFrameworkError
+from syntha import ContextMesh, SynthaFrameworkError, ToolHandler, build_system_prompt
 
 
 def simulate_agno_agent(name, tools, prompt):
@@ -26,8 +26,10 @@ def simulate_agno_agent(name, tools, prompt):
     tool_names = []
     for t in tools[:3]:
         if isinstance(t, dict) and "name" in t:
-            tool_names.append(t["name"]) 
-        elif isinstance(t, dict) and "function" in t and isinstance(t["function"], dict):
+            tool_names.append(t["name"])
+        elif (
+            isinstance(t, dict) and "function" in t and isinstance(t["function"], dict)
+        ):
             tool_names.append(t["function"].get("name", "unknown"))
         else:
             name_attr = getattr(t, "name", None)
@@ -128,7 +130,9 @@ def main():
         print(f"   Editor: {len(editor_tools)} tools")
         print(f"   SEO: {len(seo_tools)} tools")
     except SynthaFrameworkError as e:
-        print("⚠️  Agno not available (pip install agno). Falling back to raw schemas for demo.")
+        print(
+            "⚠️  Agno not available (pip install agno). Falling back to raw schemas for demo."
+        )
         writer_tools = writer_handler.get_schemas()
         editor_tools = editor_handler.get_schemas()
         seo_tools = seo_handler.get_schemas()

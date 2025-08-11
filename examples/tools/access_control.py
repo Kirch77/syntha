@@ -66,7 +66,9 @@ def main():
         print(f"❌ Viewer push blocked: {str(e)}")
 
     # Create restricted handler (predefined levels: safe, minimal, readonly)
-    restricted_handler = create_restricted_handler(context, "RestrictedAgent", "minimal")
+    restricted_handler = create_restricted_handler(
+        context, "RestrictedAgent", "minimal"
+    )
 
     restricted_available = [
         schema["name"] for schema in restricted_handler.get_schemas()

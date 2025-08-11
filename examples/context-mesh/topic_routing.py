@@ -59,7 +59,9 @@ def main():
 
     # Show keys by topic for agents
     sales_keys = context.get_available_keys_by_topic("SalesAgent").get("sales", [])
-    customer_keys = context.get_available_keys_by_topic("MarketingAgent").get("customers", [])
+    customer_keys = context.get_available_keys_by_topic("MarketingAgent").get(
+        "customers", []
+    )
 
     print(f"\n🎯 Sales-related keys: {sales_keys}")
     print(f"🎯 Customer-related keys: {customer_keys}")
@@ -68,7 +70,9 @@ def main():
     topics = context.get_all_topics()
     print(f"\n📚 Available topics: {topics}")
     for topic in topics:
-        print(f"   - {topic}: {len(context.get_subscribers_for_topic(topic))} subscribers")
+        print(
+            f"   - {topic}: {len(context.get_subscribers_for_topic(topic))} subscribers"
+        )
 
     print("\n✅ Topic routing complete!")
 

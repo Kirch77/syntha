@@ -136,27 +136,27 @@ lint: ## Run all linting checks
 	@echo "  📋 Running flake8..."
 	flake8 syntha tests --count --select=E9,F63,F7,F82 --show-source --statistics
 	flake8 syntha tests --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
-	@echo "  📐 Checking import sorting..."
-	isort --check-only syntha tests
-	@echo "  🎨 Checking code formatting..."
-	black --check syntha tests
+    @echo "  📐 Checking import sorting..."
+    python -m isort --check-only syntha tests
+    @echo "  🎨 Checking code formatting..."
+    python -m black --check syntha tests
 	@echo "✅ All linting checks passed!"
 
 format: ## Format code with black and isort
-	@echo "🎨 Formatting code..."
-	black syntha tests
-	isort syntha tests
+    @echo "🎨 Formatting code..."
+    python -m black syntha tests
+    python -m isort syntha tests
 	@echo "✅ Code formatted successfully!"
 
 type-check: ## Run type checking with mypy
-	@echo "🔍 Running type checking..."
-	mypy syntha
+    @echo "🔍 Running type checking..."
+    python -m mypy syntha
 	@echo "✅ Type checking passed!"
 
 security-scan: ## Run security scanning with bandit
-	@echo "🔒 Running security scan..."
-	bandit -r syntha -f json -o reports/security-scan.json
-	bandit -r syntha
+    @echo "🔒 Running security scan..."
+    python -m bandit -r syntha -f json -o reports/security-scan.json
+    python -m bandit -r syntha
 	@echo "✅ Security scan completed!"
 
 pre-commit: ## Run pre-commit hooks

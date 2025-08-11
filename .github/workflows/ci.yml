@@ -82,19 +82,19 @@ jobs:
 
       - name: Format check with black
         run: |
-          black --check syntha tests
+          python -m black --check syntha tests
 
       - name: Import sorting check with isort
         run: |
-          isort --check-only syntha tests
+          python -m isort --check-only syntha tests
 
       - name: Type checking with mypy
         run: |
-          mypy syntha
+          python -m mypy syntha
 
       - name: Security check with bandit
         run: |
-          bandit -r syntha
+          python -m bandit -r syntha
 
       - name: Test with pytest
         run: |

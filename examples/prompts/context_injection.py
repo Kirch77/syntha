@@ -136,18 +136,26 @@ Current Issue (Priority: {priority}):
     )
 
     # Replace placeholders with {context} where we want context injection
-    advanced_base = advanced_template.replace("{customer_name}", "{context}") \
-        .replace("{customer_id}", "{context}") \
-        .replace("{tier}", "{context}") \
-        .replace("{value}", "{context}") \
-        .replace("{satisfaction}", "{context}") \
-        .replace("{total_tickets}", "{context}") \
-        .replace("{avg_resolution}", "{context}") \
-        .replace("{priority}", "{context}") \
-        .replace("{issue_description}", "{context}") \
-        .replace("{tier_specific_instructions}", tier_instructions.get(customer_data["tier"], "")) \
-        .replace("{priority_specific_guidance}", priority_guidance.get(current_issue_data["priority"], "")) \
+    advanced_base = (
+        advanced_template.replace("{customer_name}", "{context}")
+        .replace("{customer_id}", "{context}")
+        .replace("{tier}", "{context}")
+        .replace("{value}", "{context}")
+        .replace("{satisfaction}", "{context}")
+        .replace("{total_tickets}", "{context}")
+        .replace("{avg_resolution}", "{context}")
+        .replace("{priority}", "{context}")
+        .replace("{issue_description}", "{context}")
+        .replace(
+            "{tier_specific_instructions}",
+            tier_instructions.get(customer_data["tier"], ""),
+        )
+        .replace(
+            "{priority_specific_guidance}",
+            priority_guidance.get(current_issue_data["priority"], ""),
+        )
         .replace("{resolution_rate}", str(resolution_rate))
+    )
 
     advanced_injected = inject_context_into_prompt(
         existing_prompt=advanced_base,
@@ -204,16 +212,14 @@ Special Instructions: {special_instructions}
 Please assist with: {current_issue}
 """
 
-    updated_base = updated_template.replace("{agent_name}", "ServiceAgent").replace(
-        "{customer_name}", "{context}"
-    ).replace("{tier}", "{context}").replace(
-        "{previous_interaction}", "{context}"
-    ).replace(
-        "{preferred_contact}", "{context}"
-    ).replace(
-        "{special_instructions}", "{context}"
-    ).replace(
-        "{current_issue}", "{context}"
+    updated_base = (
+        updated_template.replace("{agent_name}", "ServiceAgent")
+        .replace("{customer_name}", "{context}")
+        .replace("{tier}", "{context}")
+        .replace("{previous_interaction}", "{context}")
+        .replace("{preferred_contact}", "{context}")
+        .replace("{special_instructions}", "{context}")
+        .replace("{current_issue}", "{context}")
     )
     updated_prompt = inject_context_into_prompt(
         existing_prompt=updated_base,

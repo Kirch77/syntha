@@ -106,7 +106,9 @@ class TestToolCreationPerformance:
         )
 
         # Performance assertions (platform/CI aware)
-        import os, sys
+        import os
+        import sys
+
         is_ci = (
             os.getenv("CI", "false").lower() == "true"
             or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
@@ -167,6 +169,7 @@ class TestToolCreationPerformance:
 
         # All frameworks should be reasonably fast (allow slack on CI)
         import os
+
         is_ci = (
             os.getenv("CI", "false").lower() == "true"
             or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
@@ -221,6 +224,7 @@ class TestCachingPerformance:
 
         # Cache hits should be significantly faster (or both very fast). Be CI-aware
         import os
+
         is_ci = (
             os.getenv("CI", "false").lower() == "true"
             or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
@@ -266,6 +270,7 @@ class TestCachingPerformance:
         assert cache_info["cache_size"] == len(frameworks)
         # Should be faster or both very fast (CI-aware)
         import os
+
         is_ci = (
             os.getenv("CI", "false").lower() == "true"
             or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
@@ -475,6 +480,7 @@ class TestPerformanceRegression:
             # For very fast operations, be very tolerant of timing variations
             # This accounts for system scheduling, garbage collection, etc.
             import os
+
             is_ci = (
                 os.getenv("CI", "false").lower() == "true"
                 or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
