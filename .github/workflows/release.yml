@@ -12,8 +12,8 @@ on:
         required: true
         options:
           - pypi
-          - testpypi
-        default: testpypi
+          - pypi-test
+        default: pypi-test
 
 permissions:
   contents: read
