@@ -3,7 +3,7 @@ name: Release (PyPI Trusted Publishing + Environments)
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v0.2.2-rc.1'
   workflow_dispatch:
     inputs:
       target:
