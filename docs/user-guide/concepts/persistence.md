@@ -29,11 +29,11 @@ The persistence system handles:
 
 ## Key Features
 
-- **Automatic Schema Management**: Database tables created automatically
-- **Data Migration**: Seamless upgrades between schema versions
+- **Automatic Schema Management**: Tables are created automatically on first use
 - **User Isolation**: Complete data separation between users
-- **Performance Optimization**: Intelligent indexing and query optimization
-- **Backup and Recovery**: Built-in data protection mechanisms
+- **Performance Optimization**: In-memory indexes for fast access
+
+Note: Built-in migration tooling and backup utilities are not provided. Use your database's standard tools for migrations and backups.
 
 ## Configuration
 
@@ -52,6 +52,7 @@ from syntha import ContextMesh
 # PostgreSQL configuration
 mesh = ContextMesh(
     user_id="user123",
+    db_backend="postgresql",
     connection_string="postgresql://user:password@localhost:5432/syntha"
 )
 ```

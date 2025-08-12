@@ -19,6 +19,7 @@ The central context sharing system.
 | `host,user,password,database,port` | various | `None` | PostgreSQL connection parameters (if not using `connection_string`) |
 
 **Key Methods:**
+
 - `push(key, value, subscribers=None, topics=None, ttl=None)`
 - `get(key, agent_name=None)`
 - `get_all_for_agent(agent_name)`
@@ -43,6 +44,7 @@ Primary interface for agents to interact via tools.
 | `role_based_access` | `Dict[str,List[str]]` | `{}` | Optional role map |
 
 **Key Methods:**
+
 - `handle_tool_call(tool_name, **kwargs)`
 - `get_schemas()` / `get_syntha_schemas_only()`
 - `get_langchain_tools()` / `get_langgraph_tools()` / `get_openai_functions()` / `get_anthropic_tools()` / `get_tools_for_framework(name)`
@@ -144,9 +146,13 @@ Returns:
 Create context-aware system prompts.
 
 **Parameters:**
+
 - `agent_name`: `str` - Name of the agent
 - `context_mesh`: `ContextMesh` - Context mesh instance
-- `custom_instructions` (optional): `str` - Additional instructions
+- `template` (optional): `str` - Template with `{context}` placeholder
+- `include_context_header` (optional): `bool` - Include header. Default `True`
+- `prepend_to_existing` (optional): `bool` - Prepend to `existing_prompt`
+- `existing_prompt` (optional): `str` - Existing prompt to augment
 
 **Returns:** `str` - Complete system prompt with context
 
@@ -154,11 +160,12 @@ Create context-aware system prompts.
 Build prompts with advanced customization.
 
 **Parameters:**
+
 - `agent_name`: `str` - Name of the agent
 - `context_mesh`: `ContextMesh` - Context mesh instance
-- `custom_instructions`: `str` - Custom prompt instructions
-- `include_context_summary`: `bool` - Include context overview
-- `include_agent_context`: `bool` - Include agent-specific context
+- `keys`: `List[str]` - Specific context keys to include
+- `template`: `str` - Template with `{key}` placeholders
+- `fallback_text` (optional): `str` - Fallback for missing keys
 
 **Returns:** `str` - Customized prompt
 
@@ -166,6 +173,7 @@ Build prompts with advanced customization.
 Inject context into custom templates.
 
 **Parameters:**
+
 - `prompt_template`: `str` - Template with placeholders
 - `context_mesh`: `ContextMesh` - Context mesh instance
 - `agent_name`: `str` - Name of the agent
@@ -179,13 +187,15 @@ Inject context into custom templates.
 Create conversation-style prompts.
 
 **Parameters:**
+
 - `agent_name`: `str` - Name of the agent
 - `context_mesh`: `ContextMesh` - Context mesh instance
-- `system_message`: `str` - System message
-- `user_message`: `str` - User message
-- `include_context`: `bool` - Include context in messages
+- `template` (optional): `str` - Template with `{context}` placeholder
+- `include_context_header` (optional): `bool` - Include header
+- `recent_only` (optional): `bool` - Filter for recency (placeholder)
+- `max_age_seconds` (optional): `float` - Age filter when `recent_only=True`
 
-**Returns:** `List[Dict]` - Message array for chat APIs
+**Returns:** `str` - Message text with context
 
 ## Access Control
 
@@ -276,12 +286,14 @@ context = ContextMesh(
 ### Error Handler
 
 ```python
-from syntha import handle_syntha_error
+from syntha.exceptions import ErrorHandler
 
+handler = ErrorHandler()
 try:
-    result = handler.handle_tool_call("push_context", key="test", value="data")
-except SynthaError as e:
-    handle_syntha_error(e)  # Provides recovery suggestions
+    result = tool_handler.handle_tool_call("push_context", key="test", value="data")
+except Exception as e:
+    syntha_error = handler.handle_error(e)
+    raise syntha_error
 ```
 
 ## Logging

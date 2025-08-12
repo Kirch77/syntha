@@ -52,18 +52,35 @@ handler.push_context("user_preferences", {
 
 ### Custom System Prompts
 ```python
-from syntha.prompts import SystemPromptManager
+from syntha.prompts import build_system_prompt
 
-prompt_manager = SystemPromptManager(handler)
-
-# Define a system prompt template
-prompt_manager.set_system_prompt(
-    "assistant",
-    "You are a helpful assistant. User preferences: {user_preferences}"
+# Define a template that includes a {context} placeholder (optional)
+template = (
+    """You are a helpful assistant.\n\n"
+    "User context:\n{context}\n\n"
+    "Always use this context to personalize responses."
+    """
 )
 
-# The prompt will automatically inject context
-rendered_prompt = prompt_manager.get_system_prompt("assistant")
+# Build a system prompt with context injection
+rendered_prompt = build_system_prompt(
+    agent_name="Assistant",
+    context_mesh=mesh,
+    template=template,
+)
+```
+
+### Inject context into an existing prompt
+```python
+from syntha.prompts import inject_context_into_prompt
+
+existing = "You are a helpful assistant."
+prompt = inject_context_into_prompt(
+    existing_prompt=existing,
+    agent_name="Assistant",
+    context_mesh=mesh,
+    placement="prepend",  # or "append" / "replace_placeholder"
+)
 ```
 
 ## See Also

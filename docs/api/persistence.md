@@ -1,6 +1,6 @@
 # Persistence API Reference
 
-The Persistence API provides database backends for storing context data permanently. Syntha supports multiple database backends with a pluggable architecture that makes it easy to switch between different storage systems.
+The Persistence API provides database backends for storing context data permanently. Syntha supports SQLite (default) and PostgreSQL with a pluggable architecture that makes it easy to switch between different storage systems.
 
 ## Overview
 
@@ -10,11 +10,11 @@ Syntha's persistence layer automatically handles:
 - Topic subscription management
 - Agent permission tracking
 - User isolation at the database level
-- Automatic schema creation and migration
+- Automatic schema creation
 
 
 !!! info "Recommendation"
-    It is not recommended to use database backends directly as it is safer and more practical to handle context through the context mesh.
+    It is not recommended to use database backends directly; use `ContextMesh`, which persists automatically when enabled.
 
 ## Database Backends
 
@@ -68,27 +68,20 @@ backend = create_database_backend(
     password="secure_password"
 )
 
-# PostgreSQL with SSL configuration
+# PostgreSQL via connection string
 backend = create_database_backend(
     "postgresql",
-    host="db.company.com",
-    database="syntha_prod",
-    user="syntha_app",
-    password="prod_password",
-    sslmode="prefer"
+    connection_string="postgresql://user:pass@host:5432/syntha"
 )
 
-# PostgreSQL with SSL
+# PostgreSQL with SSL configuration
 backend = create_database_backend(
     "postgresql",
     host="secure-db.company.com",
     database="syntha",
     user="syntha_user",
     password="password",
-    sslmode="require",
-    sslcert="/path/to/client-cert.pem",
-    sslkey="/path/to/client-key.pem",
-    sslrootcert="/path/to/ca-cert.pem"
+    sslmode="require"
 )
 ```
 
@@ -108,7 +101,9 @@ def connect(self) -> None
 
 **Example:**
 ```python
-backend = create_database_backend("postgresql", host="localhost", database="syntha")
+backend = create_database_backend(
+    "postgresql", host="localhost", database="syntha", user="user", password="pass"
+)
 backend.connect()  # Creates tables if they don't exist
 ```
 
