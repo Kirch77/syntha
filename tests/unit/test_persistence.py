@@ -388,7 +388,7 @@ class TestDatabaseErrorHandling:
 
         # Create read-only directory
         readonly_dir = tempfile.mkdtemp()
-        os.chmod(readonly_dir, 0o444)
+        os.chmod(readonly_dir, 0o500)
 
         try:
             db_path = os.path.join(readonly_dir, "readonly.db")
