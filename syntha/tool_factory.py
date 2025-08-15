@@ -26,6 +26,7 @@ Key Features:
 """
 
 from typing import Any, Callable, Dict, List, Optional, Union
+import threading
 
 from .exceptions import SynthaFrameworkError
 from .framework_adapters import (
@@ -96,6 +97,21 @@ class SynthaToolFactory:
             # Create OpenAI function definitions
             openai_functions = factory.create_tools("openai")
         """
+        # Optimization: global, process-wide cache for handler-independent toolsets
+        # OpenAI and Anthropic tool definitions are pure schemas and do not capture handler state.
+        # We can safely build them once and filter per-handler by access control.
+        framework_key = framework_name.lower().strip()
+
+        if framework_key in ("openai", "anthropic"):
+            tools = _get_or_build_global_toolset(framework_key, self)
+            # Filter by access control for this handler
+            available = set(self.tool_handler.get_available_tools())
+            if framework_key == "openai":
+                return [t for t in tools if t.get("function", {}).get("name") in available]
+            # anthropic structure: {"name": tool_name, ...}
+            return [t for t in tools if t.get("name") in available]
+
+        # Default path for other frameworks
         adapter = self.get_adapter(framework_name)
         return adapter.create_all_tools()
 
@@ -386,3 +402,58 @@ def create_tool_factory(tool_handler) -> SynthaToolFactory:
         langchain_tools = factory.create_tools("langchain")
     """
     return SynthaToolFactory(tool_handler)
+
+
+# --- Internal global cache for framework toolsets (stateless frameworks) ---
+_GLOBAL_TOOLSET_CACHE: Dict[str, List[Any]] = {}
+_GLOBAL_TOOLSET_LOCK = threading.Lock()
+
+
+def _get_or_build_global_toolset(framework_key: str, factory: SynthaToolFactory) -> List[Any]:
+    """
+    Build once per process toolsets for stateless frameworks and cache them.
+
+    For frameworks like OpenAI and Anthropic, tool definitions are pure data derived
+    from Syntha schemas and do not depend on the handler instance. We therefore
+    build them once with an unrestricted view of schemas and reuse across handlers.
+    """
+    # Fast path: read cache without lock
+    cached = _GLOBAL_TOOLSET_CACHE.get(framework_key)
+    if cached is not None:
+        return cached
+
+    # Build minimal tool definitions directly from schemas (no adapter needed)
+    schemas = factory.tool_handler.get_syntha_schemas_only()
+    built_tools: List[Any] = []
+    for schema in schemas:
+        name = schema.get("name")
+        if not name:
+            continue
+        params = schema.get("parameters", {})
+        if framework_key == "openai":
+            built_tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "description": schema.get("description", f"Syntha {name} tool"),
+                        "parameters": params,
+                    },
+                }
+            )
+        elif framework_key == "anthropic":
+            built_tools.append(
+                {
+                    "name": name,
+                    "description": schema.get("description", f"Syntha {name} tool"),
+                    "input_schema": params,
+                }
+            )
+
+    # Publish to cache with lock (double-checked)
+    with _GLOBAL_TOOLSET_LOCK:
+        existing = _GLOBAL_TOOLSET_CACHE.get(framework_key)
+        if existing is None:
+            _GLOBAL_TOOLSET_CACHE[framework_key] = built_tools
+            return built_tools
+        return existing
