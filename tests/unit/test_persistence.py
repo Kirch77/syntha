@@ -402,7 +402,7 @@ class TestDatabaseErrorHandling:
 
         finally:
             # Clean up
-            os.chmod(readonly_dir, 0o755)
+            os.chmod(readonly_dir, 0o700)
             shutil.rmtree(readonly_dir, ignore_errors=True)
 
     def test_sqlite_corrupted_database(self, tmp_path):
