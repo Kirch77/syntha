@@ -25,8 +25,8 @@ Key Features:
 - Extensible architecture for new frameworks
 """
 
-from typing import Any, Callable, Dict, List, Optional, Union
 import threading
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from .exceptions import SynthaFrameworkError
 from .framework_adapters import (
@@ -107,7 +107,9 @@ class SynthaToolFactory:
             # Filter by access control for this handler
             available = set(self.tool_handler.get_available_tools())
             if framework_key == "openai":
-                return [t for t in tools if t.get("function", {}).get("name") in available]
+                return [
+                    t for t in tools if t.get("function", {}).get("name") in available
+                ]
             # anthropic structure: {"name": tool_name, ...}
             return [t for t in tools if t.get("name") in available]
 
@@ -409,7 +411,9 @@ _GLOBAL_TOOLSET_CACHE: Dict[str, List[Any]] = {}
 _GLOBAL_TOOLSET_LOCK = threading.Lock()
 
 
-def _get_or_build_global_toolset(framework_key: str, factory: SynthaToolFactory) -> List[Any]:
+def _get_or_build_global_toolset(
+    framework_key: str, factory: SynthaToolFactory
+) -> List[Any]:
     """
     Build once per process toolsets for stateless frameworks and cache them.
 
