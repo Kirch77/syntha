@@ -386,9 +386,9 @@ class TestDatabaseErrorHandling:
         if os.name == "nt":  # Skip on Windows (harder to create readonly dirs)
             pytest.skip("Read-only directory test not reliable on Windows")
 
-        # Create read-only directory
+        # Create read-only directory (owner read+execute, no write)
         readonly_dir = tempfile.mkdtemp()
-        os.chmod(readonly_dir, 0o444)
+        os.chmod(readonly_dir, 0o500)
 
         try:
             db_path = os.path.join(readonly_dir, "readonly.db")
@@ -401,8 +401,8 @@ class TestDatabaseErrorHandling:
                 backend.connect()
 
         finally:
-            # Clean up
-            os.chmod(readonly_dir, 0o755)
+            # Clean up (owner full access)
+            os.chmod(readonly_dir, 0o700)
             shutil.rmtree(readonly_dir, ignore_errors=True)
 
     def test_sqlite_corrupted_database(self, tmp_path):

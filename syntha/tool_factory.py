@@ -102,6 +102,14 @@ class SynthaToolFactory:
         # We can safely build them once and filter per-handler by access control.
         framework_key = framework_name.lower().strip()
 
+        # Ensure an adapter entry exists in the cache for visibility/metrics
+        # (some frameworks use fast-path builders that don't require the adapter)
+        try:
+            _ = self.get_adapter(framework_key)
+        except SynthaFrameworkError:
+            # Propagate unsupported framework errors
+            raise
+
         if framework_key in ("openai", "anthropic"):
             tools = _get_or_build_global_toolset(framework_key, self)
             # Filter by access control for this handler
