@@ -37,6 +37,31 @@ adapter = create_framework_adapter("openai", handler)
 tools = adapter.create_tools()
 ```
 
+### Agno Quick Start
+
+```python
+from syntha import ContextMesh, ToolHandler
+
+mesh = ContextMesh(user_id="demo")
+handler = ToolHandler(mesh, agent_name="Assistant")
+
+# Get Agno tools via the handler (shortcut)
+agno_tools = handler.get_tools_for_framework("agno")
+
+# Use with Agno Agent (if installed)
+try:
+    from agno.agent import Agent
+    agent = Agent(
+        name="Assistant",
+        tools=agno_tools,
+        instructions="Use tools to read/write context.",
+        model="gpt-4o",
+    )
+    # out = agent.run("Subscribe to 'support' topic and push a status update")
+except ImportError:
+    print("pip install agno to enable Agent integration")
+```
+
 ## See Also
 
 - [Tool Handler](tools.md)

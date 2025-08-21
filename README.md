@@ -49,6 +49,28 @@ print(system_prompt[:200] + "...")
 
 See the docs for concise, copy‑paste examples.
 
+### Agno in 30 seconds
+
+```python
+from syntha import ContextMesh, ToolHandler
+
+mesh = ContextMesh(user_id="demo")
+handler = ToolHandler(mesh, agent_name="Assistant")
+agno_tools = handler.get_tools_for_framework("agno")
+
+try:
+    from agno.agent import Agent
+    agent = Agent(
+        name="Assistant",
+        tools=agno_tools,
+        instructions="Use tools to read/write context.",
+        model="gpt-4o",
+    )
+    # response = agent.run("List context keys and fetch 'project'")
+except ImportError:
+    print("pip install agno to enable Agent integration")
+```
+
 ## Documentation
 
 - Docs: https://doc.syntha.ca

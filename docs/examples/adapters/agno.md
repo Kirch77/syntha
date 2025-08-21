@@ -258,3 +258,17 @@ if __name__ == "__main__":
 See also:
 - [Multi-Agent Setup](../tools/multi-agent.md)
 - [Framework Adapters](../../user-guide/concepts/adapters.md)
+
+Real Agent usage snippet:
+
+```python
+from syntha import ContextMesh, ToolHandler
+
+mesh = ContextMesh(user_id="content_team")
+handler = ToolHandler(mesh, "ContentWriter")
+tools = handler.get_tools_for_framework("agno")
+
+from agno.agent import Agent
+agent = Agent(name="ContentWriter", tools=tools, instructions="Use tools to collaborate.", model="gpt-4o")
+# result = agent.run("List context and push a 'draft_article' to topic 'content'")
+```

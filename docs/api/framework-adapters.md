@@ -63,6 +63,33 @@ langchain_tools = adapter.create_tools()
 
 - Tools: `adapter.create_tools()` -> list of Agno-compatible functions
 
+```python
+from syntha import ContextMesh, ToolHandler
+from syntha.framework_adapters import create_framework_adapter
+
+# 1) Build handler
+mesh = ContextMesh(user_id="team")
+handler = ToolHandler(mesh, agent_name="Writer")
+
+# 2) Create Agno tools (Function objects)
+adapter = create_framework_adapter("agno", handler)
+agno_tools = adapter.create_tools(["get_context", "push_context"])  # optional selection
+
+# 3) Use with Agno Agent (if installed)
+try:
+    from agno.agent import Agent
+    agent = Agent(
+        name="Writer",
+        tools=agno_tools,
+        instructions="Use tools to inspect and update shared context.",
+        model="gpt-4o",
+    )
+    # Example run
+    # response = agent.run("List context keys, then fetch 'project'")
+except ImportError:
+    print("Agno not installed. pip install agno")
+```
+
 ## Tool Factory
 
 ```python
