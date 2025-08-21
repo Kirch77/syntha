@@ -596,7 +596,9 @@ class AgnoAdapter(FrameworkAdapter):
         src_lines.append("\treturn _invoke_syntha_with_filtered_kwargs(**kwargs)")
         src_code = "\n".join(src_lines)
 
-        namespace: Dict[str, Any] = {"_invoke_syntha_with_filtered_kwargs": _invoke_syntha_with_filtered_kwargs}
+        namespace: Dict[str, Any] = {
+            "_invoke_syntha_with_filtered_kwargs": _invoke_syntha_with_filtered_kwargs
+        }
         exec(src_code, namespace)  # nosec - controlled input from trusted schemas
         agno_tool_wrapper = namespace[func_name]
 
@@ -642,7 +644,9 @@ class AgnoAdapter(FrameworkAdapter):
             return Function.from_callable(agno_tool_wrapper, name=tool_name, description=func_doc, strict=False)  # type: ignore[arg-type]
         except TypeError:
             # Older Agno versions may not support description param
-            return Function.from_callable(agno_tool_wrapper, name=tool_name, strict=False)
+            return Function.from_callable(
+                agno_tool_wrapper, name=tool_name, strict=False
+            )
 
     def create_tools(self, tools: Optional[List[str]] = None) -> List[Any]:
         """
