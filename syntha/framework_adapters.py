@@ -543,7 +543,7 @@ class AgnoAdapter(FrameworkAdapter):
                 framework="agno",
             )
 
-        # Create the tool function
+        # Create the core Syntha-bound callable (handles conversion + tool dispatch)
         tool_function = self._create_tool_function(tool_name)
 
         # Extract parameters from schema
@@ -551,32 +551,58 @@ class AgnoAdapter(FrameworkAdapter):
         properties = parameters.get("properties", {})
         required = set(parameters.get("required", []))
 
-        # Create function signature for Agno
-        def agno_tool_wrapper(**kwargs) -> str:
-            """
-            Wrapper function for Syntha tool to work with Agno.
-            """
+        # Build an explicit-signature wrapper so Agno can introspect parameters.
+        # Many frameworks rely on inspect.signature rather than relying on **kwargs.
+        param_names = list(properties.keys())
+
+        # Helper that the dynamic function will call
+        def _invoke_syntha_with_filtered_kwargs(**all_kwargs):
             try:
-                # Convert parameters as needed
-                converted_kwargs = {}
-                for param_name, param_value in kwargs.items():
-                    if self._should_convert_to_list(tool_name, param_name):
-                        if isinstance(param_value, str):
-                            converted_kwargs[param_name] = [param_value]
-                        else:
-                            converted_kwargs[param_name] = param_value
-                    else:
-                        converted_kwargs[param_name] = param_value
-
-                # Call the original tool function
-                result = tool_function(**converted_kwargs)
-
-                # Convert result to string for Agno
+                # Only forward provided (non-None) arguments
+                forwarded = {k: v for k, v in all_kwargs.items() if v is not None}
+                # Preserve Agno-specific expectation: convert string -> list for list params
+                for k, v in list(forwarded.items()):
+                    if self._should_convert_to_list(tool_name, k):
+                        if isinstance(v, str):
+                            forwarded[k] = [v]
+                result = tool_function(**forwarded)
                 if isinstance(result, dict):
                     return json.dumps(result, indent=2)
                 return str(result)
-            except Exception as e:
+            except Exception as e:  # pragma: no cover - defensive
                 return f"Error executing {tool_name}: {str(e)}"
+
+        # Dynamically create a function with explicit parameters matching the schema
+        # Example generated signature: def get_context(keys=None, default_value=None):
+        params_signature_src_parts = []
+        for pname in param_names:
+            # Optional parameters default to None; required have no default
+            if pname in required:
+                params_signature_src_parts.append(f"{pname}")
+            else:
+                params_signature_src_parts.append(f"{pname}=None")
+        params_signature_src = ", ".join(params_signature_src_parts)
+
+        func_name = tool_name
+        func_doc = tool_schema.get("description", f"Syntha {tool_name} tool")
+
+        # Compose the source of the dynamic wrapper function
+        src_lines = [
+            f"def {func_name}({params_signature_src}):",
+            "\tkwargs = {}",
+        ]
+        for pname in param_names:
+            src_lines.append(f"\tkwargs['{pname}'] = {pname}")
+        src_lines.append("\treturn _invoke_syntha_with_filtered_kwargs(**kwargs)")
+        src_code = "\n".join(src_lines)
+
+        namespace: Dict[str, Any] = {"_invoke_syntha_with_filtered_kwargs": _invoke_syntha_with_filtered_kwargs}
+        exec(src_code, namespace)  # nosec - controlled input from trusted schemas
+        agno_tool_wrapper = namespace[func_name]
+
+        # Attach metadata
+        agno_tool_wrapper.__name__ = tool_name
+        agno_tool_wrapper.__doc__ = func_doc
 
         # Set function attributes for Agno
         agno_tool_wrapper.__name__ = tool_name
@@ -584,8 +610,8 @@ class AgnoAdapter(FrameworkAdapter):
             "description", f"Syntha {tool_name} tool"
         )
 
-        # Add parameter annotations
-        annotations = {}
+        # Add parameter annotations (helps frameworks generate schemas)
+        annotations: Dict[str, Any] = {}
         for param_name, param_def in properties.items():
             param_type = param_def.get("type", "string")
 
@@ -611,8 +637,12 @@ class AgnoAdapter(FrameworkAdapter):
         annotations["return"] = str
         agno_tool_wrapper.__annotations__ = annotations
 
-        # Create Agno Function from the wrapper
-        return Function.from_callable(agno_tool_wrapper, name=tool_name, strict=False)
+        # Create Agno Function from the wrapper; include name and description where supported
+        try:
+            return Function.from_callable(agno_tool_wrapper, name=tool_name, description=func_doc, strict=False)  # type: ignore[arg-type]
+        except TypeError:
+            # Older Agno versions may not support description param
+            return Function.from_callable(agno_tool_wrapper, name=tool_name, strict=False)
 
     def create_tools(self, tools: Optional[List[str]] = None) -> List[Any]:
         """
