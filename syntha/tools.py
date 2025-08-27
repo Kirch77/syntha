@@ -214,7 +214,9 @@ def handle_push_context_call(
         norm_subscribers: Optional[List[str]] = None
         if subscribers is not None:
             if isinstance(subscribers, str):
-                norm_subscribers = [s.strip() for s in subscribers.split(",") if s.strip()]
+                norm_subscribers = [
+                    s.strip() for s in subscribers.split(",") if s.strip()
+                ]
             else:
                 norm_subscribers = subscribers
 
