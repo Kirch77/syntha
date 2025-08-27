@@ -202,12 +202,28 @@ def handle_push_context_call(
 
         ttl_seconds = ttl_hours * 3600 if ttl_hours > 0 else None
 
+        # Normalize routing inputs for robustness
+        norm_topics: Optional[List[str]] = None
+        if topics is not None:
+            if isinstance(topics, str):
+                # Support comma-separated or single topic strings
+                norm_topics = [t.strip() for t in topics.split(",") if t.strip()]
+            else:
+                norm_topics = topics
+
+        norm_subscribers: Optional[List[str]] = None
+        if subscribers is not None:
+            if isinstance(subscribers, str):
+                norm_subscribers = [s.strip() for s in subscribers.split(",") if s.strip()]
+            else:
+                norm_subscribers = subscribers
+
         # Use the unified push API with both topics and subscribers
         context_mesh.push(
             key=key,
             value=parsed_value,
-            topics=topics,
-            subscribers=subscribers,
+            topics=norm_topics,
+            subscribers=norm_subscribers,
             ttl=ttl_seconds,
         )
 

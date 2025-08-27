@@ -208,6 +208,8 @@ class FrameworkAdapter(ABC):
             "get_context": ["keys"],
             "subscribe_to_topics": ["topics"],
             "unsubscribe_from_topics": ["topics"],
+            # Ensure topic/subscriber strings get coerced for routing
+            "push_context": ["topics", "subscribers"],
         }
 
         return param_name in list_params.get(tool_name, [])
