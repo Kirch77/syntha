@@ -152,12 +152,12 @@ def get_push_context_tool_schema() -> Dict[str, Any]:
                 "topics": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Topics to broadcast to (e.g., ['sales', 'marketing', 'support'])",
+                    "description": "Topics to broadcast to. Must be a list of strings (not a comma-separated string). Example: ['sales', 'marketing', 'support']",
                 },
                 "subscribers": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Specific agent names to send this context to (e.g., ['ManagerAgent', 'AdminAgent'])",
+                    "description": "Specific agent names to send this context to. Must be a list of strings. Example: ['ManagerAgent', 'AdminAgent']",
                 },
                 "ttl_hours": {
                     "type": "number",
@@ -202,30 +202,32 @@ def handle_push_context_call(
 
         ttl_seconds = ttl_hours * 3600 if ttl_hours > 0 else None
 
-        # Normalize routing inputs for robustness
-        norm_topics: Optional[List[str]] = None
+        # Strict parameter validation per schema
         if topics is not None:
-            if isinstance(topics, str):
-                # Support comma-separated or single topic strings
-                norm_topics = [t.strip() for t in topics.split(",") if t.strip()]
-            else:
-                norm_topics = topics
-
-        norm_subscribers: Optional[List[str]] = None
+            if not isinstance(topics, list) or not all(
+                isinstance(t, str) for t in topics
+            ):
+                return {
+                    "success": False,
+                    "error": "Invalid parameter: 'topics' must be a list of strings",
+                    "topics": topics,
+                }
         if subscribers is not None:
-            if isinstance(subscribers, str):
-                norm_subscribers = [
-                    s.strip() for s in subscribers.split(",") if s.strip()
-                ]
-            else:
-                norm_subscribers = subscribers
+            if not isinstance(subscribers, list) or not all(
+                isinstance(s, str) for s in subscribers
+            ):
+                return {
+                    "success": False,
+                    "error": "Invalid parameter: 'subscribers' must be a list of strings",
+                    "subscribers": subscribers,
+                }
 
         # Use the unified push API with both topics and subscribers
         context_mesh.push(
             key=key,
             value=parsed_value,
-            topics=norm_topics,
-            subscribers=norm_subscribers,
+            topics=topics,
+            subscribers=subscribers,
             ttl=ttl_seconds,
         )
 
