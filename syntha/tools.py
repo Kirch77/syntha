@@ -55,7 +55,7 @@ def get_context_tool_schema() -> Dict[str, Any]:
                 "keys": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Specific context keys to retrieve. Use list_context to see available options.",
+                    "description": "Specific context keys to retrieve. Must be a list of strings. Use list_context to see available options.",
                 }
             },
             "required": [],
@@ -342,7 +342,7 @@ def get_subscribe_to_topics_tool_schema() -> Dict[str, Any]:
                 "topics": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Topics you want to receive context for (e.g., ['sales', 'customer_data', 'pricing'])",
+                    "description": "Topics you want to receive context for. Must be a list of strings. Example: ['sales', 'customer_data', 'pricing']",
                 }
             },
             "required": ["topics"],
@@ -504,7 +504,7 @@ def get_unsubscribe_from_topics_tool_schema() -> Dict[str, Any]:
                 "topics": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Topics you want to unsubscribe from (e.g., ['sales', 'old_projects'])",
+                    "description": "Topics you want to unsubscribe from. Must be a list of strings. Example: ['sales', 'old_projects']",
                 }
             },
             "required": ["topics"],
